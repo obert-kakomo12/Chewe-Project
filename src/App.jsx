@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -15,7 +15,9 @@ import {
   UserCheck,
   ClipboardList,
   FileText,
-  Database
+  Database,
+  Menu,
+  X
 } from 'lucide-react';
 import {
   AreaChart,
@@ -77,7 +79,7 @@ const mockAlerts = [
   }
 ];
 
-const Sidebar = ({ activeItem, setActiveItem }) => {
+const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen }) => {
   const navItems = [
     { id: 'war-room', label: 'Executive War Room', icon: LayoutDashboard },
     { id: 'teacher', label: 'Teacher Workstation', icon: Users },
@@ -92,31 +94,45 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        <div className="pulse-dot"></div>
-        CT Pulse
-      </div>
-      <nav>
-        {navItems.map((item) => (
-          <div 
-            key={item.id}
-            className={`nav-item ${activeItem === item.id ? 'active' : ''}`}
-            onClick={() => setActiveItem(item.id)}
-          >
-            <item.icon size={20} />
-            {item.label}
-          </div>
-        ))}
-      </nav>
-    </aside>
+    <>
+      {isMobileOpen && <div className="mobile-overlay" onClick={() => setIsMobileOpen(false)} />}
+      <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-logo">
+          <div className="pulse-dot"></div>
+          CT Pulse
+          <button className="menu-toggle" onClick={() => setIsMobileOpen(false)} style={{ marginLeft: 'auto', display: isMobileOpen ? 'block' : 'none' }}>
+            <X size={24} />
+          </button>
+        </div>
+        <nav>
+          {navItems.map((item) => (
+            <div 
+              key={item.id}
+              className={`nav-item ${activeItem === item.id ? 'active' : ''}`}
+              onClick={() => {
+                setActiveItem(item.id);
+                setIsMobileOpen(false);
+              }}
+            >
+              <item.icon size={20} />
+              {item.label}
+            </div>
+          ))}
+        </nav>
+      </aside>
+    </>
   );
 };
 
-const TopBar = () => {
+const TopBar = ({ activeItem, setIsMobileOpen }) => {
   return (
     <header className="topbar">
-      <div className="topbar-title">War Room Overview</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button className="menu-toggle" onClick={() => setIsMobileOpen(true)}>
+          <Menu size={24} />
+        </button>
+        <div className="topbar-title">{activeItem === 'war-room' ? 'War Room Overview' : ''}</div>
+      </div>
       <div className="topbar-actions">
         <button className="icon-button">
           <Search size={20} />
@@ -219,6 +235,7 @@ const DashboardContent = () => {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeItem, setActiveItem] = useState('war-room');
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   if (!isAuthenticated) {
     return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
@@ -226,9 +243,9 @@ function App() {
 
   return (
     <div className="dashboard-layout">
-      <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
+      <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
       <main className="main-content">
-        <TopBar />
+        <TopBar activeItem={activeItem} setIsMobileOpen={setIsMobileOpen} />
         {activeItem === 'war-room' ? (
           <DashboardContent />
         ) : activeItem === 'teacher' ? (

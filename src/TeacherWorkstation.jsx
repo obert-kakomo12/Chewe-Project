@@ -164,8 +164,8 @@ const TeacherWorkstation = () => {
 
   if (!teacherProfile) {
     return (
-      <div className="content-area animate-fade-in" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <div className="glass-panel" style={{ maxWidth: '600px', width: '100%' }}>
+      <div className="content-area animate-fade-in" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <div className="glass-panel" style={{ maxWidth: '600px', width: '100%', margin: 'auto' }}>
           <h2 style={{ marginBottom: '8px' }}>Teacher Workstation Setup</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.875rem' }}>
             Configure your exact teaching load based on the official curriculum mappings.
