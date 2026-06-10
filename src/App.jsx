@@ -124,7 +124,11 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen }) =
   );
 };
 
-const TopBar = ({ activeItem, setIsMobileOpen }) => {
+const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated }) => {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   return (
     <header className="topbar">
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -133,14 +137,62 @@ const TopBar = ({ activeItem, setIsMobileOpen }) => {
         </button>
         <div className="topbar-title">{activeItem === 'war-room' ? 'War Room Overview' : ''}</div>
       </div>
-      <div className="topbar-actions">
-        <button className="icon-button">
-          <Search size={20} />
-        </button>
-        <button className="icon-button">
-          <Bell size={20} />
-        </button>
-        <div className="profile-avatar">P</div>
+      <div className="topbar-actions" style={{ position: 'relative' }}>
+        
+        {/* Search Toggle */}
+        {isSearchOpen ? (
+          <div style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '4px', padding: '4px 8px' }}>
+            <Search size={16} color="var(--text-secondary)" />
+            <input 
+              autoFocus
+              type="text" 
+              placeholder="Search..." 
+              style={{ border: 'none', outline: 'none', padding: '4px 8px', fontSize: '0.875rem', width: '150px' }} 
+            />
+            <button className="icon-button" style={{ color: 'var(--text-secondary)' }} onClick={() => setIsSearchOpen(false)}>
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <button className="icon-button" onClick={() => setIsSearchOpen(true)}>
+            <Search size={20} />
+          </button>
+        )}
+        
+        {/* Notifications Toggle */}
+        <div style={{ position: 'relative' }}>
+          <button className="icon-button" onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); }}>
+            <Bell size={20} />
+            <div style={{ position: 'absolute', top: '0', right: '0', width: '8px', height: '8px', background: 'var(--status-danger)', borderRadius: '50%' }}></div>
+          </button>
+          {isNotificationsOpen && (
+            <div className="glass-panel" style={{ position: 'absolute', top: '45px', right: '-10px', width: '300px', background: '#ffffff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', padding: '0', zIndex: 50, border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', fontWeight: 600, color: 'var(--text-primary)' }}>Notifications</div>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>New Report Available</div>
+                Term 2 assessments have been fully processed.
+              </div>
+              <div style={{ padding: '12px 16px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                <div style={{ fontWeight: 500, color: 'var(--status-danger)' }}>Welfare Alert</div>
+                High priority counseling case logged.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Profile Toggle */}
+        <div style={{ position: 'relative' }}>
+          <div className="profile-avatar" style={{ cursor: 'pointer' }} onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); }}>OK</div>
+          {isProfileOpen && (
+            <div className="glass-panel" style={{ position: 'absolute', top: '50px', right: '0', width: '150px', background: '#ffffff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', padding: '8px 0', zIndex: 50, border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+              <div style={{ padding: '8px 16px', fontSize: '0.875rem', cursor: 'pointer', color: 'var(--text-primary)' }}>My Profile</div>
+              <div onClick={() => { setActiveItem('settings'); setIsProfileOpen(false); }} style={{ padding: '8px 16px', fontSize: '0.875rem', cursor: 'pointer', color: 'var(--text-primary)' }}>Settings</div>
+              <div style={{ borderTop: '1px solid var(--border-color)', margin: '4px 0' }}></div>
+              <div onClick={() => setIsAuthenticated(false)} style={{ padding: '8px 16px', fontSize: '0.875rem', cursor: 'pointer', color: 'var(--status-danger)' }}>Log Out</div>
+            </div>
+          )}
+        </div>
+
       </div>
     </header>
   );
@@ -199,12 +251,12 @@ const DashboardContent = () => {
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                <XAxis dataKey="term" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis dataKey="term" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1a1d2d', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                  itemStyle={{ color: '#111827' }}
                 />
                 <Area type="monotone" dataKey="zScore" stroke="#3b82f6" fillOpacity={1} fill="url(#colorZScore)" />
               </AreaChart>
@@ -245,7 +297,7 @@ function App() {
     <div className="dashboard-layout">
       <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
       <main className="main-content">
-        <TopBar activeItem={activeItem} setIsMobileOpen={setIsMobileOpen} />
+        <TopBar activeItem={activeItem} setIsMobileOpen={setIsMobileOpen} setActiveItem={setActiveItem} setIsAuthenticated={setIsAuthenticated} />
         {activeItem === 'war-room' ? (
           <DashboardContent />
         ) : activeItem === 'teacher' ? (

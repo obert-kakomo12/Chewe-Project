@@ -24,8 +24,8 @@ const SettingsAudit = () => {
       <div className="dashboard-row" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="glass-panel hover-lift">
-            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Shield size={20} color="var(--status-success)" /> System Hardening
+            <h3 className="section-title">
+              System Hardening
             </h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -38,9 +38,9 @@ const SettingsAudit = () => {
                 </div>
                 <div 
                   onClick={() => setDoubleLockEnabled(!doubleLockEnabled)}
-                  style={{ width: '40px', height: '24px', background: doubleLockEnabled ? 'var(--status-success)' : 'rgba(255,255,255,0.2)', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'var(--transition-fast)' }}
+                  style={{ width: '40px', height: '24px', background: doubleLockEnabled ? 'var(--status-success)' : '#e5e7eb', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'var(--transition-fast)' }}
                 >
-                  <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: doubleLockEnabled ? '19px' : '3px', transition: 'var(--transition-fast)' }} />
+                  <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: doubleLockEnabled ? '19px' : '3px', transition: 'var(--transition-fast)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
                 </div>
               </div>
 
@@ -53,9 +53,9 @@ const SettingsAudit = () => {
                 </div>
                 <div 
                   onClick={() => setMfaEnabled(!mfaEnabled)}
-                  style={{ width: '40px', height: '24px', background: mfaEnabled ? 'var(--accent-blue)' : 'rgba(255,255,255,0.2)', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'var(--transition-fast)' }}
+                  style={{ width: '40px', height: '24px', background: mfaEnabled ? 'var(--accent-blue)' : '#e5e7eb', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'var(--transition-fast)' }}
                 >
-                  <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: mfaEnabled ? '19px' : '3px', transition: 'var(--transition-fast)' }} />
+                  <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: mfaEnabled ? '19px' : '3px', transition: 'var(--transition-fast)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
                 </div>
               </div>
             </div>
@@ -72,8 +72,8 @@ const SettingsAudit = () => {
         </div>
 
         <div className="glass-panel hover-lift" style={{ overflowX: 'auto' }}>
-          <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Activity size={20} color="var(--accent-purple)" /> Immortal Audit Log
+          <h3 className="section-title">
+            Immortal Audit Log
           </h3>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
             This log is non-mutable. It records all system activity to prevent data tampering.

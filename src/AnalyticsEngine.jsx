@@ -13,8 +13,8 @@ const AnalyticsEngine = () => {
     <div className="content-area animate-fade-in">
       <div className="teacher-header">
         <div className="teacher-info">
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <LineChart size={28} color="var(--accent-blue)" /> Analytics Engine
+          <h2>
+            Analytics Engine
           </h2>
           <p>Value Multipliers & Curriculum Bottleneck Detection</p>
         </div>
@@ -22,8 +22,8 @@ const AnalyticsEngine = () => {
 
       <div className="dashboard-row" style={{ gridTemplateColumns: '1fr' }}>
         <div className="glass-panel hover-lift">
-          <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Layers size={20} color="var(--status-warning)" /> Curriculum Bottleneck Detection
+          <h3 className="section-title">
+            Curriculum Bottleneck Detection
           </h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '24px' }}>
             Identifies specific topics where the entire class is failing, signaling a need for better teaching resources or a change in instructional strategy.
@@ -31,12 +31,12 @@ const AnalyticsEngine = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             {mockTopics.map((item, idx) => {
-              let bg = 'rgba(255,255,255,0.05)';
+              let bg = '#f9f9f9';
               let border = '1px solid var(--border-color)';
               let icon = null;
 
               if (item.status === 'bottleneck') {
-                bg = 'rgba(239, 68, 68, 0.15)';
+                bg = 'rgba(239, 68, 68, 0.1)';
                 border = '1px solid var(--status-danger)';
                 icon = <AlertCircle size={16} color="var(--status-danger)" />;
               } else if (item.status === 'warning') {
@@ -48,9 +48,9 @@ const AnalyticsEngine = () => {
               }
 
               return (
-                <div key={idx} style={{ background: bg, border, padding: '16px', borderRadius: '8px', position: 'relative' }}>
+                <div key={idx} style={{ background: bg, border, padding: '16px', borderRadius: '4px', position: 'relative' }}>
                   <div style={{ fontWeight: 500, marginBottom: '8px', fontSize: '0.875rem' }}>{item.topic}</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 700, color: item.status === 'bottleneck' ? 'var(--status-danger)' : '#fff' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 700, color: item.status === 'bottleneck' ? 'var(--status-danger)' : 'var(--text-primary)' }}>
                     {item.avg}%
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Target: {item.target}%</div>

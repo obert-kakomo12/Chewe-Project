@@ -10,7 +10,7 @@ const mockArchives = [
 const EducationalArchive = () => {
   return (
     <div className="content-area animate-fade-in">
-      <div className="teacher-header" style={{ background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(26, 29, 45, 1) 100%)', borderLeft: '4px solid var(--accent-blue)' }}>
+      <div className="teacher-header" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderLeft: '4px solid var(--accent-blue)', padding: '24px', borderRadius: '4px' }}>
         <div className="teacher-info">
           <h2>Long-Term Educational Archive</h2>
           <p>Cold-storage and redundant digital preservation framework for data permanence.</p>
@@ -23,8 +23,8 @@ const EducationalArchive = () => {
       <div className="dashboard-row" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="glass-panel hover-lift">
-            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Server size={20} color="var(--accent-blue)" /> Storage Nodes
+            <h3 className="section-title">
+              Storage Nodes
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
@@ -43,8 +43,8 @@ const EducationalArchive = () => {
           </div>
 
           <div className="glass-panel hover-lift" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--status-success)' }}>
-              <ShieldCheck size={20} /> Integrity Verification
+            <h3 className="section-title" style={{ color: 'var(--status-success)' }}>
+              Integrity Verification
             </h3>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
               Last checksum validation passed for all cold storage nodes. No bit-rot detected.

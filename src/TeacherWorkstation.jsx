@@ -243,7 +243,7 @@ const TeacherWorkstation = () => {
               <label style={{ display: 'block', marginBottom: '12px', fontSize: '0.875rem', fontWeight: 500 }}>
                 Select Subjects for {setupFormNumber} {setupStream}
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', background: '#f3f4f6', border: '1px solid var(--border-color)', padding: '16px', borderRadius: '4px' }}>
                 {availableSubjects.map(subject => (
                   <label key={subject} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
                     <input 

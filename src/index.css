@@ -1,25 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Chewe Technologies Corporate Light Theme */
-  --bg-primary: #f0f4f8;
+  /* Odoo Inspired Theme */
+  --bg-primary: #f9f9f9;
   --bg-secondary: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-glass: #ffffff;
   
-  --text-primary: #0a3b73; /* Deep Navy Blue */
-  --text-secondary: #4b5563; /* Dark Grey */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
   
-  --accent-blue: #00a9e0; /* Cyan / Light Blue Arrow */
-  --accent-purple: #0a3b73; /* Navy Blue fallback */
+  --accent-blue: #017e84; /* Odoo Teal */
+  --accent-purple: #714B67; /* Odoo Aubergine */
   
   --status-success: #10b981;
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
   
-  --border-color: rgba(10, 59, 115, 0.1);
+  --border-color: #e5e7eb;
   
-  --font-main: 'Inter', sans-serif;
-  --transition-fast: 0.2s ease;
+  --font-main: 'Inter', 'Roboto', sans-serif;
+  --transition-fast: 0.15s ease-in-out;
 }
 
 * {
@@ -36,15 +36,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Glassmorphism Utilities */
+/* Flat Panel Utilities */
 .glass-panel {
-  background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: 4px;
   padding: 24px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 /* Micro-animations */
@@ -53,8 +51,8 @@ body {
 }
 
 .hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .animate-fade-in {
@@ -96,16 +94,16 @@ body {
 .sidebar-logo .pulse-dot {
   width: 10px;
   height: 10px;
-  background-color: var(--accent-blue);
+  background-color: var(--accent-purple);
   border-radius: 50%;
-  box-shadow: 0 0 10px var(--accent-blue);
+  box-shadow: 0 0 10px var(--accent-purple);
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(113, 75, 103, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(113, 75, 103, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(113, 75, 103, 0); }
 }
 
 .nav-item {
@@ -123,7 +121,7 @@ body {
 
 .nav-item:hover, .nav-item.active {
   color: var(--text-primary);
-  background-color: rgba(10, 59, 115, 0.05);
+  background-color: #f3f4f6;
   border-left-color: var(--accent-blue);
 }
 
@@ -140,14 +138,16 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--accent-purple);
+  background-color: var(--accent-purple);
+  color: #ffffff;
   z-index: 5;
 }
 
 .topbar-title {
   font-size: 1.25rem;
   font-weight: 600;
+  color: #ffffff;
 }
 
 .topbar-actions {
@@ -159,7 +159,7 @@ body {
 .icon-button {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: #e5e7eb;
   cursor: pointer;
   transition: color var(--transition-fast);
   display: flex;
@@ -168,14 +168,15 @@ body {
 }
 
 .icon-button:hover {
-  color: var(--text-primary);
+  color: #ffffff;
 }
 
 .profile-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  background: #ffffff;
+  color: var(--accent-purple);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,8 +264,9 @@ body {
   display: flex;
   gap: 16px;
   padding: 16px;
-  background-color: rgba(10, 59, 115, 0.02);
-  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
   border-left: 4px solid var(--accent-blue);
   align-items: flex-start;
 }
@@ -329,7 +331,7 @@ select.premium-select {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: 4px;
   font-family: var(--font-main);
   font-size: 0.875rem;
   outline: none;
@@ -339,11 +341,11 @@ select.premium-select {
 }
 
 .action-button {
-  background: linear-gradient(135deg, var(--accent-blue), var(--text-primary));
-  color: #fff;
+  background: var(--accent-blue);
+  color: #ffffff;
   border: none;
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: 4px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -353,14 +355,15 @@ select.premium-select {
 }
 
 .action-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+  background: #016b70;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Spreadsheet Grid */
 .spreadsheet-container {
   overflow-x: auto;
-  border-radius: 12px;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
 }
@@ -372,7 +375,7 @@ select.premium-select {
 }
 
 .data-table th {
-  background-color: rgba(10, 59, 115, 0.03);
+  background-color: #f3f4f6;
   padding: 16px;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -408,11 +411,11 @@ select.premium-select {
 }
 
 .mark-input {
-  background-color: var(--bg-primary);
-  border: 1px solid rgba(10, 59, 115, 0.1);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   color: var(--text-primary);
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: 4px;
   width: 70px;
   font-family: var(--font-main);
   text-align: center;
@@ -448,7 +451,7 @@ select.premium-select {
 .report-modal {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: 4px;
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
@@ -543,7 +546,7 @@ select.premium-select {
   display: none;
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: #e5e7eb;
   cursor: pointer;
   align-items: center;
   justify-content: center;
@@ -551,7 +554,7 @@ select.premium-select {
 }
 
 .menu-toggle:hover {
-  color: var(--text-primary);
+  color: #ffffff;
 }
 
 .mobile-overlay {

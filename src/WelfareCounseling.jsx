@@ -12,7 +12,7 @@ const WelfareCounseling = () => {
 
   return (
     <div className="content-area animate-fade-in">
-      <div className="teacher-header" style={{ background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(26, 29, 45, 1) 100%)', borderLeft: '4px solid var(--status-danger)' }}>
+      <div className="teacher-header" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderLeft: '4px solid var(--status-danger)', padding: '24px', borderRadius: '4px' }}>
         <div className="teacher-info">
           <h2>Student Welfare & Counseling (Safe Space)</h2>
           <p>Highly secure, cryptographically isolated repository for behavioral and counseling logs.</p>
@@ -25,8 +25,8 @@ const WelfareCounseling = () => {
       <div className="dashboard-row" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="glass-panel hover-lift">
-            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Heart size={20} color="var(--status-danger)" /> Counseling Metrics
+            <h3 className="section-title">
+              Counseling Metrics
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
@@ -45,8 +45,8 @@ const WelfareCounseling = () => {
           </div>
 
           <div className="glass-panel hover-lift" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--status-warning)' }}>
-              <AlertTriangle size={20} /> Access Audit
+            <h3 className="section-title" style={{ color: 'var(--status-warning)' }}>
+              Access Audit
             </h3>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
               All access to welfare logs is permanently audited and requires Multi-Factor Authentication.

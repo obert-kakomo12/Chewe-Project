@@ -16,8 +16,8 @@ const Pathfinder = () => {
     <div className="content-area animate-fade-in">
       <div className="teacher-header">
         <div className="teacher-info">
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Compass size={28} color="var(--accent-purple)" /> The Pathfinder
+          <h2>
+            The Pathfinder
           </h2>
           <p>Automated Level 3 Streaming & Transition Proposals</p>
         </div>
@@ -50,8 +50,8 @@ const Pathfinder = () => {
         <div className="dashboard-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '24px' }}>
           {/* Sciences Column */}
           <div className="glass-panel hover-lift" style={{ borderTop: '4px solid #3b82f6' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '1.125rem' }}>
-              <Beaker size={20} color="#3b82f6" /> Sciences Track
+            <h3 style={{ marginBottom: '16px', fontSize: '1.125rem' }}>
+              Sciences Track
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {MOCK_STREAMING_STUDENTS.filter(s => s.recommended === 'Sciences').map(s => (
@@ -67,8 +67,8 @@ const Pathfinder = () => {
 
           {/* Commercials Column */}
           <div className="glass-panel hover-lift" style={{ borderTop: '4px solid #10b981' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '1.125rem' }}>
-              <Briefcase size={20} color="#10b981" /> Commercials Track
+            <h3 style={{ marginBottom: '16px', fontSize: '1.125rem' }}>
+              Commercials Track
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {MOCK_STREAMING_STUDENTS.filter(s => s.recommended === 'Commercials').map(s => (
@@ -90,8 +90,8 @@ const Pathfinder = () => {
 
           {/* Arts Column */}
           <div className="glass-panel hover-lift" style={{ borderTop: '4px solid #8b5cf6' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '1.125rem' }}>
-              <Palette size={20} color="#8b5cf6" /> Arts Track
+            <h3 style={{ marginBottom: '16px', fontSize: '1.125rem' }}>
+              Arts Track
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {MOCK_STREAMING_STUDENTS.filter(s => s.recommended === 'Arts').map(s => (
