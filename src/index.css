@@ -1,22 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Premium Dark Mode Palette */
-  --bg-primary: #0f111a;
-  --bg-secondary: #1a1d2d;
-  --bg-glass: rgba(26, 29, 45, 0.7);
+  /* Chewe Technologies Corporate Light Theme */
+  --bg-primary: #f0f4f8;
+  --bg-secondary: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.85);
   
-  --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
+  --text-primary: #0a3b73; /* Deep Navy Blue */
+  --text-secondary: #4b5563; /* Dark Grey */
   
-  --accent-blue: #3b82f6;
-  --accent-purple: #8b5cf6;
+  --accent-blue: #00a9e0; /* Cyan / Light Blue Arrow */
+  --accent-purple: #0a3b73; /* Navy Blue fallback */
   
   --status-success: #10b981;
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
   
-  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color: rgba(10, 59, 115, 0.1);
   
   --font-main: 'Inter', sans-serif;
   --transition-fast: 0.2s ease;
@@ -123,7 +123,7 @@ body {
 
 .nav-item:hover, .nav-item.active {
   color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(10, 59, 115, 0.05);
   border-left-color: var(--accent-blue);
 }
 
@@ -263,7 +263,7 @@ body {
   display: flex;
   gap: 16px;
   padding: 16px;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(10, 59, 115, 0.02);
   border-radius: 12px;
   border-left: 4px solid var(--accent-blue);
   align-items: flex-start;
@@ -339,7 +339,7 @@ select.premium-select {
 }
 
 .action-button {
-  background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+  background: linear-gradient(135deg, var(--accent-blue), var(--text-primary));
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -372,7 +372,7 @@ select.premium-select {
 }
 
 .data-table th {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(10, 59, 115, 0.03);
   padding: 16px;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -384,7 +384,7 @@ select.premium-select {
 
 .data-table td {
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(10, 59, 115, 0.05);
   vertical-align: middle;
 }
 
@@ -393,7 +393,7 @@ select.premium-select {
 }
 
 .data-table tr:hover td {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(10, 59, 115, 0.02);
 }
 
 .student-name {
@@ -409,7 +409,7 @@ select.premium-select {
 
 .mark-input {
   background-color: var(--bg-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(10, 59, 115, 0.1);
   color: var(--text-primary);
   padding: 8px 12px;
   border-radius: 6px;
@@ -436,7 +436,7 @@ select.premium-select {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 17, 26, 0.85);
+  background: rgba(10, 59, 115, 0.5);
   backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
@@ -482,7 +482,7 @@ select.premium-select {
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(10, 59, 115, 0.02);
   padding: 16px;
   border-radius: 8px;
 }
@@ -508,7 +508,7 @@ select.premium-select {
 .report-table th, .report-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(10, 59, 115, 0.05);
 }
 
 .velocity-warning {

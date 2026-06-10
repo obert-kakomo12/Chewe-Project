@@ -12,7 +12,10 @@ import {
   TrendingDown,
   AlertCircle,
   AlertTriangle,
-  UserCheck
+  UserCheck,
+  ClipboardList,
+  FileText,
+  Database
 } from 'lucide-react';
 import {
   AreaChart,
@@ -29,6 +32,11 @@ import LoginScreen from './LoginScreen';
 import Pathfinder from './Pathfinder';
 import AnalyticsEngine from './AnalyticsEngine';
 import SettingsAudit from './SettingsAudit';
+import AssessmentManagement from './AssessmentManagement';
+import AttendanceNotification from './AttendanceNotification';
+import WelfareCounseling from './WelfareCounseling';
+import ReportingDocumentation from './ReportingDocumentation';
+import EducationalArchive from './EducationalArchive';
 
 // Mock Data for the Dashboard
 const mockPerformanceData = [
@@ -73,9 +81,13 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
   const navItems = [
     { id: 'war-room', label: 'Executive War Room', icon: LayoutDashboard },
     { id: 'teacher', label: 'Teacher Workstation', icon: Users },
+    { id: 'assessment', label: 'Assessment Management', icon: ClipboardList },
+    { id: 'attendance', label: 'Attendance & Notification', icon: UserCheck },
     { id: 'safe-space', label: 'Counseling Safe Space', icon: ShieldAlert },
     { id: 'pathfinder', label: 'Level 3 Streaming', icon: GraduationCap },
     { id: 'analytics', label: 'AI Analytics Engine', icon: LineChart },
+    { id: 'reports', label: 'Reporting & Docs', icon: FileText },
+    { id: 'archive', label: 'Educational Archive', icon: Database },
     { id: 'settings', label: 'Settings & Audit', icon: Settings },
   ];
 
@@ -221,10 +233,20 @@ function App() {
           <DashboardContent />
         ) : activeItem === 'teacher' ? (
           <TeacherWorkstation />
+        ) : activeItem === 'assessment' ? (
+          <AssessmentManagement />
+        ) : activeItem === 'attendance' ? (
+          <AttendanceNotification />
+        ) : activeItem === 'safe-space' ? (
+          <WelfareCounseling />
         ) : activeItem === 'pathfinder' ? (
           <Pathfinder />
         ) : activeItem === 'analytics' ? (
           <AnalyticsEngine />
+        ) : activeItem === 'reports' ? (
+          <ReportingDocumentation />
+        ) : activeItem === 'archive' ? (
+          <EducationalArchive />
         ) : activeItem === 'settings' ? (
           <SettingsAudit />
         ) : (
