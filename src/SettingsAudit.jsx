@@ -1,90 +1,108 @@
 import React, { useState } from 'react';
-import { Shield, Key, EyeOff, Activity, AlertOctagon, Lock } from 'lucide-react';
+import { Key, AlertOctagon, Lock, ShieldCheck } from 'lucide-react';
 
 const mockAuditLogs = [
-  { id: 1, time: '2026-06-09 08:15:22', user: 'Mrs. N. Dube', action: 'MARK_UPDATE', details: 'Changed Math In-Class mark for CT24-004 from 45 to 65', ip: '192.168.1.14', status: 'SUCCESS' },
-  { id: 2, time: '2026-06-09 07:42:01', user: 'SYSTEM', action: 'BRUTE_FORCE_LOCK', details: 'Account lockout triggered for user ID 8842. 5 failed MFA attempts.', ip: '41.216.222.10', status: 'WARNING' },
-  { id: 3, time: '2026-06-09 07:30:10', user: 'Principal Moyo', action: 'WELFARE_DECRYPT', details: 'Used Master Key to decrypt Trauma Log for CT24-019', ip: '192.168.1.2', status: 'SUCCESS' },
-  { id: 4, time: '2026-06-08 14:20:00', user: 'Mr. T. Banda', action: 'REPORT_GENERATE', details: 'Generated Term 2 Report Books for Form 3 Arts', ip: '192.168.1.45', status: 'SUCCESS' },
+  { id: 1, time: '2026-06-09 08:15:22', user: 'Mrs. N. Dube',    action: 'MARK_UPDATE',       details: 'Changed Math In-Class mark for CT24-004 from 45 to 65',            ip: '192.168.1.14',  status: 'SUCCESS' },
+  { id: 2, time: '2026-06-09 07:42:01', user: 'SYSTEM',          action: 'BRUTE_FORCE_LOCK',  details: 'Account lockout triggered for user ID 8842. 5 failed MFA attempts.', ip: '41.216.222.10', status: 'WARNING' },
+  { id: 3, time: '2026-06-09 07:30:10', user: 'Principal Moyo',  action: 'WELFARE_DECRYPT',   details: 'Used Master Key to decrypt Trauma Log for CT24-019',                ip: '192.168.1.2',   status: 'SUCCESS' },
+  { id: 4, time: '2026-06-08 14:20:00', user: 'Mr. T. Banda',    action: 'REPORT_GENERATE',   details: 'Generated Term 2 Report Books for Form 3 Arts',                     ip: '192.168.1.45',  status: 'SUCCESS' },
 ];
+
+const Toggle = ({ on, onToggle, color }) => (
+  <div onClick={onToggle} style={{
+    width: '42px', height: '24px',
+    background: on ? color : '#d1ddef',
+    borderRadius: '12px', position: 'relative',
+    cursor: 'pointer', transition: 'background 0.2s',
+    flexShrink: 0,
+  }}>
+    <div style={{
+      width: '18px', height: '18px', background: '#fff',
+      borderRadius: '50%', position: 'absolute', top: '3px',
+      left: on ? '21px' : '3px', transition: 'left 0.2s',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+    }} />
+  </div>
+);
 
 const SettingsAudit = () => {
   const [doubleLockEnabled, setDoubleLockEnabled] = useState(true);
-  const [mfaEnabled, setMfaEnabled] = useState(true);
+  const [mfaEnabled,        setMfaEnabled]        = useState(true);
 
   return (
     <div className="content-area animate-fade-in">
       <div className="teacher-header">
         <div className="teacher-info">
-          <h2>Security & Audit Vault</h2>
-          <p>End-to-End Encryption Configuration & Immortal Activity Log</p>
+          <h2>Security &amp; Audit Vault</h2>
+          <p>End-to-End Encryption Configuration &amp; Immortal Activity Log</p>
         </div>
       </div>
 
       <div className="dashboard-row" style={{ gridTemplateColumns: '1fr 2fr' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+        {/* ── Left: System Hardening ─────────────────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass-panel hover-lift">
-            <h3 className="section-title">
-              System Hardening
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 className="section-title">System Hardening</h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Double-Lock */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#f0f4f8', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 <div>
-                  <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Key size={16} /> Double-Lock Welfare
+                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.875rem', color: 'var(--text-primary)', marginBottom: '3px' }}>
+                    <Key size={15} color="var(--accent-blue)" /> Double-Lock Welfare
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Encrypts trauma data (requires 2 keys)</div>
                 </div>
-                <div 
-                  onClick={() => setDoubleLockEnabled(!doubleLockEnabled)}
-                  style={{ width: '40px', height: '24px', background: doubleLockEnabled ? 'var(--status-success)' : '#e5e7eb', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'var(--transition-fast)' }}
-                >
-                  <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: doubleLockEnabled ? '19px' : '3px', transition: 'var(--transition-fast)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
-                </div>
+                <Toggle on={doubleLockEnabled} onToggle={() => setDoubleLockEnabled(v => !v)} color="var(--status-success)" />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* MFA */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#f0f4f8', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 <div>
-                  <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Lock size={16} /> MFA Enforcement
+                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.875rem', color: 'var(--text-primary)', marginBottom: '3px' }}>
+                    <Lock size={15} color="var(--accent-blue)" /> MFA Enforcement
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Requires mobile OTP for all staff</div>
                 </div>
-                <div 
-                  onClick={() => setMfaEnabled(!mfaEnabled)}
-                  style={{ width: '40px', height: '24px', background: mfaEnabled ? 'var(--accent-blue)' : '#e5e7eb', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'var(--transition-fast)' }}
-                >
-                  <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: mfaEnabled ? '19px' : '3px', transition: 'var(--transition-fast)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
+                <Toggle on={mfaEnabled} onToggle={() => setMfaEnabled(v => !v)} color="var(--accent-blue)" />
+              </div>
+
+              {/* Brute-force */}
+              <div style={{ padding: '14px', background: '#fff5f5', borderLeft: '4px solid var(--status-danger)', borderRadius: '0 8px 8px 0', border: '1px solid #fca5a5', borderLeft: '4px solid var(--status-danger)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--status-danger)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
+                  <AlertOctagon size={15} /> Brute-Force Protection Active
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#991b1b' }}>
+                  Accounts auto-lock and IPs are blacklisted after 3 failed login attempts.
                 </div>
               </div>
-            </div>
 
-            <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderLeft: '3px solid var(--status-danger)', borderRadius: '0 8px 8px 0' }}>
-              <div style={{ fontWeight: 600, color: 'var(--status-danger)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                <AlertOctagon size={16} /> Brute-Force Protection Active
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Accounts automatically lock and IP addresses are blacklisted after 3 failed login attempts.
+              {/* Encryption status */}
+              <div style={{ padding: '14px', background: '#f0fdf4', border: '1px solid #6ee7b7', borderRadius: '8px' }}>
+                <div style={{ fontWeight: 700, color: 'var(--status-success)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
+                  <ShieldCheck size={15} /> AES-256 + TLS 1.3 Active
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#065f46' }}>
+                  All data encrypted at rest and in transit. Last certificate renewal: 2026-05-01.
+                </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* ── Right: Audit Log ───────────────────────────────────────────── */}
         <div className="glass-panel hover-lift" style={{ overflowX: 'auto' }}>
-          <h3 className="section-title">
-            Immortal Audit Log
-          </h3>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-            This log is non-mutable. It records all system activity to prevent data tampering.
+          <h3 className="section-title">Immortal Audit Log</h3>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            Non-mutable. Every mark change, login and decrypt action is permanently recorded.
           </p>
-
           <table className="data-table">
             <thead>
               <tr>
                 <th>Timestamp</th>
                 <th>Actor</th>
-                <th>Action Type</th>
+                <th>Action</th>
                 <th>Details</th>
                 <th>IP Address</th>
               </tr>
@@ -93,20 +111,19 @@ const SettingsAudit = () => {
               {mockAuditLogs.map(log => (
                 <tr key={log.id}>
                   <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{log.time}</td>
-                  <td style={{ fontWeight: 500 }}>{log.user}</td>
+                  <td style={{ fontWeight: 600 }}>{log.user}</td>
                   <td>
-                    <span style={{ 
-                      padding: '4px 8px', 
-                      borderRadius: '4px', 
-                      fontSize: '0.7rem', 
-                      fontWeight: 600,
-                      background: log.status === 'WARNING' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                      color: log.status === 'WARNING' ? 'var(--status-warning)' : 'var(--accent-blue)'
+                    <span style={{
+                      padding: '3px 9px', borderRadius: '10px',
+                      fontSize: '0.68rem', fontWeight: 700,
+                      background: log.status === 'WARNING' ? '#fffbeb' : '#eff6ff',
+                      color:      log.status === 'WARNING' ? '#92400e' : '#1d4ed8',
+                      border:     `1px solid ${log.status === 'WARNING' ? '#fde68a' : '#bfdbfe'}`,
                     }}>
                       {log.action}
                     </span>
                   </td>
-                  <td style={{ fontSize: '0.875rem' }}>{log.details}</td>
+                  <td style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{log.details}</td>
                   <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.ip}</td>
                 </tr>
               ))}
