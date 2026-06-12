@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText } from 'lucide-react';
 
 const mockLogs = [
@@ -36,6 +36,19 @@ const TabBtn = ({ label, active, onClick }) => (
 
 const WelfareCounseling = () => {
   const [activeTab, setActiveTab] = useState('cases');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredLogs = useMemo(() => {
+    if (!searchQuery.trim()) return mockLogs;
+    const q = searchQuery.toLowerCase();
+    return mockLogs.filter(log =>
+      log.id.toLowerCase().includes(q) ||
+      log.student.toLowerCase().includes(q) ||
+      log.trigger.toLowerCase().includes(q) ||
+      log.priority.toLowerCase().includes(q) ||
+      log.type.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
 
   return (
     <div className="content-area animate-fade-in">
@@ -70,7 +83,7 @@ const WelfareCounseling = () => {
       <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', marginBottom: '24px' }}>
         {[
           { label: 'Active Cases',          value: '24',                                                              color: 'var(--text-primary)' },
-          { label: 'High Priority',         value: String(mockLogs.filter(l => l.priority === 'High').length),        color: 'var(--status-danger)' },
+          { label: 'High Priority',         value: String(filteredLogs.filter(l => l.priority === 'High').length),    color: 'var(--status-danger)' },
           { label: 'Resolved This Term',    value: '18',                                                              color: 'var(--status-success)' },
           { label: 'Guidance Reports Sent', value: '45',                                                              color: 'var(--accent-blue)' },
         ].map((m, i) => (
@@ -104,7 +117,7 @@ const WelfareCounseling = () => {
                   borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none', fontSize: '0.85rem' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>{src}</span>
                   <span style={{ fontWeight: 700, color: 'var(--accent-blue)' }}>
-                    {mockLogs.filter(l => l.trigger === src).length}
+                    {filteredLogs.filter(l => l.trigger === src).length}
                   </span>
                 </div>
               ))}
@@ -117,7 +130,12 @@ const WelfareCounseling = () => {
               <h3 className="section-title" style={{ margin: 0 }}>Secure Case Repository</h3>
               <div className="search-bar" style={{ width: '200px' }}>
                 <Search size={15} className="text-secondary" />
-                <input type="text" placeholder="Search cases…" />
+                <input 
+                  type="text" 
+                  placeholder="Search cases…" 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
               </div>
             </div>
             <table className="data-table">
@@ -125,33 +143,41 @@ const WelfareCounseling = () => {
                 <tr><th>Case ID</th><th>Student</th><th>Trigger</th><th>Priority</th><th>Type</th><th>Data</th><th>Action</th></tr>
               </thead>
               <tbody>
-                {mockLogs.map(log => {
-                  const pb = PRIORITY_BADGE[log.priority];
-                  return (
-                    <tr key={log.id}>
-                      <td style={{ fontWeight: 600 }}>{log.id}</td>
-                      <td style={{ fontWeight: 500 }}>{log.student}</td>
-                      <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.trigger}</td>
-                      <td>
-                        <span style={{ padding: '2px 9px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700,
-                          background: pb.bg, color: pb.color, border: `1px solid ${pb.border}` }}>
-                          {log.priority}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: '0.82rem' }}>{log.type}</td>
-                      <td>
-                        {log.encrypted
-                          ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}><Lock size={11} /> Encrypted</span>
-                          : <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.72rem' }}><EyeOff size={11} /> Standard</span>}
-                      </td>
-                      <td>
-                        <button className="icon-button" style={{ color: log.encrypted ? 'var(--text-muted)' : 'var(--accent-blue)' }}>
-                          {log.encrypted ? <Lock size={14} /> : <Search size={14} />}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>
+                      No cases found matching search query.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLogs.map(log => {
+                    const pb = PRIORITY_BADGE[log.priority];
+                    return (
+                      <tr key={log.id}>
+                        <td style={{ fontWeight: 600 }}>{log.id}</td>
+                        <td style={{ fontWeight: 500 }}>{log.student}</td>
+                        <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.trigger}</td>
+                        <td>
+                          <span style={{ padding: '2px 9px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700,
+                            background: pb.bg, color: pb.color, border: `1px solid ${pb.border}` }}>
+                            {log.priority}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '0.82rem' }}>{log.type}</td>
+                        <td>
+                          {log.encrypted
+                            ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}><Lock size={11} /> Encrypted</span>
+                            : <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.72rem' }}><EyeOff size={11} /> Standard</span>}
+                        </td>
+                        <td>
+                          <button className="icon-button" style={{ color: log.encrypted ? 'var(--text-muted)' : 'var(--accent-blue)' }}>
+                            {log.encrypted ? <Lock size={14} /> : <Search size={14} />}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

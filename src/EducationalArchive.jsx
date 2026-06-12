@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Database, Search, HardDrive, ShieldCheck, Download, Archive, RefreshCw, FileText } from 'lucide-react';
 
 const mockArchives = [
@@ -17,11 +17,22 @@ const BACKUP_TIERS = [
 const EducationalArchive = () => {
   const [exportYear, setExportYear] = useState('2025');
   const [exportTriggered, setExportTriggered] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleExport = () => {
     setExportTriggered(true);
     setTimeout(() => setExportTriggered(false), 3000);
   };
+
+  const filteredArchives = useMemo(() => {
+    if (!searchQuery.trim()) return mockArchives;
+    const q = searchQuery.toLowerCase();
+    return mockArchives.filter(a => 
+      a.cohort.toLowerCase().includes(q) || 
+      a.location.toLowerCase().includes(q) ||
+      a.status.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
 
   return (
     <div className="content-area animate-fade-in">
@@ -42,7 +53,7 @@ const EducationalArchive = () => {
           { label: 'Hot Storage (NVMe)', value: '840 GB', color: 'var(--status-success)' },
           { label: 'Cold Storage A',     value: '2.4 TB', color: 'var(--accent-blue)' },
           { label: 'Deep Glacier',       value: '8.7 TB', color: '#8b5cf6' },
-          { label: 'Cohorts Archived',   value: String(mockArchives.length), color: 'var(--text-primary)' },
+          { label: 'Cohorts Archived',   value: String(filteredArchives.length), color: 'var(--text-primary)' },
         ].map((m, i) => (
           <div key={i} className="glass-panel metric-card hover-lift">
             <div className="metric-header"><span>{m.label}</span><HardDrive size={16} /></div>
@@ -109,7 +120,12 @@ const EducationalArchive = () => {
             <h3 className="section-title" style={{ margin: 0 }}>Archived Cohorts</h3>
             <div className="search-bar" style={{ width: '200px' }}>
               <Search size={16} className="text-secondary" />
-              <input type="text" placeholder="Search cohort…" />
+              <input 
+                type="text" 
+                placeholder="Search cohort…" 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
           <table className="data-table">
@@ -119,33 +135,41 @@ const EducationalArchive = () => {
               </tr>
             </thead>
             <tbody>
-              {mockArchives.map((a, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 600 }}>{a.cohort}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{a.size}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{a.compression}</td>
-                  <td>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
-                      <HardDrive size={13} color="var(--text-secondary)" /> {a.location}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.75rem', fontWeight: 600 }}>
-                      <ShieldCheck size={12} /> {a.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button className="secondary-button" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
-                        <Archive size={12} /> Retrieve
-                      </button>
-                      <button className="icon-button" title="Export as PDF" style={{ color: 'var(--accent-blue)' }}>
-                        <Download size={15} />
-                      </button>
-                    </div>
+              {filteredArchives.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>
+                    No archived cohorts found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredArchives.map((a, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 600 }}>{a.cohort}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{a.size}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{a.compression}</td>
+                    <td>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
+                        <HardDrive size={13} color="var(--text-secondary)" /> {a.location}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.75rem', fontWeight: 600 }}>
+                        <ShieldCheck size={12} /> {a.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="secondary-button" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
+                          <Archive size={12} /> Retrieve
+                        </button>
+                        <button className="icon-button" title="Export as PDF" style={{ color: 'var(--accent-blue)' }}>
+                          <Download size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           <div style={{ marginTop: '16px', padding: '12px 14px', background: '#f0f4f8', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
