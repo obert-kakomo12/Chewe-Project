@@ -11,6 +11,7 @@ const generateStudentsForSubject = (subjectName) => {
     id:      `CT24-${String(hash % 100).padStart(2,'0')}${i}`,
     name:    `${fNames[(hash + i) % fNames.length]} ${lNames[(hash + Math.floor(i * 1.5)) % lNames.length]}`,
     inClass: 0, monthly: 0, endTerm: 0,
+    attendanceStatus: 'Present', attendanceRemark: '',
   }));
 };
 
@@ -67,6 +68,8 @@ const calcZScore = (value, mean, stdDev) => {
 // ─── Component ────────────────────────────────────────────────────────────────
 const TeacherWorkstation = () => {
   const [teacherProfile,  setTeacherProfile]  = useState(null);
+  const [viewMode,        setViewMode]        = useState('academics'); // 'academics' or 'attendance'
+  const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [setupName,       setSetupName]       = useState('');
   const [setupLevel,      setSetupLevel]      = useState('O-Level (Forms 1-4)');
   const [setupFormNumber, setSetupFormNumber] = useState('Form 1');
@@ -110,6 +113,10 @@ const TeacherWorkstation = () => {
     if (isNaN(n)) n = 0;
     n = Math.min(100, Math.max(0, n));
     setStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: n } : s));
+  };
+
+  const handleAttendanceChange = (id, field, value) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   // ── Processed students with weighted total, rank, Z-score ──────────────────
@@ -235,12 +242,59 @@ const TeacherWorkstation = () => {
           <select className="premium-select" value={selectedClass} onChange={e => handleClassSwitch(e.target.value)}>
             {teacherProfile.subjects.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <button className="action-button"><Save size={16} /> Save Marks</button>
+          {viewMode === 'academics' ? (
+            <button className="action-button"><Save size={16} /> Save Marks</button>
+          ) : (
+            <button className="action-button" onClick={() => {
+              setAttendanceSubmitted(true);
+              setTimeout(() => setAttendanceSubmitted(false), 3000);
+            }}>
+              <Save size={16} /> Submit Register
+            </button>
+          )}
         </div>
       </div>
 
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        <button 
+          onClick={() => setViewMode('academics')}
+          style={{ 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            border: 'none', 
+            cursor: 'pointer',
+            fontWeight: 500,
+            background: viewMode === 'academics' ? 'var(--accent-blue)' : '#e5e7eb',
+            color: viewMode === 'academics' ? '#fff' : 'var(--text-secondary)'
+          }}
+        >
+          Academics
+        </button>
+        <button 
+          onClick={() => setViewMode('attendance')}
+          style={{ 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            border: 'none', 
+            cursor: 'pointer',
+            fontWeight: 500,
+            background: viewMode === 'attendance' ? 'var(--accent-blue)' : '#e5e7eb',
+            color: viewMode === 'attendance' ? '#fff' : 'var(--text-secondary)'
+          }}
+        >
+          Attendance Register
+        </button>
+      </div>
+
+      {attendanceSubmitted && (
+        <div className="animate-fade-in" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--status-success)', padding: '12px', borderRadius: '4px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+           <UserCheck size={18} /> Register successfully submitted and synced with Notification Engine.
+        </div>
+      )}
+
       <div className="spreadsheet-container hover-lift">
-        <table className="data-table">
+        {viewMode === 'academics' ? (
+          <table className="data-table">
           <thead>
             <tr>
               <th>Student</th>
@@ -293,11 +347,71 @@ const TeacherWorkstation = () => {
               );
             })}
           </tbody>
-        </table>
+          </table>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Student Details</th>
+                <th style={{width: '300px'}}>Attendance Status</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {processedStudents.map((student) => (
+                <tr key={student.id}>
+                  <td>
+                    <span className="student-name">{student.name}</span>
+                    <span className="student-id">{student.id}</span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {['Present', 'Absent', 'Late'].map(status => (
+                        <button
+                          key={status}
+                          onClick={() => handleAttendanceChange(student.id, 'attendanceStatus', status)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            border: '1px solid',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: student.attendanceStatus === status 
+                              ? (status === 'Present' ? 'rgba(16, 185, 129, 0.2)' : status === 'Absent' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)')
+                              : 'transparent',
+                            borderColor: student.attendanceStatus === status
+                              ? (status === 'Present' ? 'var(--status-success)' : status === 'Absent' ? 'var(--status-danger)' : 'var(--status-warning)')
+                              : 'var(--border-color)',
+                            color: student.attendanceStatus === status
+                              ? (status === 'Present' ? 'var(--status-success)' : status === 'Absent' ? 'var(--status-danger)' : 'var(--status-warning)')
+                              : 'var(--text-secondary)'
+                          }}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <input 
+                      type="text" 
+                      className="mark-input" 
+                      placeholder="Add note..."
+                      style={{ width: '100%', textAlign: 'left' }}
+                      value={student.attendanceRemark || ''} 
+                      onChange={(e) => handleAttendanceChange(student.id, 'attendanceRemark', e.target.value)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-        <span>Class Mean: <strong style={{ color: 'var(--text-primary)' }}>{classMean}%</strong></span>
+        {viewMode === 'academics' && <span>Class Mean: <strong style={{ color: 'var(--text-primary)' }}>{classMean}%</strong></span>}
         <span style={{ color: 'var(--status-success)' }}>● Auto-sync enabled</span>
       </div>
 
