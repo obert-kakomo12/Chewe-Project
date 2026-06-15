@@ -21,6 +21,7 @@ import AttendanceNotification  from './AttendanceNotification';
 import WelfareCounseling       from './WelfareCounseling';
 import ReportingDocumentation  from './ReportingDocumentation';
 import EducationalArchive      from './EducationalArchive';
+import EncryptionBarrier       from './EncryptionBarrier';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const mockPerformanceData = [
@@ -205,7 +206,7 @@ const pageTitle = {
   'settings':   'Settings & Audit Vault',
 };
 
-const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated }) => {
+const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated, setIsDecrypted }) => {
   const [isSearchOpen,       setIsSearchOpen]       = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen,       setIsProfileOpen]       = useState(false);
@@ -264,7 +265,7 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
                 onClick={() => { setActiveItem('settings'); setIsProfileOpen(false); }}>Settings</div>
               <div style={{ borderTop: '1px solid #e4ecf5', margin: '2px 0' }} />
               <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: 'var(--status-danger)', fontWeight: 600 }}
-                onClick={() => setIsAuthenticated(false)}>Log Out</div>
+                onClick={() => { setIsAuthenticated(false); setIsDecrypted(false); }}>Log Out</div>
             </div>
           )}
         </div>
@@ -351,10 +352,16 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeItem, setActiveItem]           = useState('war-room');
   const [isMobileOpen, setIsMobileOpen]       = useState(false);
+  const [isDecrypted, setIsDecrypted]         = useState(false);
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
   const renderContent = () => {
+    const executiveViews = ['war-room', 'analytics', 'settings'];
+    if (executiveViews.includes(activeItem) && !isDecrypted) {
+      return <EncryptionBarrier onUnlock={() => setIsDecrypted(true)} />;
+    }
+
     switch (activeItem) {
       case 'war-room':   return <DashboardContent />;
       case 'teacher':    return <TeacherWorkstation />;
@@ -386,6 +393,7 @@ function App() {
         <TopBar
           activeItem={activeItem} setIsMobileOpen={setIsMobileOpen}
           setActiveItem={setActiveItem} setIsAuthenticated={setIsAuthenticated}
+          setIsDecrypted={setIsDecrypted}
         />
         {renderContent()}
       </main>
