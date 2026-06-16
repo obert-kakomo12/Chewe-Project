@@ -1,32 +1,67 @@
 import React, { useState } from 'react';
-import { KeyRound, Lock, Smartphone, AlertCircle } from 'lucide-react';
+import { KeyRound, Lock, User as UserIcon, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import CTLogo from './CTLogo';
 
 const LoginScreen = ({ onLogin }) => {
-  const [step,     setStep]     = useState(1);
-  const [username, setUsername] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  
+  // Form State
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mfaCode,  setMfaCode]  = useState('');
-  const [attempts, setAttempts] = useState(0);
-  const [locked,   setLocked]   = useState(false);
+  const [name, setName] = useState('');
+  
+  // UI State
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handlePasswordSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (username && password) setStep(2);
-  };
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
-  const handleMfaSubmit = (e) => {
-    e.preventDefault();
-    if (locked) return;
-    if (mfaCode.length === 6) {
-      // Simulate brute-force protection: wrong code increments attempts
-      if (mfaCode !== '000000') {
-        const next = attempts + 1;
-        setAttempts(next);
-        if (next >= 3) setLocked(true);
-        return;
+    const endpoint = isLogin ? '/auth/login' : '/auth/register';
+    const payload = isLogin 
+      ? { email, password }
+      : { email, password, name };
+
+    try {
+      const response = await fetch(`http://13.140.177.98:3000${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Authentication failed');
       }
-      onLogin();
+
+      if (isLogin) {
+        setSuccess('Login successful!');
+        // Store token securely (e.g., in localStorage or context)
+        if (data.access_token) {
+          localStorage.setItem('access_token', data.access_token);
+        }
+        
+        // Brief delay before transitioning to app
+        setTimeout(() => {
+          onLogin();
+        }, 800);
+      } else {
+        setSuccess('Registration successful! Please log in.');
+        setTimeout(() => {
+          setIsLogin(true);
+          setPassword('');
+          setSuccess('');
+        }, 2000);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,72 +81,72 @@ const LoginScreen = ({ onLogin }) => {
           <CTLogo variant="dark" size="md" />
         </div>
         <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginBottom: '28px', letterSpacing: '0.04em' }}>
-          Secure Staff Portal
+          Secure Authentication System
         </p>
 
-        {/* Step indicators */}
+        {/* Tabs for Login / Register */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-          {[1, 2].map(s => (
-            <div key={s} style={{ width: '28px', height: '4px', borderRadius: '2px', background: step >= s ? 'var(--accent-blue)' : 'var(--border-color)', transition: 'background 0.3s' }} />
-          ))}
+          <button 
+            onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }} 
+            style={{ 
+              flex: 1, padding: '8px', background: 'none', 
+              borderBottom: isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
+              color: isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
+            }}>
+            Log In
+          </button>
+          <button 
+            onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }} 
+            style={{ 
+              flex: 1, padding: '8px', background: 'none', 
+              borderBottom: !isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
+              color: !isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
+            }}>
+            Sign Up
+          </button>
         </div>
 
-        {step === 1 ? (
-          <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ position: 'relative' }}>
-              <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="text" placeholder="Staff ID" className="mark-input"
-                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
-                value={username} onChange={e => setUsername(e.target.value)} required />
-            </div>
-            <div style={{ position: 'relative' }}>
-              <KeyRound size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="password" placeholder="Password" className="mark-input"
-                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
-                value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
-            <button type="submit" className="action-button" style={{ justifyContent: 'center', marginTop: '4px' }}>
-              Verify Identity
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleMfaSubmit} className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-blue-light)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Smartphone size={24} color="var(--accent-blue)" />
-              </div>
-            </div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Multi-Factor Authentication</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-              Enter the 6-digit code sent to your registered mobile device.
-            </p>
-
-            {locked && (
-              <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--status-danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertCircle size={14} /> Account locked after 3 failed attempts. Contact your administrator.
-              </div>
-            )}
-
-            {!locked && attempts > 0 && (
-              <div style={{ padding: '8px 12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', fontSize: '0.78rem', color: 'var(--status-warning)' }}>
-                ⚠ {3 - attempts} attempt{3 - attempts !== 1 ? 's' : ''} remaining. Use code: 000000 (demo)
-              </div>
-            )}
-
-            <input type="text" placeholder="000000" maxLength="6" className="mark-input"
-              style={{ width: '100%', textAlign: 'center', fontSize: '1.5rem', letterSpacing: '10px', padding: '12px' }}
-              value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))}
-              disabled={locked} required />
-
-            <button type="submit" className="action-button" style={{ justifyContent: 'center', opacity: locked ? 0.5 : 1 }} disabled={locked}>
-              Authenticate
-            </button>
-            <button type="button" onClick={() => { setStep(1); setAttempts(0); setLocked(false); setMfaCode(''); }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem' }}>
-              ← Back to login
-            </button>
-          </form>
+        {/* Alerts */}
+        {error && (
+          <div className="animate-fade-in" style={{ marginBottom: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--status-danger)', display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} /> {error}
+          </div>
         )}
+        
+        {success && (
+          <div className="animate-fade-in" style={{ marginBottom: '16px', padding: '10px 14px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--status-success)', display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}>
+            <CheckCircle size={16} style={{ flexShrink: 0 }} /> {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {!isLogin && (
+            <div className="animate-fade-in" style={{ position: 'relative' }}>
+              <UserIcon size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input type="text" placeholder="Full Name" className="mark-input"
+                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+                value={name} onChange={e => setName(e.target.value)} required={!isLogin} />
+            </div>
+          )}
+          
+          <div style={{ position: 'relative' }}>
+            <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input type="email" placeholder="Email Address" className="mark-input"
+              style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+              value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          
+          <div style={{ position: 'relative' }}>
+            <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input type="password" placeholder="Password" className="mark-input"
+              style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+              value={password} onChange={e => setPassword(e.target.value)} required />
+          </div>
+          
+          <button type="submit" className="action-button" style={{ justifyContent: 'center', marginTop: '4px', opacity: loading ? 0.7 : 1 }} disabled={loading}>
+            {loading ? 'Processing...' : (isLogin ? 'Authenticate' : 'Create Account')}
+          </button>
+        </form>
       </div>
     </div>
   );

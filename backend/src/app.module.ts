@@ -10,12 +10,14 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { WelfareModule } from './welfare/welfare.module';
 import { DocumentsModule } from './documents/documents.module';
 import { SettingsModule } from './settings/settings.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     UsersModule,
+    AuthModule,
     AcademicsModule,
     AssessmentsModule,
     AttendanceModule,
