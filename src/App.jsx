@@ -22,6 +22,7 @@ import WelfareCounseling       from './WelfareCounseling';
 import ReportingDocumentation  from './ReportingDocumentation';
 import EducationalArchive      from './EducationalArchive';
 import EncryptionBarrier       from './EncryptionBarrier';
+import ResetPasswordScreen     from './ResetPasswordScreen';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const mockPerformanceData = [
@@ -353,6 +354,24 @@ function App() {
   const [activeItem, setActiveItem]           = useState('war-room');
   const [isMobileOpen, setIsMobileOpen]       = useState(false);
   const [isDecrypted, setIsDecrypted]         = useState(false);
+
+  const queryParams = new URLSearchParams(window.location.search);
+  const isResetting = queryParams.get('reset') === 'true';
+  const resetToken = queryParams.get('token');
+  const resetEmail = queryParams.get('email');
+
+  if (isResetting && resetToken && resetEmail) {
+    return (
+      <ResetPasswordScreen 
+        token={resetToken} 
+        email={resetEmail} 
+        onResetComplete={() => {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          window.location.reload();
+        }} 
+      />
+    );
+  }
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 

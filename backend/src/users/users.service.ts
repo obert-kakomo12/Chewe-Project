@@ -18,4 +18,31 @@ export class UsersService {
     const user = this.usersRepository.create(userData);
     return this.usersRepository.save(user);
   }
+
+  async saveResetToken(userId: number, token: string, expires: Date): Promise<void> {
+    await this.usersRepository.update(userId, {
+      reset_token: token,
+      reset_token_expires: expires,
+    });
+  }
+
+  async findByResetToken(token: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { reset_token: token },
+    });
+  }
+
+  async clearResetToken(userId: number): Promise<void> {
+    // Cannot pass null directly to TypeORM update in strict mode without assertion, using any or undefined is safer, or save()
+    const user = await this.usersRepository.findOneBy({ id: userId });
+    if (user) {
+      user.reset_token = null;
+      user.reset_token_expires = null;
+      await this.usersRepository.save(user);
+    }
+  }
+
+  async updatePassword(userId: number, passwordHash: string): Promise<void> {
+    await this.usersRepository.update(userId, { password_hash: passwordHash });
+  }
 }

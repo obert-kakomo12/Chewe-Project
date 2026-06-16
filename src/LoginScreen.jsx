@@ -4,6 +4,7 @@ import CTLogo from './CTLogo';
 
 const LoginScreen = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   
   // Form State
   const [email, setEmail] = useState('');
@@ -20,6 +21,25 @@ const LoginScreen = ({ onLogin }) => {
     setLoading(true);
     setError('');
     setSuccess('');
+
+    if (isForgotPassword) {
+      try {
+        const response = await fetch(`http://13.140.177.98:3000/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
+        setSuccess('If the email exists, a reset link has been sent!');
+        setTimeout(() => setIsForgotPassword(false), 3000);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     const endpoint = isLogin ? '/auth/login' : '/auth/register';
     const payload = isLogin 
@@ -41,12 +61,9 @@ const LoginScreen = ({ onLogin }) => {
 
       if (isLogin) {
         setSuccess('Login successful!');
-        // Store token securely (e.g., in localStorage or context)
         if (data.access_token) {
           localStorage.setItem('access_token', data.access_token);
         }
-        
-        // Brief delay before transitioning to app
         setTimeout(() => {
           onLogin();
         }, 800);
@@ -85,26 +102,35 @@ const LoginScreen = ({ onLogin }) => {
         </p>
 
         {/* Tabs for Login / Register */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-          <button 
-            onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }} 
-            style={{ 
-              flex: 1, padding: '8px', background: 'none', 
-              borderBottom: isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
-              color: isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
-            }}>
-            Log In
-          </button>
-          <button 
-            onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }} 
-            style={{ 
-              flex: 1, padding: '8px', background: 'none', 
-              borderBottom: !isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
-              color: !isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
-            }}>
-            Sign Up
-          </button>
-        </div>
+        {!isForgotPassword && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
+            <button 
+              onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }} 
+              style={{ 
+                flex: 1, padding: '8px', background: 'none', 
+                borderBottom: isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
+                color: isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
+              }}>
+              Log In
+            </button>
+            <button 
+              onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }} 
+              style={{ 
+                flex: 1, padding: '8px', background: 'none', 
+                borderBottom: !isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
+                color: !isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
+              }}>
+              Sign Up
+            </button>
+          </div>
+        )}
+
+        {isForgotPassword && (
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: 'white', marginBottom: '8px' }}>Forgot Password?</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Enter your email and we'll send you a reset link.</p>
+          </div>
+        )}
 
         {/* Alerts */}
         {error && (
@@ -120,7 +146,7 @@ const LoginScreen = ({ onLogin }) => {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {!isLogin && (
+          {!isLogin && !isForgotPassword && (
             <div className="animate-fade-in" style={{ position: 'relative' }}>
               <UserIcon size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
               <input type="text" placeholder="Full Name" className="mark-input"
@@ -136,16 +162,32 @@ const LoginScreen = ({ onLogin }) => {
               value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           
-          <div style={{ position: 'relative' }}>
-            <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-            <input type="password" placeholder="Password" className="mark-input"
-              style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
-              value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
+          {!isForgotPassword && (
+            <div style={{ position: 'relative' }}>
+              <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input type="password" placeholder="Password" className="mark-input"
+                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+                value={password} onChange={e => setPassword(e.target.value)} required />
+            </div>
+          )}
           
           <button type="submit" className="action-button" style={{ justifyContent: 'center', marginTop: '4px', opacity: loading ? 0.7 : 1 }} disabled={loading}>
-            {loading ? 'Processing...' : (isLogin ? 'Authenticate' : 'Create Account')}
+            {loading ? 'Processing...' : (isForgotPassword ? 'Send Reset Link' : (isLogin ? 'Authenticate' : 'Create Account'))}
           </button>
+
+          {isLogin && !isForgotPassword && (
+            <button type="button" onClick={() => { setIsForgotPassword(true); setError(''); setSuccess(''); }}
+              style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', cursor: 'pointer', fontSize: '0.8rem', marginTop: '8px' }}>
+              Forgot Password?
+            </button>
+          )}
+
+          {isForgotPassword && (
+            <button type="button" onClick={() => { setIsForgotPassword(false); setError(''); setSuccess(''); }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem', marginTop: '8px' }}>
+              Back to Login
+            </button>
+          )}
         </form>
       </div>
     </div>

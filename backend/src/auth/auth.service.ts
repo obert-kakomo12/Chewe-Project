@@ -49,4 +49,74 @@ export class AuthService {
       user: { id: user.id, email: user.email, name: user.name, role: user.role }
     };
   }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) {
+      // Don't throw error to prevent email enumeration, just return
+      return { message: 'If that email exists, a reset link has been sent.' };
+    }
+
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hash = await bcrypt.hash(resetToken, 10);
+    
+    // Set expiration to 1 hour from now
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 1);
+
+    await this.usersService.saveResetToken(user.id, hash, expires);
+
+    // Send email via nodemailer
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.example.com',
+      port: parseInt(process.env.SMTP_PORT || '587') || 587,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://13.140.177.98:5173';
+    const resetLink = `${frontendUrl}/?reset=true&token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    try {
+      await transporter.sendMail({
+        from: '"Support" <support@chewetech.com>',
+        to: email,
+        subject: 'Password Reset Request',
+        text: `You requested a password reset. Click this link to reset your password: ${resetLink}`,
+        html: `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${resetLink}">${resetLink}</a></p>`,
+      });
+    } catch (e) {
+      console.error('Failed to send email. Check SMTP config.', e);
+    }
+
+    return { message: 'If that email exists, a reset link has been sent.' };
+  }
+
+  async resetPassword(email: string, token: string, newPass: string) {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user || !user.reset_token || !user.reset_token_expires) {
+      throw new UnauthorizedException('Invalid or expired password reset token');
+    }
+
+    if (new Date() > user.reset_token_expires) {
+      throw new UnauthorizedException('Reset token has expired');
+    }
+
+    const isValid = await bcrypt.compare(token, user.reset_token);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid reset token');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const newHash = await bcrypt.hash(newPass, salt);
+
+    await this.usersService.updatePassword(user.id, newHash);
+    await this.usersService.clearResetToken(user.id);
+
+    return { message: 'Password has been successfully reset.' };
+  }
 }

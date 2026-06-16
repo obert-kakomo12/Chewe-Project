@@ -15,4 +15,14 @@ export class AuthController {
   register(@Body() signUpDto: Record<string, any>) {
     return this.authService.register(signUpDto.email, signUpDto.password, signUpDto.name);
   }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: Record<string, any>) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() dto: Record<string, any>) {
+    return this.authService.resetPassword(dto.email, dto.token, dto.newPassword);
+  }
 }
