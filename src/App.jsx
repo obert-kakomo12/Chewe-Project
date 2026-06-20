@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Users, GraduationCap, ShieldAlert,
   LineChart, Settings, Bell, Search, TrendingUp, TrendingDown,
@@ -24,55 +24,7 @@ import EducationalArchive      from './EducationalArchive';
 import EncryptionBarrier       from './EncryptionBarrier';
 import ResetPasswordScreen     from './ResetPasswordScreen';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const mockPerformanceData = [
-  { term: 'T1 F1', zScore: 0.1 },
-  { term: 'T2 F1', zScore: 0.2 },
-  { term: 'T3 F1', zScore: 0.15 },
-  { term: 'T1 F2', zScore: -0.1 },
-  { term: 'T2 F2', zScore: -0.3 },
-  { term: 'T3 F2', zScore: 0.0 },
-  { term: 'T1 F3', zScore: 0.4 },
-  { term: 'T2 F3', zScore: 0.62 },
-];
-
-const mockAlerts = [
-  { id: 1, type: 'critical', title: 'Trauma Signal Detected',
-    message: '5 Form 3 students showed >1.2 Z-score drop across 3 subjects in one week.',
-    time: '10 mins ago', icon: AlertCircle },
-  { id: 2, type: 'warning',  title: 'Attendance Bottleneck',
-    message: 'Form 4 Physics attendance dropped below 85% this week.',
-    time: '2 hours ago', icon: AlertTriangle },
-  { id: 3, type: 'info',     title: 'Positive Outlier',
-    message: 'Chipo Moyo (F2) consistently scoring >1.5 IQR above Q3 in Mathematics.',
-    time: '1 day ago', icon: TrendingUp },
-];
-
-// ─── Institutional Heatmap ────────────────────────────────────────────────────
-const SUBJECTS   = ['Maths', 'Physics', 'Chemistry', 'Biology', 'English', 'History', 'Accounts'];
-const CLASSES    = ['Form 1A', 'Form 2A', 'Form 3A', 'Form 3B', 'Form 4A', 'Form 4B', 'Lower 6th', 'Upper 6th'];
-
-// Deterministic mock average for each cell
-const cellAvg = (cls, subj) => {
-  const seed = (cls.length * 7 + subj.length * 13 + cls.charCodeAt(0) + subj.charCodeAt(0)) % 100;
-  // Spread across the three zones
-  const bases = [82, 65, 44, 78, 51, 36, 90];
-  return bases[(seed) % bases.length];
-};
-
-const heatClass = (avg) => {
-  if (avg >= 75) return 'heatmap-emerald';
-  if (avg >= 50) return 'heatmap-amber';
-  return 'heatmap-crimson';
-};
-
-const heatLabel = (avg) => {
-  if (avg >= 75) return `${avg}%`;
-  if (avg >= 50) return `${avg}%`;
-  return `${avg}% ⚠`;
-};
-
-const InstitutionalHeatmap = () => (
+const InstitutionalHeatmap = ({ heatmapData }) => (
   <div className="glass-panel hover-lift" style={{ marginTop: '24px' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
       <div>
@@ -87,37 +39,58 @@ const InstitutionalHeatmap = () => (
         <span style={{ color: '#991b1b', background: '#fee2e2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fca5a5' }}>● Critical &lt;50%</span>
       </div>
     </div>
-    <div className="heatmap-grid">
-      <table className="heatmap-table">
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', paddingLeft: '8px' }}>Class</th>
-            {SUBJECTS.map(s => <th key={s}>{s}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {CLASSES.map(cls => (
-            <tr key={cls}>
-              <td style={{
-                textAlign: 'left', fontWeight: 600, fontSize: '0.75rem',
-                color: 'var(--text-secondary)', paddingLeft: '8px',
-                background: 'transparent', border: 'none', minWidth: '90px'
-              }}>
-                {cls}
-              </td>
-              {SUBJECTS.map(subj => {
-                const avg = cellAvg(cls, subj);
-                return (
-                  <td key={subj} className={heatClass(avg)} title={`${cls} · ${subj}: ${avg}%`}>
-                    {heatLabel(avg)}
-                  </td>
-                );
-              })}
+    
+    {heatmapData.length === 0 ? (
+      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+        No assessment data available to generate heatmap.
+      </div>
+    ) : (
+      <div className="heatmap-grid">
+        <table className="heatmap-table">
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', paddingLeft: '8px' }}>Class</th>
+              {Array.from(new Set(heatmapData.map(d => d.subject))).map(s => <th key={s}>{s}</th>)}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {Array.from(new Set(heatmapData.map(d => d.class))).map(cls => (
+              <tr key={cls}>
+                <td style={{
+                  textAlign: 'left', fontWeight: 600, fontSize: '0.75rem',
+                  color: 'var(--text-secondary)', paddingLeft: '8px',
+                  background: 'transparent', border: 'none', minWidth: '90px'
+                }}>
+                  {cls}
+                </td>
+                {Array.from(new Set(heatmapData.map(d => d.subject))).map(subj => {
+                  const cell = heatmapData.find(d => d.class === cls && d.subject === subj);
+                  const avg = cell ? cell.avg : 0;
+                  
+                  const heatClass = (avg) => {
+                    if (avg >= 75) return 'heatmap-emerald';
+                    if (avg >= 50) return 'heatmap-amber';
+                    return 'heatmap-crimson';
+                  };
+                  
+                  const heatLabel = (avg) => {
+                    if (avg >= 75) return `${avg}%`;
+                    if (avg >= 50) return `${avg}%`;
+                    return `${avg}% ⚠`;
+                  };
+                  
+                  return (
+                    <td key={subj} className={avg > 0 ? heatClass(avg) : ''} title={avg > 0 ? `${cls} · ${subj}: ${avg}%` : 'No data'}>
+                      {avg > 0 ? heatLabel(avg) : '-'}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
   </div>
 );
 
@@ -287,77 +260,131 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
 };
 
 // ─── War Room / Dashboard ─────────────────────────────────────────────────────
-const DashboardContent = () => (
-  <div className="content-area animate-fade-in">
-    {/* KPI Cards */}
-    <div className="metrics-grid">
-      <div className="glass-panel metric-card hover-lift">
-        <div className="metric-header"><span>School Avg Z-Score</span><LineChart size={18} /></div>
-        <div className="metric-value">+0.42</div>
-        <div className="metric-trend trend-up"><TrendingUp size={15} /><span>↑0.15 since last term</span></div>
+const DashboardContent = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://13.140.177.98:3000/dashboard/metrics', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    })
+    .then(res => res.json())
+    .then(json => {
+      setData(json);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch dashboard metrics:', err);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading || !data) {
+    return (
+      <div className="content-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(59, 130, 246, 0.2)', borderTopColor: 'var(--accent-blue)', animation: 'spin 1s linear infinite' }} />
+          <h2 style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Loading Live Database Metrics...</h2>
+        </div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
-      <div className="glass-panel metric-card hover-lift">
-        <div className="metric-header"><span>Overall Attendance</span><UserCheck size={18} /></div>
-        <div className="metric-value">94.8%</div>
-        <div className="metric-trend trend-down"><TrendingDown size={15} /><span>↓1.2% from last week</span></div>
-      </div>
-      <div className="glass-panel metric-card hover-lift">
-        <div className="metric-header"><span>Open Welfare Cases</span><ShieldAlert size={18} /></div>
-        <div className="metric-value">12</div>
-        <div className="metric-trend trend-up" style={{ color: 'var(--status-success)' }}>
-          <TrendingDown size={15} /><span>3 resolved this week</span>
+    );
+  }
+
+  return (
+    <div className="content-area animate-fade-in">
+      {/* KPI Cards */}
+      <div className="metrics-grid">
+        <div className="glass-panel metric-card hover-lift">
+          <div className="metric-header"><span>School Avg Z-Score</span><LineChart size={18} /></div>
+          <div className="metric-value">{data.kpis.avgZScore.value}</div>
+          <div className={`metric-trend ${data.kpis.avgZScore.trend === 'up' ? 'trend-up' : data.kpis.avgZScore.trend === 'down' ? 'trend-down' : ''}`}>
+            {data.kpis.avgZScore.trend === 'up' ? <TrendingUp size={15} /> : data.kpis.avgZScore.trend === 'down' ? <TrendingDown size={15} /> : null}
+            <span>{data.kpis.avgZScore.description}</span>
+          </div>
+        </div>
+        <div className="glass-panel metric-card hover-lift">
+          <div className="metric-header"><span>Overall Attendance</span><UserCheck size={18} /></div>
+          <div className="metric-value">{data.kpis.attendance.value}</div>
+          <div className={`metric-trend ${data.kpis.attendance.trend === 'up' ? 'trend-up' : data.kpis.attendance.trend === 'down' ? 'trend-down' : ''}`}>
+            {data.kpis.attendance.trend === 'up' ? <TrendingUp size={15} /> : data.kpis.attendance.trend === 'down' ? <TrendingDown size={15} /> : null}
+            <span>{data.kpis.attendance.description}</span>
+          </div>
+        </div>
+        <div className="glass-panel metric-card hover-lift">
+          <div className="metric-header"><span>Open Welfare Cases</span><ShieldAlert size={18} /></div>
+          <div className="metric-value">{data.kpis.welfareCases.value}</div>
+          <div className={`metric-trend ${data.kpis.welfareCases.trend === 'up' ? 'trend-down' : data.kpis.welfareCases.trend === 'down' ? 'trend-up' : ''}`} style={data.kpis.welfareCases.trend === 'down' ? { color: 'var(--status-success)' } : {}}>
+            {data.kpis.welfareCases.trend === 'up' ? <TrendingUp size={15} /> : data.kpis.welfareCases.trend === 'down' ? <TrendingDown size={15} /> : null}
+            <span>{data.kpis.welfareCases.description}</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Chart + Alerts row */}
-    <div className="dashboard-row">
-      <div className="glass-panel hover-lift">
-        <h3 className="section-title">Longitudinal Z-Score — Cohort F3</h3>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mockPerformanceData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorZ" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#1d4ed8" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e4ecf5" vertical={false} />
-              <XAxis dataKey="term" stroke="#8fa5c0" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#8fa5c0" fontSize={11} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #d1ddef', borderRadius: '8px', boxShadow: '0 4px 12px rgba(13,31,69,0.12)' }}
-                itemStyle={{ color: '#0d1f45' }}
-                labelStyle={{ color: '#4a6080', fontWeight: 600 }}
-              />
-              <Area type="monotone" dataKey="zScore" stroke="#1d4ed8" strokeWidth={2} fillOpacity={1} fill="url(#colorZ)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="glass-panel hover-lift">
-        <h3 className="section-title">Early Warning System</h3>
-        <div className="alert-list">
-          {mockAlerts.map(alert => (
-            <div key={alert.id} className={`alert-item ${alert.type}`}>
-              <alert.icon size={18} className="alert-icon" />
-              <div className="alert-content">
-                <h4>{alert.title}</h4>
-                <p>{alert.message}</p>
+      {/* Chart + Alerts row */}
+      <div className="dashboard-row">
+        <div className="glass-panel hover-lift">
+          <h3 className="section-title">Longitudinal Z-Score — Cohort F3</h3>
+          <div className="chart-container">
+            {data.performanceData.length === 0 ? (
+              <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                No performance data recorded yet.
               </div>
-              <div className="alert-time">{alert.time}</div>
-            </div>
-          ))}
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data.performanceData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorZ" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#1d4ed8" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e4ecf5" vertical={false} />
+                  <XAxis dataKey="term" stroke="#8fa5c0" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#8fa5c0" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #d1ddef', borderRadius: '8px', boxShadow: '0 4px 12px rgba(13,31,69,0.12)' }}
+                    itemStyle={{ color: '#0d1f45' }}
+                    labelStyle={{ color: '#4a6080', fontWeight: 600 }}
+                  />
+                  <Area type="monotone" dataKey="zScore" stroke="#1d4ed8" strokeWidth={2} fillOpacity={1} fill="url(#colorZ)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="glass-panel hover-lift">
+          <h3 className="section-title">Early Warning System</h3>
+          <div className="alert-list">
+            {data.alerts.length === 0 ? (
+              <div style={{ padding: '20px 0', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No active alerts.</div>
+            ) : (
+              data.alerts.map(alert => (
+                <div key={alert.id} className={`alert-item ${alert.type}`}>
+                  {alert.type === 'critical' ? <AlertCircle size={18} className="alert-icon" /> :
+                   alert.type === 'warning'  ? <AlertTriangle size={18} className="alert-icon" /> :
+                   <TrendingUp size={18} className="alert-icon" />}
+                  <div className="alert-content">
+                    <h4>{alert.title}</h4>
+                    <p>{alert.message}</p>
+                  </div>
+                  <div className="alert-time">{alert.time}</div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Institutional Heatmap */}
-    <InstitutionalHeatmap />
-  </div>
-);
+      {/* Institutional Heatmap */}
+      <InstitutionalHeatmap heatmapData={data.heatmapData} />
+    </div>
+  );
+};
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 function App() {
