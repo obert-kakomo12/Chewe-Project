@@ -10,10 +10,21 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async register(email: string, pass: string, name: string) {
+  async register(email: string, pass: string, name: string, accessCode: string) {
     const existingUser = await this.usersService.findOneByEmail(email);
     if (existingUser) {
       throw new ConflictException('Email already exists');
+    }
+
+    let role = 'Student';
+    if (accessCode === process.env.EXEC_ACCESS_CODE) {
+      role = 'Admin';
+    } else if (accessCode === process.env.TEACHER_ACCESS_CODE) {
+      role = 'Teacher';
+    } else if (accessCode === process.env.STUDENT_ACCESS_CODE) {
+      role = 'Student';
+    } else {
+      throw new UnauthorizedException('Invalid Access Code');
     }
 
     const salt = await bcrypt.genSalt();
@@ -23,6 +34,7 @@ export class AuthService {
       email,
       password_hash,
       name,
+      role,
     });
 
     const payload = { sub: user.id, email: user.email };

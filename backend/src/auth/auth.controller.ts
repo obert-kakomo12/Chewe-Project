@@ -13,7 +13,7 @@ export class AuthController {
 
   @Post('register')
   register(@Body() signUpDto: Record<string, any>) {
-    return this.authService.register(signUpDto.email, signUpDto.password, signUpDto.name);
+    return this.authService.register(signUpDto.email, signUpDto.password, signUpDto.name, signUpDto.accessCode);
   }
 
   @Post('forgot-password')

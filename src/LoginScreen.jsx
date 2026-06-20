@@ -10,6 +10,7 @@ const LoginScreen = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   
   // UI State
   const [loading, setLoading] = useState(false);
@@ -44,7 +45,7 @@ const LoginScreen = ({ onLogin }) => {
     const endpoint = isLogin ? '/auth/login' : '/auth/register';
     const payload = isLogin 
       ? { email, password }
-      : { email, password, name };
+      : { email, password, name, accessCode };
 
     try {
       const response = await fetch(`http://13.140.177.98:3000${endpoint}`, {
@@ -72,6 +73,7 @@ const LoginScreen = ({ onLogin }) => {
         setTimeout(() => {
           setIsLogin(true);
           setPassword('');
+          setAccessCode('');
           setSuccess('');
         }, 2000);
       }
@@ -152,6 +154,15 @@ const LoginScreen = ({ onLogin }) => {
               <input type="text" placeholder="Full Name" className="mark-input"
                 style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
                 value={name} onChange={e => setName(e.target.value)} required={!isLogin} />
+            </div>
+          )}
+          
+          {!isLogin && !isForgotPassword && (
+            <div className="animate-fade-in" style={{ position: 'relative' }}>
+              <KeyRound size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input type="text" placeholder="School Access Code" className="mark-input"
+                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+                value={accessCode} onChange={e => setAccessCode(e.target.value)} required={!isLogin} />
             </div>
           )}
           
