@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, ShieldAlert, KeyRound, Key } from 'lucide-react';
 
-const EncryptionBarrier = ({ onUnlock }) => {
+const EncryptionBarrier = ({ onUnlock, userEmail }) => {
   const [key, setKey] = useState('');
   const [confirmKey, setConfirmKey] = useState('');
   const [error, setError] = useState(false);
@@ -11,13 +11,14 @@ const EncryptionBarrier = ({ onUnlock }) => {
   const [savedKey, setSavedKey] = useState('');
 
   useEffect(() => {
-    const existing = localStorage.getItem('ct_executiveKey');
+    const storageKey = `ct_executiveKey_${userEmail || 'default'}`;
+    const existing = localStorage.getItem(storageKey);
     if (!existing) {
       setIsCreatingKey(true);
     } else {
       setSavedKey(existing);
     }
-  }, []);
+  }, [userEmail]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,7 +33,8 @@ const EncryptionBarrier = ({ onUnlock }) => {
         setErrorMsg('Keys do not match');
         return;
       }
-      localStorage.setItem('ct_executiveKey', key);
+      const storageKey = `ct_executiveKey_${userEmail || 'default'}`;
+      localStorage.setItem(storageKey, key);
       setSavedKey(key);
       setIsCreatingKey(false);
       setKey('');

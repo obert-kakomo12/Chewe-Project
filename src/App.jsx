@@ -155,7 +155,17 @@ const NAV_SECTIONS = [
   }
 ];
 
-const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen }) => (
+const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, currentUser }) => {
+  const isAdmin = currentUser?.role === 'Admin';
+  const filteredSections = NAV_SECTIONS.map(section => ({
+    ...section,
+    items: section.items.filter(item => {
+      if (!isAdmin && ['war-room', 'analytics', 'settings'].includes(item.id)) return false;
+      return true;
+    })
+  })).filter(section => section.items.length > 0);
+
+  return (
   <>
     {isMobileOpen && <div className="mobile-overlay" onClick={() => setIsMobileOpen(false)} />}
     <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
@@ -169,7 +179,7 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen }) =
       </div>
 
       <nav style={{ flex: 1, paddingBottom: '24px' }}>
-        {NAV_SECTIONS.map(section => (
+        {filteredSections.map(section => (
           <div key={section.label}>
             <div className="sidebar-section-label">{section.label}</div>
             {section.items.map(item => (
@@ -191,7 +201,8 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen }) =
       </div>
     </aside>
   </>
-);
+  );
+};
 
 // ─── Topbar ───────────────────────────────────────────────────────────────────
 const pageTitle = {
@@ -354,6 +365,8 @@ function App() {
   const [activeItem, setActiveItem]           = useState('war-room');
   const [isMobileOpen, setIsMobileOpen]       = useState(false);
   const [isDecrypted, setIsDecrypted]         = useState(false);
+  const [userEmail, setUserEmail]             = useState('');
+  const [currentUser, setCurrentUser]         = useState(null);
 
   const queryParams = new URLSearchParams(window.location.search);
   const isResetting = queryParams.get('reset') === 'true';
@@ -373,12 +386,28 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
+  if (!isAuthenticated) return <LoginScreen onLogin={(user) => { 
+    setIsAuthenticated(true); 
+    setCurrentUser(user);
+    setUserEmail(user?.email || ''); 
+    if (user?.role !== 'Admin') {
+      setActiveItem('teacher');
+    }
+  }} />;
 
   const renderContent = () => {
     const executiveViews = ['war-room', 'analytics', 'settings'];
-    if (executiveViews.includes(activeItem) && !isDecrypted) {
-      return <EncryptionBarrier onUnlock={() => setIsDecrypted(true)} />;
+    if (executiveViews.includes(activeItem)) {
+      if (currentUser?.role !== 'Admin') {
+        return (
+          <div className="content-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+            <h2 style={{ color: 'var(--status-danger)' }}>Access Denied: Executive Privileges Required</h2>
+          </div>
+        );
+      }
+      if (!isDecrypted) {
+        return <EncryptionBarrier userEmail={userEmail} onUnlock={() => setIsDecrypted(true)} />;
+      }
     }
 
     switch (activeItem) {
@@ -407,6 +436,7 @@ function App() {
       <Sidebar
         activeItem={activeItem} setActiveItem={setActiveItem}
         isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen}
+        currentUser={currentUser}
       />
       <main className="main-content">
         <TopBar

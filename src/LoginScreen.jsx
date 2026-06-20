@@ -65,7 +65,7 @@ const LoginScreen = ({ onLogin }) => {
           localStorage.setItem('access_token', data.access_token);
         }
         setTimeout(() => {
-          onLogin();
+          onLogin(data.user);
         }, 800);
       } else {
         setSuccess('Registration successful! Please log in.');
