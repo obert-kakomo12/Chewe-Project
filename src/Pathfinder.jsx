@@ -1,13 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlaskConical, Briefcase, BookOpen, AlertTriangle } from 'lucide-react';
-
-const MOCK_STREAMING_STUDENTS = [
-  { id: 'CT24-81', name: 'James Nyika',    zScore: 1.8,  recommended: 'Sciences',    requested: 'Sciences',    match: true  },
-  { id: 'CT24-82', name: 'Sarah Musoni',   zScore: 1.2,  recommended: 'Commercials', requested: 'Sciences',    match: false, reason: 'Low Science Z-Score' },
-  { id: 'CT24-83', name: 'Leo Gumbo',      zScore: 2.1,  recommended: 'Sciences',    requested: 'Sciences',    match: true  },
-  { id: 'CT24-84', name: 'Tariro Chikwe',  zScore: 0.9,  recommended: 'Arts',        requested: 'Arts',        match: true  },
-  { id: 'CT24-85', name: 'Brian Dube',     zScore: -0.2, recommended: 'Arts',        requested: 'Commercials', match: false, reason: 'Requires high velocity for Accounts' },
-];
 
 const TRACKS = [
   { key: 'Sciences',    label: 'Sciences Track',    color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
@@ -31,6 +23,38 @@ const TabBtn = ({ label, active, onClick }) => (
 
 const Pathfinder = () => {
   const [activeTab, setActiveTab] = useState('proposals');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://13.140.177.98:3000/academics/pathfinder', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    })
+    .then(res => res.json())
+    .then(json => {
+      setData(json);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch pathfinder data:', err);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading || !data) {
+    return (
+      <div className="content-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(59, 130, 246, 0.2)', borderTopColor: 'var(--accent-blue)', animation: 'spin 1s linear infinite' }} />
+          <h2 style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Calculating Z-Scores & Streaming Pathways...</h2>
+        </div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="content-area animate-fade-in">
@@ -55,7 +79,12 @@ const Pathfinder = () => {
                 {track.label}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {MOCK_STREAMING_STUDENTS.filter(s => s.recommended === track.key).map(s => (
+                {data.proposals.filter(s => s.recommended === track.key).length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    No students currently mapped to this track.
+                  </div>
+                ) : (
+                  data.proposals.filter(s => s.recommended === track.key).map(s => (
                   <div key={s.id} style={{
                     background: track.bg,
                     border: `1.5px solid ${track.border}`,
@@ -82,7 +111,8 @@ const Pathfinder = () => {
                       </div>
                     )}
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           ))}
@@ -97,38 +127,21 @@ const Pathfinder = () => {
             Real-time funnelling notifications dispatched to Department Heads.
           </p>
           <div className="alert-list">
-            <div className="alert-item" style={{ borderLeftColor: '#1d4ed8' }}>
-              <FlaskConical size={18} color="#1d4ed8" className="alert-icon" />
-              <div className="alert-content">
-                <h4>To: Science Department Head</h4>
-                <p>35 students have qualified for Level 3 Physics. 5 flagged as High-Potential Outliers for Advanced Level track.</p>
+            {data.alerts.length === 0 ? (
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                No active departmental load alerts.
               </div>
-              <div className="alert-time">2 mins ago</div>
-            </div>
-            <div className="alert-item" style={{ borderLeftColor: '#059669' }}>
-              <Briefcase size={18} color="#059669" className="alert-icon" />
-              <div className="alert-content">
-                <h4>To: Commercials Department Head</h4>
-                <p>Level 3 class lists finalised. 3 students with Trauma History placed in your homeroom — review encrypted welfare logs.</p>
-              </div>
-              <div className="alert-time">1 hour ago</div>
-            </div>
-            <div className="alert-item warning">
-              <AlertTriangle size={18} className="alert-icon" />
-              <div className="alert-content">
-                <h4>To: Principal &amp; Counselors</h4>
-                <p>12 Mismatch Alerts generated. Students requested streams misaligned with historical Z-scores. Parent consultations needed.</p>
-              </div>
-              <div className="alert-time">3 hours ago</div>
-            </div>
-            <div className="alert-item" style={{ borderLeftColor: '#7c3aed' }}>
-              <BookOpen size={18} color="#7c3aed" className="alert-icon" />
-              <div className="alert-content">
-                <h4>To: Arts Department Head</h4>
-                <p>Level 3 Arts class finalised with 28 students. 2 students recommended for Advanced Literature track.</p>
-              </div>
-              <div className="alert-time">4 hours ago</div>
-            </div>
+            ) : (
+              data.alerts.map((alert, i) => (
+                <div key={i} className={`alert-item ${alert.type === 'warning' ? 'warning' : ''}`} style={{ borderLeftColor: alert.color }}>
+                  <div className="alert-content">
+                    <h4>{alert.title}</h4>
+                    <p>{alert.message}</p>
+                  </div>
+                  <div className="alert-time">{alert.time}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
