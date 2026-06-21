@@ -1,18 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText } from 'lucide-react';
-
-const mockLogs = [
-  { id: 'WL-091', student: 'Sarah Connor',  priority: 'High',   type: 'Behavioral',      encrypted: true,  trigger: 'Trauma Triage'   },
-  { id: 'WL-092', student: 'John Smith',    priority: 'Medium', type: 'Counseling',      encrypted: true,  trigger: 'Truancy Alert'   },
-  { id: 'WL-093', student: 'Alice M',       priority: 'Low',    type: 'Academic Stress', encrypted: false, trigger: 'Teacher Referral'},
-  { id: 'WL-094', student: 'Rudo Sibanda',  priority: 'High',   type: 'Trauma',          encrypted: true,  trigger: 'Trauma Triage'   },
-];
-
-const mockGuidance = [
-  { student: 'Chipo Moyo',   rank: 3,  zScore: '+1.4', attendance: '96%', consistency: 'Excellent', fit: 'Engineering / Applied Mathematics',  summary: 'Consistent mastery in Sciences. Strong A-Level Sciences candidate.' },
-  { student: 'Farai Ndlovu', rank: 12, zScore: '-0.3', attendance: '79%', consistency: 'Poor',      fit: 'Commerce / Business Studies',         summary: 'Attendance concerns impacting academic standing. Parental consultation recommended.' },
-  { student: 'Tendai Nyoni', rank: 7,  zScore: '+0.6', attendance: '91%', consistency: 'Good',      fit: 'Accounting / Economics',              summary: 'Stable performer with affinity for numerical subjects. Commercials track advised.' },
-];
 
 const PRIORITY_BADGE = {
   High:   { bg: '#fff5f5', color: '#991b1b', border: '#fca5a5' },
@@ -37,18 +24,52 @@ const TabBtn = ({ label, active, onClick }) => (
 const WelfareCounseling = () => {
   const [activeTab, setActiveTab] = useState('cases');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://13.140.177.98:3000/welfare/dashboard', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    })
+    .then(res => res.json())
+    .then(json => {
+      setData(json);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch welfare data:', err);
+      setLoading(false);
+    });
+  }, []);
 
   const filteredLogs = useMemo(() => {
-    if (!searchQuery.trim()) return mockLogs;
+    if (!data || !data.logs) return [];
+    if (!searchQuery.trim()) return data.logs;
     const q = searchQuery.toLowerCase();
-    return mockLogs.filter(log =>
+    return data.logs.filter(log =>
       log.id.toLowerCase().includes(q) ||
       log.student.toLowerCase().includes(q) ||
       log.trigger.toLowerCase().includes(q) ||
       log.priority.toLowerCase().includes(q) ||
       log.type.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, data]);
+
+  if (loading || !data) {
+    return (
+      <div className="content-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(59, 130, 246, 0.2)', borderTopColor: 'var(--accent-blue)', animation: 'spin 1s linear infinite' }} />
+          <h2 style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Decrypting Secure Case Repository...</h2>
+        </div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="content-area animate-fade-in">
@@ -82,10 +103,10 @@ const WelfareCounseling = () => {
       {/* ── KPIs ─────────────────────────────────────────────────────────── */}
       <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', marginBottom: '24px' }}>
         {[
-          { label: 'Active Cases',          value: '24',                                                              color: 'var(--text-primary)' },
-          { label: 'High Priority',         value: String(filteredLogs.filter(l => l.priority === 'High').length),    color: 'var(--status-danger)' },
-          { label: 'Resolved This Term',    value: '18',                                                              color: 'var(--status-success)' },
-          { label: 'Guidance Reports Sent', value: '45',                                                              color: 'var(--accent-blue)' },
+          { label: 'Active Cases',          value: String(data.stats.activeCases),                               color: 'var(--text-primary)' },
+          { label: 'High Priority',         value: String(data.stats.highPriority),                              color: 'var(--status-danger)' },
+          { label: 'Resolved This Term',    value: String(data.stats.resolvedThisTerm),                          color: 'var(--status-success)' },
+          { label: 'Guidance Reports Sent', value: String(data.stats.guidanceReportsSent),                       color: 'var(--accent-blue)' },
         ].map((m, i) => (
           <div key={i} className="glass-panel metric-card hover-lift">
             <div className="metric-header"><span>{m.label}</span><ShieldAlert size={15} /></div>
@@ -198,7 +219,12 @@ const WelfareCounseling = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {mockGuidance.map((r, i) => (
+            {data.guidance.length === 0 ? (
+              <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                No guidance reports generated this term.
+              </div>
+            ) : (
+              data.guidance.map((r, i) => (
               <div key={i} className="glass-panel hover-lift">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
                   <div>
@@ -240,7 +266,7 @@ const WelfareCounseling = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}
