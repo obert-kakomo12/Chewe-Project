@@ -39,4 +39,12 @@ export class DashboardService {
       heatmapData
     };
   }
+
+  async getAnalytics() {
+    return {
+      topicData: [],
+      correlationData: [],
+      outliers: []
+    };
+  }
 }

@@ -1,12 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Key, AlertOctagon, Lock, ShieldCheck } from 'lucide-react';
-
-const mockAuditLogs = [
-  { id: 1, time: '2026-06-09 08:15:22', user: 'Mrs. N. Dube',    action: 'MARK_UPDATE',       details: 'Changed Math In-Class mark for CT24-004 from 45 to 65',            ip: '192.168.1.14',  status: 'SUCCESS' },
-  { id: 2, time: '2026-06-09 07:42:01', user: 'SYSTEM',          action: 'BRUTE_FORCE_LOCK',  details: 'Account lockout triggered for user ID 8842. 5 failed MFA attempts.', ip: '41.216.222.10', status: 'WARNING' },
-  { id: 3, time: '2026-06-09 07:30:10', user: 'Principal Moyo',  action: 'WELFARE_DECRYPT',   details: 'Used Master Key to decrypt Trauma Log for CT24-019',                ip: '192.168.1.2',   status: 'SUCCESS' },
-  { id: 4, time: '2026-06-08 14:20:00', user: 'Mr. T. Banda',    action: 'REPORT_GENERATE',   details: 'Generated Term 2 Report Books for Form 3 Arts',                     ip: '192.168.1.45',  status: 'SUCCESS' },
-];
 
 const Toggle = ({ on, onToggle, color }) => (
   <div onClick={onToggle} style={{
@@ -28,6 +21,23 @@ const Toggle = ({ on, onToggle, color }) => (
 const SettingsAudit = () => {
   const [doubleLockEnabled, setDoubleLockEnabled] = useState(true);
   const [mfaEnabled,        setMfaEnabled]        = useState(true);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://13.140.177.98:3000/settings/audit', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      setAuditLogs(data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch audit logs:', err);
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <div className="content-area animate-fade-in">
@@ -108,25 +118,39 @@ const SettingsAudit = () => {
               </tr>
             </thead>
             <tbody>
-              {mockAuditLogs.map(log => (
-                <tr key={log.id}>
-                  <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{log.time}</td>
-                  <td style={{ fontWeight: 600 }}>{log.user}</td>
-                  <td>
-                    <span style={{
-                      padding: '3px 9px', borderRadius: '10px',
-                      fontSize: '0.68rem', fontWeight: 700,
-                      background: log.status === 'WARNING' ? '#fffbeb' : '#eff6ff',
-                      color:      log.status === 'WARNING' ? '#92400e' : '#1d4ed8',
-                      border:     `1px solid ${log.status === 'WARNING' ? '#fde68a' : '#bfdbfe'}`,
-                    }}>
-                      {log.action}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                    Loading audit logs...
                   </td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{log.details}</td>
-                  <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.ip}</td>
                 </tr>
-              ))}
+              ) : auditLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                    No audit logs recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                auditLogs.map(log => (
+                  <tr key={log.id}>
+                    <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{log.time}</td>
+                    <td style={{ fontWeight: 600 }}>{log.user}</td>
+                    <td>
+                      <span style={{
+                        padding: '3px 9px', borderRadius: '10px',
+                        fontSize: '0.68rem', fontWeight: 700,
+                        background: log.status === 'WARNING' ? '#fffbeb' : '#eff6ff',
+                        color:      log.status === 'WARNING' ? '#92400e' : '#1d4ed8',
+                        border:     `1px solid ${log.status === 'WARNING' ? '#fde68a' : '#bfdbfe'}`,
+                      }}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{log.details}</td>
+                    <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.ip}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

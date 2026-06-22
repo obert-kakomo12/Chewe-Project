@@ -1,21 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   UserCheck, UserX, UserMinus, AlertTriangle,
   MessageSquare, Clock, RefreshCw, Bell,
   ClipboardList, List, AlertOctagon
 } from 'lucide-react';
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const STUDENTS = [
-  { id: 'CT24-01', name: 'Chipo Moyo',     class: 'Form 3A' },
-  { id: 'CT24-02', name: 'Farai Ndlovu',   class: 'Form 3A' },
-  { id: 'CT24-03', name: 'Rudo Sibanda',   class: 'Form 3A' },
-  { id: 'CT24-04', name: 'Tendai Nyoni',   class: 'Form 3A' },
-  { id: 'CT24-05', name: 'Kudzai Phiri',   class: 'Form 3A' },
-  { id: 'CT24-06', name: 'Nyasha Ncube',   class: 'Form 4B' },
-  { id: 'CT24-07', name: 'Thabo Dube',     class: 'Form 4B' },
-  { id: 'CT24-08', name: 'Munashe Mutasa', class: 'Form 4B' },
-];
 
 const STATUS_CYCLE = ['present', 'absent', 'late', 'sick'];
 const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', sick: 'Sick' };
@@ -27,20 +15,28 @@ const STATUS_COLOR = {
   sick:    '#3b82f6',
 };
 
-// Truancy alerts (system-generated)
-const TRUANCY_ALERTS = [
-  { student: 'Thabo Dube',     reason: '3 consecutive Friday absences detected.', priority: 'High' },
-  { student: 'Rudo Sibanda',   reason: 'Monthly attendance declined 17% vs last month.', priority: 'High' },
-  { student: 'Farai Ndlovu',   reason: 'Consistently absent for Form 4B Physics period only — Internal Truancy flag.', priority: 'Medium' },
-  { student: 'Kudzai Phiri',   reason: 'Attendance rate: 81%. Below 85% threshold. Counseling alert triggered.', priority: 'Medium' },
-];
-
 const AttendanceNotification = () => {
   const [activeTab, setActiveTab] = useState('rollcall');
-  const [attendance, setAttendance] = useState(() =>
-    Object.fromEntries(STUDENTS.map(s => [s.id, 'present']))
-  );
+  const [data, setData] = useState({ students: [], truancyAlerts: [] });
+  const [attendance, setAttendance] = useState({});
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://13.140.177.98:3000/attendance/rollcall', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(json => {
+      setData(json);
+      setAttendance(Object.fromEntries(json.students.map(s => [s.id, 'present'])));
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch rollcall data:', err);
+      setLoading(false);
+    });
+  }, []);
 
   const cycleStatus = (id) => {
     setSaved(false);
@@ -53,12 +49,12 @@ const AttendanceNotification = () => {
 
   const handleSave = () => setSaved(true);
 
-  const counts = STUDENTS.reduce((acc, s) => {
+  const counts = data.students.reduce((acc, s) => {
     acc[attendance[s.id]] = (acc[attendance[s.id]] || 0) + 1;
     return acc;
   }, {});
 
-  const presentPct = Math.round(((counts.present || 0) / STUDENTS.length) * 100);
+  const presentPct = data.students.length > 0 ? Math.round(((counts.present || 0) / data.students.length) * 100) : 0;
 
   const TabBtn = ({ id, label, icon: Icon }) => (
     <button onClick={() => setActiveTab(id)} style={{
@@ -108,10 +104,17 @@ const AttendanceNotification = () => {
         </div>
         <div className="glass-panel metric-card hover-lift">
           <div className="metric-header"><span>Truancy Flags</span><Bell size={17} /></div>
-          <div className="metric-value" style={{ color: 'var(--status-danger)' }}>{TRUANCY_ALERTS.filter(a => a.priority === 'High').length}</div>
+          <div className="metric-value" style={{ color: 'var(--status-danger)' }}>{data.truancyAlerts.filter(a => a.priority === 'High').length}</div>
           <div className="metric-trend trend-down"><AlertTriangle size={14} /><span>High priority cases</span></div>
         </div>
       </div>
+
+      {loading ? (
+        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Loading attendance data...
+        </div>
+      ) : (
+        <>
 
       {/* ── 60-Second Roll Call ────────────────────────────────────────────── */}
       {activeTab === 'rollcall' && (
@@ -125,7 +128,7 @@ const AttendanceNotification = () => {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="secondary-button" onClick={() => {
-                setAttendance(Object.fromEntries(STUDENTS.map(s => [s.id, 'present'])));
+                setAttendance(Object.fromEntries(data.students.map(s => [s.id, 'present'])));
                 setSaved(false);
               }}>
                 <RefreshCw size={14} /> Reset
@@ -136,34 +139,40 @@ const AttendanceNotification = () => {
             </div>
           </div>
 
-          {['Form 3A', 'Form 4B'].map(cls => (
-            <div key={cls} style={{ marginBottom: '24px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-                {cls}
-              </div>
-              <div className="rollcall-grid">
-                {STUDENTS.filter(s => s.class === cls).map(s => {
-                  const status = attendance[s.id];
-                  const Icon   = STATUS_ICON[status];
-                  return (
-                    <div key={s.id} className={`rollcall-card ${status}`} onClick={() => cycleStatus(s.id)}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</span>
-                        <Icon size={14} style={{ color: STATUS_COLOR[status], flexShrink: 0 }} />
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{s.id}</div>
-                      <div style={{
-                        marginTop: '8px', fontSize: '0.7rem', fontWeight: 700,
-                        color: STATUS_COLOR[status], textTransform: 'uppercase', letterSpacing: '0.06em',
-                      }}>
-                        {STATUS_LABEL[status]}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          {data.students.length === 0 ? (
+            <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              No students are currently registered for this session's roll call.
             </div>
-          ))}
+          ) : (
+            ['Form 3A', 'Form 4B'].map(cls => (
+              <div key={cls} style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+                  {cls}
+                </div>
+                <div className="rollcall-grid">
+                  {data.students.filter(s => s.class === cls).map(s => {
+                    const status = attendance[s.id];
+                    const Icon   = STATUS_ICON[status];
+                    return (
+                      <div key={s.id} className={`rollcall-card ${status}`} onClick={() => cycleStatus(s.id)}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</span>
+                          <Icon size={14} style={{ color: STATUS_COLOR[status], flexShrink: 0 }} />
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{s.id}</div>
+                        <div style={{
+                          marginTop: '8px', fontSize: '0.7rem', fontWeight: 700,
+                          color: STATUS_COLOR[status], textTransform: 'uppercase', letterSpacing: '0.06em',
+                        }}>
+                          {STATUS_LABEL[status]}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
 
           {saved && (
             <div style={{ padding: '12px 16px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--status-success)' }}>
@@ -184,39 +193,47 @@ const AttendanceNotification = () => {
               </tr>
             </thead>
             <tbody>
-              {STUDENTS.map(s => {
-                const status = attendance[s.id];
-                return (
-                  <tr key={s.id}>
-                    <td style={{ fontWeight: 500 }}>{s.name}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{s.class}</td>
-                    <td>
-                      <span style={{
-                        padding: '3px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700,
-                        background: status === 'present' ? 'rgba(16,185,129,0.15)'
-                                  : status === 'late'    ? 'rgba(245,158,11,0.15)'
-                                  : status === 'sick'    ? 'rgba(59,130,246,0.15)'
-                                  : 'rgba(239,68,68,0.15)',
-                        color: STATUS_COLOR[status],
-                        textTransform: 'uppercase',
-                      }}>
-                        {STATUS_LABEL[status]}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      {status === 'present' ? '07:45 AM'
-                       : status === 'late'  ? '08:15 AM'
-                       : '—'}
-                    </td>
-                    <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {status === 'absent' ? 'SMS sent to parent'
-                       : status === 'late' ? 'Email warning sent'
-                       : status === 'sick' ? 'SMS sent — Medical note requested'
-                       : 'N/A'}
-                    </td>
-                  </tr>
-                );
-              })}
+              {data.students.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
+                    No daily logs available.
+                  </td>
+                </tr>
+              ) : (
+                data.students.map(s => {
+                  const status = attendance[s.id];
+                  return (
+                    <tr key={s.id}>
+                      <td style={{ fontWeight: 500 }}>{s.name}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{s.class}</td>
+                      <td>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700,
+                          background: status === 'present' ? 'rgba(16,185,129,0.15)'
+                                    : status === 'late'    ? 'rgba(245,158,11,0.15)'
+                                    : status === 'sick'    ? 'rgba(59,130,246,0.15)'
+                                    : 'rgba(239,68,68,0.15)',
+                          color: STATUS_COLOR[status],
+                          textTransform: 'uppercase',
+                        }}>
+                          {STATUS_LABEL[status]}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        {status === 'present' ? '07:45 AM'
+                         : status === 'late'  ? '08:15 AM'
+                         : '—'}
+                      </td>
+                      <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {status === 'absent' ? 'SMS sent to parent'
+                         : status === 'late' ? 'Email warning sent'
+                         : status === 'sick' ? 'SMS sent — Medical note requested'
+                         : 'N/A'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -230,27 +247,33 @@ const AttendanceNotification = () => {
             Absence pattern monitoring — 3 consecutive same-day absences or &gt;15% monthly decline triggers a counseling alert automatically.
           </p>
           <div className="alert-list">
-            {TRUANCY_ALERTS.map((alert, i) => (
-              <div key={i} className={`alert-item ${alert.priority === 'High' ? 'critical' : 'warning'}`}>
-                <AlertTriangle size={18} className="alert-icon" />
-                <div className="alert-content">
-                  <h4>{alert.student}</h4>
-                  <p>{alert.reason}</p>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
-                  <span style={{
-                    padding: '2px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 700,
-                    background: alert.priority === 'High' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
-                    color: alert.priority === 'High' ? 'var(--status-danger)' : 'var(--status-warning)',
-                  }}>
-                    {alert.priority}
-                  </span>
-                  <button className="secondary-button" style={{ padding: '4px 10px', fontSize: '0.7rem' }}>
-                    Refer to Counselor
-                  </button>
-                </div>
+            {data.truancyAlerts.length === 0 ? (
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                No active truancy alerts.
               </div>
-            ))}
+            ) : (
+              data.truancyAlerts.map((alert, i) => (
+                <div key={i} className={`alert-item ${alert.priority === 'High' ? 'critical' : 'warning'}`}>
+                  <AlertTriangle size={18} className="alert-icon" />
+                  <div className="alert-content">
+                    <h4>{alert.student}</h4>
+                    <p>{alert.reason}</p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 700,
+                      background: alert.priority === 'High' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                      color: alert.priority === 'High' ? 'var(--status-danger)' : 'var(--status-warning)',
+                    }}>
+                      {alert.priority}
+                    </span>
+                    <button className="secondary-button" style={{ padding: '4px 10px', fontSize: '0.7rem' }}>
+                      Refer to Counselor
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Correlation note */}

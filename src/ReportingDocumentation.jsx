@@ -1,11 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Download, Printer, FileSpreadsheet, CheckCircle, Clock } from 'lucide-react';
-
-const mockReports = [
-  { id: 'REP-101', name: 'Term 1 Ministry Compliance Report', type: 'Statutory',    date: '2026-04-15', status: 'Generated' },
-  { id: 'REP-102', name: 'Form 3 Academic Transcripts',        type: 'Institutional',date: '2026-06-08', status: 'Generating...' },
-  { id: 'REP-103', name: 'End of Year Financial Summary',       type: 'Financial',   date: '2025-12-10', status: 'Archived' },
-];
 
 const statusBadge = (status) => {
   if (status === 'Generated')    return { bg: '#f0fdf4', color: '#065f46', border: '#6ee7b7' };
@@ -13,7 +7,26 @@ const statusBadge = (status) => {
   return                                  { bg: '#f0f4f8', color: '#4a6080', border: '#d1ddef' };
 };
 
-const ReportingDocumentation = () => (
+const ReportingDocumentation = () => {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://13.140.177.98:3000/documents/reports', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      setReports(data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch reports:', err);
+      setLoading(false);
+    });
+  }, []);
+
+  return (
   <div className="content-area animate-fade-in">
     <div className="teacher-header">
       <div className="teacher-info">
@@ -54,39 +67,54 @@ const ReportingDocumentation = () => (
           </tr>
         </thead>
         <tbody>
-          {mockReports.map(r => {
-            const badge = statusBadge(r.status);
-            return (
-              <tr key={r.id}>
-                <td style={{ fontWeight: 600 }}>{r.id}</td>
-                <td style={{ fontWeight: 500 }}>{r.name}</td>
-                <td style={{ color: 'var(--text-secondary)' }}>{r.type}</td>
-                <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{r.date}</td>
-                <td>
-                  <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700,
-                    background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
-                    {r.status}
-                  </span>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="icon-button" disabled={r.status === 'Generating...'}
-                      style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--accent-blue)' }}>
-                      <Download size={16} />
-                    </button>
-                    <button className="icon-button" disabled={r.status === 'Generating...'}
-                      style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
-                      <Printer size={16} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
+          {loading ? (
+            <tr>
+              <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                Loading reports...
+              </td>
+            </tr>
+          ) : reports.length === 0 ? (
+            <tr>
+              <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                No reports have been generated yet.
+              </td>
+            </tr>
+          ) : (
+            reports.map(r => {
+              const badge = statusBadge(r.status);
+              return (
+                <tr key={r.id}>
+                  <td style={{ fontWeight: 600 }}>{r.id}</td>
+                  <td style={{ fontWeight: 500 }}>{r.name}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{r.type}</td>
+                  <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{r.date}</td>
+                  <td>
+                    <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700,
+                      background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="icon-button" disabled={r.status === 'Generating...'}
+                        style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--accent-blue)' }}>
+                        <Download size={16} />
+                      </button>
+                      <button className="icon-button" disabled={r.status === 'Generating...'}
+                        style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
+                        <Printer size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>
   </div>
-);
+  );
+};
 
 export default ReportingDocumentation;

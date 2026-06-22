@@ -1,12 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Database, Search, HardDrive, ShieldCheck, Download, Archive, RefreshCw, FileText } from 'lucide-react';
-
-const mockArchives = [
-  { cohort: 'Class of 2025', size: '4.2 GB', compression: 'GZIP L9', location: 'Cold Storage A', status: 'Immutable', year: 2025 },
-  { cohort: 'Class of 2024', size: '3.8 GB', compression: 'GZIP L9', location: 'Cold Storage A', status: 'Immutable', year: 2024 },
-  { cohort: 'Class of 2023', size: '4.0 GB', compression: 'GZIP L9', location: 'Deep Glacier',   status: 'Immutable', year: 2023 },
-  { cohort: 'Class of 2022', size: '3.6 GB', compression: 'GZIP L9', location: 'Deep Glacier',   status: 'Immutable', year: 2022 },
-];
 
 const BACKUP_TIERS = [
   { label: 'Live Mirror (Geo-redundant)',     detail: 'Every mark written to 2 servers simultaneously',      icon: RefreshCw, color: 'var(--status-success)' },
@@ -18,6 +11,24 @@ const EducationalArchive = () => {
   const [exportYear, setExportYear] = useState('2025');
   const [exportTriggered, setExportTriggered] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [archives, setArchives] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://13.140.177.98:3000/documents/archives', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      setArchives(data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch archives:', err);
+      setLoading(false);
+    });
+  }, []);
 
   const handleExport = () => {
     setExportTriggered(true);
@@ -25,14 +36,14 @@ const EducationalArchive = () => {
   };
 
   const filteredArchives = useMemo(() => {
-    if (!searchQuery.trim()) return mockArchives;
+    if (!searchQuery.trim()) return archives;
     const q = searchQuery.toLowerCase();
-    return mockArchives.filter(a => 
+    return archives.filter(a => 
       a.cohort.toLowerCase().includes(q) || 
       a.location.toLowerCase().includes(q) ||
       a.status.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, archives]);
 
   return (
     <div className="content-area animate-fade-in">
@@ -135,9 +146,15 @@ const EducationalArchive = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredArchives.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '30px' }}>
+                    Loading archives...
+                  </td>
+                </tr>
+              ) : filteredArchives.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '30px' }}>
                     No archived cohorts found.
                   </td>
                 </tr>
