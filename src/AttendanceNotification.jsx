@@ -283,6 +283,8 @@ const AttendanceNotification = () => {
           </div>
         </div>
       )}
+      </>
+    )}
     </div>
   );
 };
