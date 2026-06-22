@@ -1,12 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ClipboardList, CheckCircle, TrendingUp, Search, PlusCircle, FileSpreadsheet, X, Trash2, CheckSquare } from 'lucide-react';
-
-const initialAssessments = [
-  { id: 'AST-001', subject: 'Mathematics', class: 'Form 3A', type: 'Continuous Assessment', date: '2026-06-01', avgScore: '68%', status: 'Graded' },
-  { id: 'AST-002', subject: 'Physics',     class: 'Form 4B', type: 'Mid-Term Exam',         date: '2026-06-05', avgScore: '74%', status: 'Graded' },
-  { id: 'AST-003', subject: 'English',     class: 'Form 2C', type: 'Pop Quiz',              date: '2026-06-08', avgScore: '—',   status: 'Pending Marking' },
-  { id: 'AST-004', subject: 'Chemistry',   class: 'Form 3A', type: 'Continuous Assessment', date: '2026-06-10', avgScore: '—',   status: 'Scheduled' },
-];
 
 const statusBadge = (status) => {
   if (status === 'Graded')          return { bg: '#f0fdf4', color: '#065f46', border: '#6ee7b7' };
@@ -23,9 +16,29 @@ const getTodayDateString = () => {
 };
 
 const AssessmentManagement = () => {
-  const [assessments, setAssessments] = useState(initialAssessments);
+  const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
+  const fetchAssessments = () => {
+    fetch('http://13.140.177.98:3000/assessments', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      setAssessments(data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch assessments:', err);
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    fetchAssessments();
+  }, []);
+
   // Modal states
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
@@ -69,9 +82,7 @@ const AssessmentManagement = () => {
 
   const handleAddAssessment = (e) => {
     e.preventDefault();
-    const newId = `AST-${String(assessments.length + 1).padStart(3, '0')}`;
     const newAst = {
-      id: newId,
       subject: formSubject,
       class: formClass,
       type: formType,
@@ -79,38 +90,76 @@ const AssessmentManagement = () => {
       avgScore: formStatus === 'Graded' ? `${formAvgScore}%` : '—',
       status: formStatus
     };
-    setAssessments([newAst, ...assessments]);
-    setIsNewModalOpen(false);
     
-    // Reset Form
-    setFormSubject('Mathematics');
-    setFormClass('Form 3A');
-    setFormType('Continuous Assessment');
-    setFormDate(getTodayDateString());
-    setFormStatus('Scheduled');
-    setFormAvgScore('75');
+    fetch('http://13.140.177.98:3000/assessments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify(newAst)
+    })
+    .then(res => res.json())
+    .then(data => {
+      setAssessments([data, ...assessments]);
+      setIsNewModalOpen(false);
+      // Reset Form
+      setFormSubject('Mathematics');
+      setFormClass('Form 3A');
+      setFormType('Continuous Assessment');
+      setFormDate(getTodayDateString());
+      setFormStatus('Scheduled');
+      setFormAvgScore('75');
+    });
   };
 
-  const handleDeleteAssessment = (id) => {
-    setAssessments(assessments.filter(a => a.id !== id));
+  const handleDeleteAssessment = (dbId, id) => {
+    fetch(`http://13.140.177.98:3000/assessments/${dbId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(() => {
+      setAssessments(assessments.filter(a => a.id !== id));
+    });
   };
 
   const handleGradingSubmit = (e) => {
     e.preventDefault();
-    setAssessments(assessments.map(a => {
-      if (a.id === selectedAssessmentId) {
-        return {
-          ...a,
-          status: 'Graded',
-          avgScore: `${gradeValue}%`
-        };
-      }
-      return a;
-    }));
-    setIsGradeModalOpen(false);
-    setGradeValue('');
-    setSelectedAssessmentId(null);
+    const assessment = assessments.find(a => a.id === selectedAssessmentId);
+    
+    fetch(`http://13.140.177.98:3000/assessments/${assessment.dbId}/grade`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({ avgScore: `${gradeValue}%` })
+    })
+    .then(res => res.json())
+    .then(updated => {
+      setAssessments(assessments.map(a => {
+        if (a.dbId === updated.id) {
+          return { ...a, status: 'Graded', avgScore: updated.avgScore };
+        }
+        return a;
+      }));
+      setIsGradeModalOpen(false);
+      setGradeValue('');
+      setSelectedAssessmentId(null);
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="content-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(59, 130, 246, 0.2)', borderTopColor: 'var(--accent-blue)', animation: 'spin 1s linear infinite' }} />
+          <h2 style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Loading Assessments...</h2>
+        </div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="content-area animate-fade-in">
@@ -206,7 +255,7 @@ const AssessmentManagement = () => {
                           </button>
                         )}
                         <button 
-                          onClick={() => handleDeleteAssessment(a.id)} 
+                          onClick={() => handleDeleteAssessment(a.dbId, a.id)} 
                           className="icon-button" 
                           style={{ color: 'var(--status-danger)', padding: '4px' }}
                           title="Delete Assessment"

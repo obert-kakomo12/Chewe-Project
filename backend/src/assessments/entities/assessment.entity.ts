@@ -10,13 +10,25 @@ export class Assessment {
   @JoinColumn({ name: 'course_id' })
   course: Course;
 
-  @Column()
+  @Column({ nullable: true })
   title: string;
+
+  @Column()
+  subject: string;
+
+  @Column({ name: 'class_name' })
+  class: string;
+
+  @Column({ default: 'Scheduled' })
+  status: string;
+
+  @Column({ default: '—' })
+  avgScore: string;
 
   @Column()
   type: string; // Quiz, Midterm, Final
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', nullable: true })
   max_score: number;
 
   @Column({ type: 'date' })
