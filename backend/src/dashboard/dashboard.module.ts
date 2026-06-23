@@ -4,9 +4,11 @@ import { DashboardService } from './dashboard.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Assessment } from '../assessments/entities/assessment.entity';
 import { AttendanceRecord } from '../attendance/entities/attendance-record.entity';
+import { Grade } from '../assessments/entities/grade.entity';
+import { CounselingLog } from '../welfare/entities/counseling-log.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Assessment, AttendanceRecord])],
+  imports: [TypeOrmModule.forFeature([Assessment, AttendanceRecord, Grade, CounselingLog])],
   controllers: [DashboardController],
   providers: [DashboardService],
 })
