@@ -27,119 +27,203 @@ export class AppService implements OnModuleInit {
 
   async seed() {
     const userRepo = this.dataSource.getRepository(User);
-    const count = await userRepo.count();
-    if (count > 0) {
-      console.log('Database already has data. Skipping seed.');
-      return;
-    }
+    const courseRepo = this.dataSource.getRepository(Course);
+    const enrollRepo = this.dataSource.getRepository(Enrollment);
+    const assessRepo = this.dataSource.getRepository(Assessment);
+    const gradeRepo = this.dataSource.getRepository(Grade);
+    const attRepo = this.dataSource.getRepository(AttendanceRecord);
+    const logRepo = this.dataSource.getRepository(CounselingLog);
+    const guidRepo = this.dataSource.getRepository(GuidanceResource);
+    const reportRepo = this.dataSource.getRepository(Report);
+    const archRepo = this.dataSource.getRepository(EducationalArchive);
+    const auditRepo = this.dataSource.getRepository(AuditLog);
 
-    console.log('Database is empty. Seeding realistic sample data...');
+    console.log('Running granular database seeder checks...');
 
-    // 1. Create Users
+    // 1. Seed Users (Admin, Teachers, Students)
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash('password123', salt);
 
-    const admin = userRepo.create({ name: 'Admin User', email: 'admin@chewetech.com', role: 'Admin', password_hash: hash });
-    const teacher1 = userRepo.create({ name: 'Constance Chimbi', email: 'constance@chewetech.com', role: 'Teacher', password_hash: hash });
-    const teacher2 = userRepo.create({ name: 'Jefter Tokomere', email: 'jefter@chewetech.com', role: 'Teacher', password_hash: hash });
+    let admin = await userRepo.findOne({ where: { role: 'Admin' } });
+    if (!admin) {
+      admin = userRepo.create({ name: 'Admin User', email: 'admin@chewetech.com', role: 'Admin', password_hash: hash });
+      await userRepo.save(admin);
+      console.log('Seeded Admin User.');
+    }
 
-    const studentNames = [
-      'Nyasha Mandaza', 'Tendai Moyo', 'Rufaro Sibanda', 'Chipo Ndlovu', 
-      'Tinashe Mutasa', 'Farai Gumbo', 'Tariro Hove', 'Kudzai Shumba'
-    ];
-    const students = studentNames.map((name, i) => userRepo.create({
-      name,
-      email: `${name.toLowerCase().replace(' ', '.')}@chewe.com`,
-      role: 'Student',
-      password_hash: hash
-    }));
+    let teacher1 = await userRepo.findOne({ where: { email: 'constance@chewetech.com' } });
+    if (!teacher1) {
+      teacher1 = userRepo.create({ name: 'Constance Chimbi', email: 'constance@chewetech.com', role: 'Teacher', password_hash: hash });
+      await userRepo.save(teacher1);
+      console.log('Seeded Constance Chimbi (Teacher).');
+    }
 
-    await userRepo.save([admin, teacher1, teacher2, ...students]);
+    let teacher2 = await userRepo.findOne({ where: { email: 'jefter@chewetech.com' } });
+    if (!teacher2) {
+      teacher2 = userRepo.create({ name: 'Jefter Tokomere', email: 'jefter@chewetech.com', role: 'Teacher', password_hash: hash });
+      await userRepo.save(teacher2);
+      console.log('Seeded Jefter Tokomere (Teacher).');
+    }
 
-    // 2. Create Courses
-    const courseRepo = this.dataSource.getRepository(Course);
-    const course1 = courseRepo.create({ subject_name: 'Mathematics', grade_level: 'Form 3A', schedule: 'Mon/Wed 08:00 AM', teacher: teacher1 });
-    const course2 = courseRepo.create({ subject_name: 'English Language', grade_level: 'Form 4B', schedule: 'Tue/Thu 10:00 AM', teacher: teacher2 });
-    const course3 = courseRepo.create({ subject_name: 'Integrated Science', grade_level: 'Form 3A', schedule: 'Fri 09:30 AM', teacher: teacher1 });
-    await courseRepo.save([course1, course2, course3]);
-
-    // 3. Create Enrollments
-    const enrollRepo = this.dataSource.getRepository(Enrollment);
-    const enrollments: Enrollment[] = [];
-    students.forEach((s, idx) => {
-      if (idx % 2 === 0) {
-        enrollments.push(enrollRepo.create({ student: s, course: course1 }));
-        enrollments.push(enrollRepo.create({ student: s, course: course3 }));
-      } else {
-        enrollments.push(enrollRepo.create({ student: s, course: course2 }));
-      }
-    });
-    await enrollRepo.save(enrollments);
-
-    // 4. Create Assessments
-    const assessRepo = this.dataSource.getRepository(Assessment);
-    const ast1 = assessRepo.create({ subject: 'Mathematics', class: 'Form 3A', type: 'Continuous Assessment', date: new Date('2026-06-20'), status: 'Graded', avgScore: '78%', course: course1, title: 'Term 1 Algebra Test' });
-    const ast2 = assessRepo.create({ subject: 'English Language', class: 'Form 4B', type: 'Final Exam', date: new Date('2026-06-22'), status: 'Pending Marking', avgScore: '—', course: course2, title: 'Shakespeare Essay' });
-    const ast3 = assessRepo.create({ subject: 'Integrated Science', class: 'Form 3A', type: 'Quiz', date: new Date('2026-06-23'), status: 'Scheduled', avgScore: '—', course: course3, title: 'Cell Structure Quiz' });
-    await assessRepo.save([ast1, ast2, ast3]);
-
-    // 5. Create Grades
-    const gradeRepo = this.dataSource.getRepository(Grade);
-    const grades: Grade[] = [];
-    students.filter((_, idx) => idx % 2 === 0).forEach((s, i) => {
-      grades.push(gradeRepo.create({
-        student: s,
-        assessment: ast1,
-        score: 70 + (i * 8) % 30,
-        teacher_feedback: 'Well done'
+    let students = await userRepo.find({ where: { role: 'Student' } });
+    if (students.length === 0) {
+      const studentNames = [
+        'Nyasha Mandaza', 'Tendai Moyo', 'Rufaro Sibanda', 'Chipo Ndlovu', 
+        'Tinashe Mutasa', 'Farai Gumbo', 'Tariro Hove', 'Kudzai Shumba'
+      ];
+      const newStudents = studentNames.map(name => userRepo.create({
+        name,
+        email: `${name.toLowerCase().replace(' ', '.')}@chewe.com`,
+        role: 'Student',
+        password_hash: hash
       }));
-    });
-    await gradeRepo.save(grades);
+      students = await userRepo.save(newStudents);
+      console.log(`Seeded ${students.length} students.`);
+    }
 
-    // 6. Create Attendance Records
-    const attRepo = this.dataSource.getRepository(AttendanceRecord);
-    const attRecords: AttendanceRecord[] = [];
-    const dateToday = new Date();
-    const dateYesterday = new Date();
-    dateYesterday.setDate(dateYesterday.getDate() - 1);
+    // 2. Seed Courses
+    let courses = await courseRepo.find();
+    if (courses.length === 0) {
+      const course1 = courseRepo.create({ subject_name: 'Mathematics', grade_level: 'Form 3A', schedule: 'Mon/Wed 08:00 AM', teacher: teacher1 });
+      const course2 = courseRepo.create({ subject_name: 'English Language', grade_level: 'Form 4B', schedule: 'Tue/Thu 10:00 AM', teacher: teacher2 });
+      const course3 = courseRepo.create({ subject_name: 'Integrated Science', grade_level: 'Form 3A', schedule: 'Fri 09:30 AM', teacher: teacher1 });
+      courses = await courseRepo.save([course1, course2, course3]);
+      console.log('Seeded courses.');
+    }
 
-    students.forEach((s, idx) => {
-      const statusToday = idx === 0 ? 'Absent' : (idx === 2 ? 'Late' : 'Present');
-      const statusYesterday = idx === 0 ? 'Absent' : 'Present';
+    const course1 = courses.find(c => c.subject_name === 'Mathematics') || courses[0];
+    const course2 = courses.find(c => c.subject_name === 'English Language') || courses[1];
+    const course3 = courses.find(c => c.subject_name === 'Integrated Science') || courses[2];
 
-      attRecords.push(attRepo.create({ student: s, course: idx % 2 === 0 ? course1 : course2, date: dateToday, status: statusToday, notes: statusToday === 'Absent' ? 'No excuse' : '' }));
-      attRecords.push(attRepo.create({ student: s, course: idx % 2 === 0 ? course1 : course2, date: dateYesterday, status: statusYesterday }));
-    });
-    await attRepo.save(attRecords);
+    // 3. Seed Enrollments
+    const enrollmentsCount = await enrollRepo.count();
+    if (enrollmentsCount === 0 && students.length > 0 && courses.length > 0) {
+      const enrollments: Enrollment[] = [];
+      students.forEach((s, idx) => {
+        if (idx % 2 === 0) {
+          if (course1) enrollments.push(enrollRepo.create({ student: s, course: course1 }));
+          if (course3) enrollments.push(enrollRepo.create({ student: s, course: course3 }));
+        } else {
+          if (course2) enrollments.push(enrollRepo.create({ student: s, course: course2 }));
+        }
+      });
+      await enrollRepo.save(enrollments);
+      console.log('Seeded enrollments.');
+    }
 
-    // 7. Create Counseling Logs
-    const logRepo = this.dataSource.getRepository(CounselingLog);
-    const wlog1 = logRepo.create({ student: students[0], counselor: teacher1, date: new Date(), severity_level: 'High', session_notes: 'Discussed consecutive unexplained absences. Student reports transport difficulties.', follow_up_required: true });
-    const wlog2 = logRepo.create({ student: students[1], counselor: teacher2, date: new Date(), severity_level: 'Medium', session_notes: 'Academic anxiety session. Discussed study plans.', follow_up_required: false });
-    await logRepo.save([wlog1, wlog2]);
+    // 4. Seed Assessments
+    let assessments = await assessRepo.find();
+    if (assessments.length === 0 && courses.length > 0) {
+      const ast1 = assessRepo.create({ subject: 'Mathematics', class: 'Form 3A', type: 'Continuous Assessment', date: new Date('2026-06-20'), status: 'Graded', avgScore: '78%', course: course1, title: 'Term 1 Algebra Test' });
+      const ast2 = assessRepo.create({ subject: 'English Language', class: 'Form 4B', type: 'Final Exam', date: new Date('2026-06-22'), status: 'Pending Marking', avgScore: '—', course: course2, title: 'Shakespeare Essay' });
+      const ast3 = assessRepo.create({ subject: 'Integrated Science', class: 'Form 3A', type: 'Quiz', date: new Date('2026-06-23'), status: 'Scheduled', avgScore: '—', course: course3, title: 'Cell Structure Quiz' });
+      assessments = await assessRepo.save([ast1, ast2, ast3]);
+      console.log('Seeded assessments.');
+    }
 
-    // 8. Create Guidance Resources
-    const guidRepo = this.dataSource.getRepository(GuidanceResource);
-    const gr1 = guidRepo.create({ title: 'Study tips for Zimsec Exams', type: 'Study Tips', url: 'https://example.com/zimsec-tips' });
-    const gr2 = guidRepo.create({ title: 'Anxiety management techniques', type: 'Mental Health', url: 'https://example.com/anxiety-management' });
-    await guidRepo.save([gr1, gr2]);
+    const ast1 = assessments.find(a => a.subject === 'Mathematics') || assessments[0];
+    const ast2 = assessments.find(a => a.subject === 'English Language') || assessments[1];
+    const ast3 = assessments.find(a => a.subject === 'Integrated Science') || assessments[2];
 
-    // 9. Create Reports
-    const reportRepo = this.dataSource.getRepository(Report);
-    const rep1 = reportRepo.create({ author: teacher1, report_type: 'Academic', status: 'Generated', content: 'Term 1 Mid-Term academic report summary for Form 3A.', file_url: 'https://example.com/reports/form3a-midterm.pdf' });
-    const rep2 = reportRepo.create({ author: teacher2, report_type: 'Disciplinary', status: 'Draft', content: 'Disciplinary review register draft.', file_url: '' });
-    await reportRepo.save([rep1, rep2]);
+    // 5. Seed Grades
+    const gradesCount = await gradeRepo.count();
+    if (gradesCount === 0 && students.length > 0 && assessments.length > 0) {
+      const grades: Grade[] = [];
+      students.forEach((s, i) => {
+        if (i % 2 === 0 && ast1) {
+          grades.push(gradeRepo.create({
+            student: s,
+            assessment: ast1,
+            score: 70 + (i * 8) % 30,
+            teacher_feedback: 'Well done'
+          }));
+        }
+        if (i % 2 === 0 && ast3) {
+          grades.push(gradeRepo.create({
+            student: s,
+            assessment: ast3,
+            score: 65 + (i * 7) % 35,
+            teacher_feedback: 'Good effort'
+          }));
+        }
+        if (i % 2 !== 0 && ast2) {
+          grades.push(gradeRepo.create({
+            student: s,
+            assessment: ast2,
+            score: 55 + (i * 9) % 40,
+            teacher_feedback: 'Fair performance'
+          }));
+        }
+      });
+      await gradeRepo.save(grades);
+      console.log('Seeded grades.');
+    }
 
-    // 10. Create Educational Archives
-    const archRepo = this.dataSource.getRepository(EducationalArchive);
-    const arch1 = archRepo.create({ title: 'Zimsec 2025 Syllabus Archive', subject: 'Mathematics', grade_level: 'Form 3A', file_url: 'https://example.com/syllabus/math-2025.zip', uploaded_by: admin });
-    const arch2 = archRepo.create({ title: 'Shakespeare Literature Guide', subject: 'English Language', grade_level: 'Form 4B', file_url: 'https://example.com/guides/shakespeare.zip', uploaded_by: admin });
-    await archRepo.save([arch1, arch2]);
+    // 6. Seed Attendance Records
+    const attendanceCount = await attRepo.count();
+    if (attendanceCount === 0 && students.length > 0 && courses.length > 0) {
+      const attRecords: AttendanceRecord[] = [];
+      const dateToday = new Date();
+      const dateYesterday = new Date();
+      dateYesterday.setDate(dateYesterday.getDate() - 1);
 
-    // 11. Create Audit Logs
-    const auditRepo = this.dataSource.getRepository(AuditLog);
-    const al1 = auditRepo.create({ user: admin, action: 'SEEDED_DATABASE', details: 'Initialized database with default sample data.' });
-    await auditRepo.save(al1);
+      students.forEach((s, idx) => {
+        const targetCourse = idx % 2 === 0 ? course1 : course2;
+        if (targetCourse) {
+          const statusToday = idx === 0 ? 'Absent' : (idx === 2 ? 'Late' : 'Present');
+          const statusYesterday = idx === 0 ? 'Absent' : 'Present';
+
+          attRecords.push(attRepo.create({ student: s, course: targetCourse, date: dateToday, status: statusToday, notes: statusToday === 'Absent' ? 'No excuse' : '' }));
+          attRecords.push(attRepo.create({ student: s, course: targetCourse, date: dateYesterday, status: statusYesterday }));
+        }
+      });
+      await attRepo.save(attRecords);
+      console.log('Seeded attendance records.');
+    }
+
+    // 7. Seed Counseling Logs
+    const logCount = await logRepo.count();
+    if (logCount === 0 && students.length > 0) {
+      const wlog1 = logRepo.create({ student: students[0], counselor: teacher1, date: new Date(), severity_level: 'High', session_notes: 'Discussed consecutive unexplained absences. Student reports transport difficulties.', follow_up_required: true });
+      const wlog2 = logRepo.create({ student: students[1], counselor: teacher2, date: new Date(), severity_level: 'Medium', session_notes: 'Academic anxiety session. Discussed study plans.', follow_up_required: false });
+      await logRepo.save([wlog1, wlog2]);
+      console.log('Seeded counseling logs.');
+    }
+
+    // 8. Seed Guidance Resources
+    const guidCount = await guidRepo.count();
+    if (guidCount === 0) {
+      const gr1 = guidRepo.create({ title: 'Study tips for Zimsec Exams', type: 'Study Tips', url: 'https://example.com/zimsec-tips' });
+      const gr2 = guidRepo.create({ title: 'Anxiety management techniques', type: 'Mental Health', url: 'https://example.com/anxiety-management' });
+      await guidRepo.save([gr1, gr2]);
+      console.log('Seeded guidance resources.');
+    }
+
+    // 9. Seed Reports
+    const reportCount = await reportRepo.count();
+    if (reportCount === 0) {
+      const rep1 = reportRepo.create({ author: teacher1, report_type: 'Academic', status: 'Generated', content: 'Term 1 Mid-Term academic report summary for Form 3A.', file_url: 'https://example.com/reports/form3a-midterm.pdf' });
+      const rep2 = reportRepo.create({ author: teacher2, report_type: 'Disciplinary', status: 'Draft', content: 'Disciplinary review register draft.', file_url: '' });
+      await reportRepo.save([rep1, rep2]);
+      console.log('Seeded reports.');
+    }
+
+    // 10. Seed Educational Archives
+    const archCount = await archRepo.count();
+    if (archCount === 0) {
+      const arch1 = archRepo.create({ title: 'Zimsec 2025 Syllabus Archive', subject: 'Mathematics', grade_level: 'Form 3A', file_url: 'https://example.com/syllabus/math-2025.zip', uploaded_by: admin });
+      const arch2 = archRepo.create({ title: 'Shakespeare Literature Guide', subject: 'English Language', grade_level: 'Form 4B', file_url: 'https://example.com/guides/shakespeare.zip', uploaded_by: admin });
+      await archRepo.save([arch1, arch2]);
+      console.log('Seeded educational archives.');
+    }
+
+    // 11. Seed Audit Logs
+    const auditCount = await auditRepo.count();
+    if (auditCount === 0) {
+      const al1 = auditRepo.create({ user: admin, action: 'SEEDED_DATABASE', details: 'Initialized database with default sample data.' });
+      await auditRepo.save(al1);
+      console.log('Seeded audit logs.');
+    }
 
     console.log('Database seeding finished successfully!');
   }
