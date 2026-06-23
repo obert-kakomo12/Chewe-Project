@@ -14,24 +14,37 @@ export class WelfareService {
   ) {}
 
   async getDashboardData() {
-    // Fetch logs from DB, joining user relations if they exist
-    // For now, we will return empty arrays if no data exists instead of mock placeholders
-    const logsCount = await this.logsRepository.count();
-    const guidanceCount = await this.guidanceRepository.count();
+    const dbLogs = await this.logsRepository.find({ relations: { student: true, counselor: true } });
+    const logs = dbLogs.map(l => ({
+      id: `WL-${String(l.id).padStart(4, '0')}`,
+      student: l.student?.name || 'Anonymous',
+      priority: l.severity_level, // High, Medium, Low
+      date: l.date ? new Date(l.date).toLocaleDateString() : 'N/A',
+      notes: l.session_notes,
+      followUp: l.follow_up_required ? 'Yes' : 'No'
+    }));
 
-    // Eventually, you would map real DB entities to the frontend format here
-    // Example:
-    // const dbLogs = await this.logsRepository.find({ relations: ['student'] });
-    // const logs = dbLogs.map(l => ({ id: `WL-${l.id}`, student: l.student?.name, priority: l.severity_level, ... }))
-    
+    const dbGuidance = await this.guidanceRepository.find();
+    const guidance = dbGuidance.map(g => ({
+      id: g.id,
+      title: g.title,
+      type: g.type,
+      sharedWith: 'All Students',
+      sharedDate: g.created_at ? new Date(g.created_at).toLocaleDateString() : 'N/A'
+    }));
+
+    const activeCases = dbLogs.filter(l => l.follow_up_required).length;
+    const highPriority = dbLogs.filter(l => l.severity_level === 'High' && l.follow_up_required).length;
+    const resolvedThisTerm = dbLogs.filter(l => !l.follow_up_required).length;
+
     return {
-      logs: [],
-      guidance: [],
+      logs,
+      guidance,
       stats: {
-        activeCases: 0,
-        highPriority: 0,
-        resolvedThisTerm: 0,
-        guidanceReportsSent: guidanceCount
+        activeCases,
+        highPriority,
+        resolvedThisTerm,
+        guidanceReportsSent: dbGuidance.length
       }
     };
   }

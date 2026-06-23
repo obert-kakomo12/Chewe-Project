@@ -11,6 +11,13 @@ export class SettingsService {
   ) {}
 
   async getAuditLogs() {
-    return [];
+    const logs = await this.auditLogRepository.find({ relations: { user: true }, order: { timestamp: 'DESC' } });
+    return logs.map(l => ({
+      id: l.id,
+      user: l.user?.name || 'System',
+      action: l.action,
+      details: l.details,
+      timestamp: l.timestamp ? new Date(l.timestamp).toLocaleString() : 'N/A'
+    }));
   }
 }
