@@ -4,6 +4,7 @@ import {
   MessageSquare, Clock, RefreshCw, Bell,
   ClipboardList, List, AlertOctagon
 } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 const STATUS_CYCLE = ['present', 'absent', 'late', 'sick'];
 const STATUS_LABEL = { present: 'Present', absent: 'Absent', late: 'Late', sick: 'Sick' };
@@ -23,7 +24,7 @@ const AttendanceNotification = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/attendance/rollcall', {
+    fetch(`${API_BASE_URL}/attendance/rollcall`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
     .then(res => res.json())

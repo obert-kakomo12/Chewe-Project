@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FlaskConical, Briefcase, BookOpen, AlertTriangle } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 const TRACKS = [
   { key: 'Sciences',    label: 'Sciences Track',    color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
@@ -27,7 +28,7 @@ const Pathfinder = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/academics/pathfinder', {
+    fetch(`${API_BASE_URL}/academics/pathfinder`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import CTLogo from './CTLogo';
+import { API_BASE_URL } from './config';
 
 const ResetPasswordScreen = ({ token, email, onResetComplete }) => {
   const [password, setPassword] = useState('');
@@ -21,7 +22,7 @@ const ResetPasswordScreen = ({ token, email, onResetComplete }) => {
     setSuccess('');
 
     try {
-      const response = await fetch(`http://13.140.177.98:3000/auth/reset-password`, {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token, newPassword: password }),
