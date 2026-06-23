@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Key, AlertOctagon, Lock, ShieldCheck } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 const Toggle = ({ on, onToggle, color }) => (
   <div onClick={onToggle} style={{
@@ -25,7 +26,7 @@ const SettingsAudit = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/settings/audit', {
+    fetch(`${API_BASE_URL}/settings/audit`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
     .then(res => res.json())

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ClipboardList, CheckCircle, TrendingUp, Search, PlusCircle, FileSpreadsheet, X, Trash2, CheckSquare } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 const statusBadge = (status) => {
   if (status === 'Graded')          return { bg: '#f0fdf4', color: '#065f46', border: '#6ee7b7' };
@@ -21,7 +22,7 @@ const AssessmentManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   const fetchAssessments = () => {
-    fetch('http://13.140.177.98:3000/assessments', {
+    fetch(`${API_BASE_URL}/assessments`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
     .then(res => res.json())
@@ -91,7 +92,7 @@ const AssessmentManagement = () => {
       status: formStatus
     };
     
-    fetch('http://13.140.177.98:3000/assessments', {
+    fetch(`${API_BASE_URL}/assessments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ const AssessmentManagement = () => {
   };
 
   const handleDeleteAssessment = (dbId, id) => {
-    fetch(`http://13.140.177.98:3000/assessments/${dbId}`, {
+    fetch(`${API_BASE_URL}/assessments/${dbId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
@@ -127,7 +128,7 @@ const AssessmentManagement = () => {
     e.preventDefault();
     const assessment = assessments.find(a => a.id === selectedAssessmentId);
     
-    fetch(`http://13.140.177.98:3000/assessments/${assessment.dbId}/grade`, {
+    fetch(`${API_BASE_URL}/assessments/${assessment.dbId}/grade`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

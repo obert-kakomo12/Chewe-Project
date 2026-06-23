@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Database, Search, HardDrive, ShieldCheck, Download, Archive, RefreshCw, FileText } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 const BACKUP_TIERS = [
   { label: 'Live Mirror (Geo-redundant)',     detail: 'Every mark written to 2 servers simultaneously',      icon: RefreshCw, color: 'var(--status-success)' },
@@ -16,7 +17,7 @@ const EducationalArchive = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/documents/archives', {
+    fetch(`${API_BASE_URL}/documents/archives`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
     .then(res => res.json())

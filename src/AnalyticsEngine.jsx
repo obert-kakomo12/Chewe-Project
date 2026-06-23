@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, TrendingDown, TrendingUp, AlertTriangle, Activity, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { API_BASE_URL } from './config';
 
 const statusStyle = (status) => ({
   bottleneck: { bg: '#fff5f5',  border: '1.5px solid #fca5a5', color: '#dc2626',  barColor: '#dc2626' },
@@ -15,7 +16,7 @@ const AnalyticsEngine = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/dashboard/analytics', {
+    fetch(`${API_BASE_URL}/dashboard/analytics`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
     .then(res => res.json())

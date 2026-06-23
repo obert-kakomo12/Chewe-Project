@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 const PRIORITY_BADGE = {
   High:   { bg: '#fff5f5', color: '#991b1b', border: '#fca5a5' },
@@ -29,7 +30,7 @@ const WelfareCounseling = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/welfare/dashboard', {
+    fetch(`${API_BASE_URL}/welfare/dashboard`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`

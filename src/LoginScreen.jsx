@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { KeyRound, Lock, User as UserIcon, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import CTLogo from './CTLogo';
+import { API_BASE_URL } from './config';
 
 const LoginScreen = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,7 +26,7 @@ const LoginScreen = ({ onLogin }) => {
 
     if (isForgotPassword) {
       try {
-        const response = await fetch(`http://13.140.177.98:3000/auth/forgot-password`, {
+        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
@@ -48,7 +49,7 @@ const LoginScreen = ({ onLogin }) => {
       : { email, password, name, accessCode };
 
     try {
-      const response = await fetch(`http://13.140.177.98:3000${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

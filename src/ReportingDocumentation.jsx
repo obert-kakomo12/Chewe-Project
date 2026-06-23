@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Printer, FileSpreadsheet, CheckCircle, Clock } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 const statusBadge = (status) => {
   if (status === 'Generated')    return { bg: '#f0fdf4', color: '#065f46', border: '#6ee7b7' };
@@ -12,7 +13,7 @@ const ReportingDocumentation = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/documents/reports', {
+    fetch(`${API_BASE_URL}/documents/reports`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
     .then(res => res.json())

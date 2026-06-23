@@ -18,6 +18,7 @@ import AnalyticsEngine         from './AnalyticsEngine';
 import SettingsAudit           from './SettingsAudit';
 import AssessmentManagement    from './AssessmentManagement';
 import AttendanceNotification  from './AttendanceNotification';
+import { API_BASE_URL } from './config';
 import WelfareCounseling       from './WelfareCounseling';
 import ReportingDocumentation  from './ReportingDocumentation';
 import EducationalArchive      from './EducationalArchive';
@@ -265,7 +266,7 @@ const DashboardContent = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://13.140.177.98:3000/dashboard/metrics', {
+    fetch(`${API_BASE_URL}/dashboard/metrics`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`

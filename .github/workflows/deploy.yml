@@ -1,0 +1,72 @@
+name: CI/CD Deployment
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build-and-test:
+    name: Build & Verify Project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Backend Checks
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Build Backend
+        run: |
+          cd backend
+          npm run build
+
+      # Frontend Checks
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      - name: Build Frontend
+        run: npm run build
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Pull Code
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          script: |
+            cd /root/Chewe-Project
+            # Discard any local server changes to prevent git conflicts
+            git reset --hard
+            git clean -fd
+            # Fetch remote branches
+            git fetch origin
+            # Ensure we are tracking the remote production branch
+            git checkout production || git checkout -b production origin/production
+            git pull origin production
+            # Rebuild and restart backend
+            cd backend
+            npm install
+            npm run build
+            pm2 restart chewe-backend
+            # Rebuild and restart frontend
+            cd ..
+            npm install
+            npm run build
+            pm2 restart chewe-frontend
+            # Save PM2 state
+            pm2 save
