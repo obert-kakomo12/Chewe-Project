@@ -105,7 +105,10 @@ export class AuthService {
       console.error('Failed to send email. Check SMTP config.', e);
     }
 
-    return { message: 'If that email exists, a reset link has been sent.' };
+    return { 
+      message: 'If that email exists, a reset link has been sent.',
+      resetLink: resetLink
+    };
   }
 
   async resetPassword(email: string, token: string, newPass: string) {
