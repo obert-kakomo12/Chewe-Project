@@ -20,8 +20,8 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   reset_token: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
-  reset_token_expires: Date | null;
+  @Column({ type: 'varchar', nullable: true })
+  reset_token_expires: string | null;
 
   @CreateDateColumn()
   created_at: Date;

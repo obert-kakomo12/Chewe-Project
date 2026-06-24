@@ -22,7 +22,7 @@ export class UsersService {
   async saveResetToken(userId: number, token: string, expires: Date): Promise<void> {
     await this.usersRepository.update(userId, {
       reset_token: token,
-      reset_token_expires: expires,
+      reset_token_expires: expires.getTime().toString(),
     });
   }
 
