@@ -2,6 +2,8 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
+import * as path from 'path';
 
 @Injectable()
 export class AuthService {
@@ -62,16 +64,15 @@ export class AuthService {
     };
   }
 
-  async forgotPassword(email: string) {
+  async forgotPassword(email: string, origin?: string) {
     const user = await this.usersService.findOneByEmail(email);
     if (!user) {
       // Don't throw error to prevent email enumeration, just return
       return { message: 'If that email exists, a reset link has been sent.' };
     }
 
-    const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const hash = await bcrypt.hash(resetToken, 10);
+    const hash = crypto.createHash('sha256').update(resetToken).digest('hex');
     
     // Set expiration to 1 hour from now
     const expires = new Date();
@@ -90,22 +91,45 @@ export class AuthService {
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://13.140.177.98:5173';
+    const frontendUrl = origin || process.env.FRONTEND_URL || 'http://13.140.177.98:5173';
     const resetLink = `${frontendUrl}/?reset=true&token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     try {
       await transporter.sendMail({
-        from: '"Support" <support@chewetech.com>',
+        from: '"Support" <support@chewetechnologies.co.zw>',
         to: email,
         subject: 'Password Reset Request',
         text: `You requested a password reset. Click this link to reset your password: ${resetLink}`,
-        html: `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${resetLink}">${resetLink}</a></p>`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="cid:logo" alt="Chewe Technology Logo" style="height: 50px; object-fit: contain;" />
+            </div>
+            <h2 style="color: #0d1f45; text-align: center;">Password Reset Request</h2>
+            <p>Hello,</p>
+            <p>You requested a password reset for your account. Please click the button below to set a new password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+            </div>
+            <p>If you did not request this reset, you can safely ignore this email.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #666; text-align: center;">This is an automated message, please do not reply.</p>
+          </div>
+        `,
+        attachments: [{
+          filename: 'logo.png',
+          path: path.join(process.cwd(), '..', 'src', 'assets', 'logo_no_bg.png'),
+          cid: 'logo'
+        }]
       });
     } catch (e) {
       console.error('Failed to send email. Check SMTP config.', e);
     }
 
-    return { message: 'If that email exists, a reset link has been sent.' };
+    return { 
+      message: 'If that email exists, a reset link has been sent.',
+      resetLink: resetLink
+    };
   }
 
   async resetPassword(email: string, token: string, newPass: string) {
@@ -114,11 +138,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired password reset token');
     }
 
-    if (new Date() > user.reset_token_expires) {
+    if (Date.now() > Number(user.reset_token_expires)) {
       throw new UnauthorizedException('Reset token has expired');
     }
 
-    const isValid = await bcrypt.compare(token, user.reset_token);
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const isValid = hash === user.reset_token;
     if (!isValid) {
       throw new UnauthorizedException('Invalid reset token');
     }

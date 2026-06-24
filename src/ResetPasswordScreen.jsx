@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import CTLogo from './CTLogo';
 import { API_BASE_URL } from './config';
 
@@ -9,6 +9,8 @@ const ResetPasswordScreen = ({ token, email, onResetComplete }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,16 +76,38 @@ const ResetPasswordScreen = ({ token, email, onResetComplete }) => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ position: 'relative' }}>
             <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-            <input type="password" placeholder="New Password" className="mark-input"
-              style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+            <input type={showPassword ? "text" : "password"} placeholder="New Password" className="mark-input"
+              style={{ width: '100%', paddingLeft: '38px', paddingRight: '40px', textAlign: 'left' }}
               value={password} onChange={e => setPassword(e.target.value)} required />
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              style={{ 
+                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', 
+                background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', padding: 0
+              }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
 
           <div style={{ position: 'relative' }}>
             <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-            <input type="password" placeholder="Confirm Password" className="mark-input"
-              style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+            <input type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" className="mark-input"
+              style={{ width: '100%', paddingLeft: '38px', paddingRight: '40px', textAlign: 'left' }}
               value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+            <button 
+              type="button" 
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={{ 
+                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', 
+                background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', padding: 0
+              }}
+            >
+              {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
           
           <button type="submit" className="action-button" style={{ justifyContent: 'center', marginTop: '4px', opacity: loading ? 0.7 : 1 }} disabled={loading}>

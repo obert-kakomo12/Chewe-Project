@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { KeyRound, Lock, User as UserIcon, Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { KeyRound, Lock, User as UserIcon, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import CTLogo from './CTLogo';
 import { API_BASE_URL } from './config';
 
 const LoginScreen = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Form State
   const [email, setEmail] = useState('');
@@ -33,8 +34,20 @@ const LoginScreen = ({ onLogin }) => {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
-        setSuccess('If the email exists, a reset link has been sent!');
-        setTimeout(() => setIsForgotPassword(false), 3000);
+        
+        if (data.resetLink) {
+          setSuccess(
+            <div>
+              Reset link generated: <br />
+              <a href={data.resetLink} style={{ color: '#60a5fa', textDecoration: 'underline', fontWeight: 'bold', wordBreak: 'break-all' }}>
+                Click here to reset password
+              </a>
+            </div>
+          );
+        } else {
+          setSuccess('If the email exists, a reset link has been sent!');
+          setTimeout(() => setIsForgotPassword(false), 3000);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -177,9 +190,20 @@ const LoginScreen = ({ onLogin }) => {
           {!isForgotPassword && (
             <div style={{ position: 'relative' }}>
               <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="password" placeholder="Password" className="mark-input"
-                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
+              <input type={showPassword ? "text" : "password"} placeholder="Password" className="mark-input"
+                style={{ width: '100%', paddingLeft: '38px', paddingRight: '40px', textAlign: 'left' }}
                 value={password} onChange={e => setPassword(e.target.value)} required />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ 
+                  position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', 
+                  background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', padding: 0
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           )}
           

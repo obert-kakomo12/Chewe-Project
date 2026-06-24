@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -17,8 +17,8 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  forgotPassword(@Body() dto: Record<string, any>) {
-    return this.authService.forgotPassword(dto.email);
+  forgotPassword(@Body() dto: Record<string, any>, @Headers('origin') origin?: string) {
+    return this.authService.forgotPassword(dto.email, origin);
   }
 
   @Post('reset-password')
