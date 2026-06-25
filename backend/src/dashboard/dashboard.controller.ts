@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 
 @Controller('dashboard')
@@ -13,5 +13,10 @@ export class DashboardController {
   @Get('analytics')
   getAnalytics() {
     return this.dashboardService.getAnalytics();
+  }
+
+  @Post('executive-ai-advisor')
+  getExecutiveAIInsight(@Body('query') query: string) {
+    return this.dashboardService.getExecutiveAIInsight(query);
   }
 }

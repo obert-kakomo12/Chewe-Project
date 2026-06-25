@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { FileText, Save, Download, X, AlertTriangle, UserCheck, PenLine, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 // ─── Student generator ────────────────────────────────────────────────────────
+// ... (student generator remains the same)
 const generateStudentsForSubject = (subjectName) => {
   const hash = subjectName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const fNames = ['Tanaka','Chipo','Farai','Rudo','Tendai','Kudzai','Nyasha','Thabo','Munashe','Rutendo'];
@@ -80,6 +82,36 @@ const TeacherWorkstation = () => {
   const [students,        setStudents]        = useState([]);
   const [reportModalData, setReportModalData] = useState(null);
   const [editedComment,   setEditedComment]   = useState('');
+  const [aiInstruction,   setAiInstruction]   = useState('');
+  const [adjusting,       setAdjusting]       = useState(false);
+
+  const handleAdjustCommentWithAi = () => {
+    if (!reportModalData) return;
+    setAdjusting(true);
+    fetch(`${API_BASE_URL}/assessments/ai-comment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({
+        studentName: reportModalData.name,
+        score: reportModalData.total,
+        userPrompt: aiInstruction
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.comment) {
+        setEditedComment(data.comment);
+      }
+      setAdjusting(false);
+    })
+    .catch(err => {
+      console.error('Failed to adjust comment with AI:', err);
+      setAdjusting(false);
+    });
+  };
 
   const availableSubjects = CURRICULUM[setupLevel]?.[setupStream] || [];
 
@@ -512,6 +544,32 @@ const TeacherWorkstation = () => {
                 <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                   Suggested comment based on marks. Edit before approving.
                 </p>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Instruct AI (e.g. 'more encouragement', 'warn about finals')..."
+                    value={aiInstruction}
+                    onChange={e => setAiInstruction(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      borderRadius: '6px',
+                      border: '1px solid #bfdbfe',
+                      outline: 'none',
+                      background: '#ffffff',
+                      color: 'var(--text-primary)'
+                    }}
+                  />
+                  <button
+                    onClick={handleAdjustCommentWithAi}
+                    disabled={adjusting}
+                    className="action-button"
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                  >
+                    {adjusting ? 'Adjusting...' : 'Adjust with AI'}
+                  </button>
+                </div>
                 <textarea
                   className="comment-box"
                   value={editedComment}

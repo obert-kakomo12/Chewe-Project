@@ -24,4 +24,13 @@ export class AssessmentsController {
   remove(@Param('id') id: string) {
     return this.assessmentsService.remove(+id);
   }
+
+  @Post('ai-comment')
+  generateAIComment(
+    @Body('studentName') studentName: string,
+    @Body('score') score: number,
+    @Body('userPrompt') userPrompt?: string,
+  ) {
+    return this.assessmentsService.generateAIComment(studentName, score, userPrompt);
+  }
 }

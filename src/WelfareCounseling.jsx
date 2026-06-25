@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText } from 'lucide-react';
+import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText, X } from 'lucide-react';
 import { API_BASE_URL } from './config';
 
 const PRIORITY_BADGE = {
@@ -28,6 +28,28 @@ const WelfareCounseling = () => {
   
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  const handleSelectCase = (log) => {
+    setSelectedCase(log);
+    setAiSuggestion(null);
+    setLoadingAi(true);
+    fetch(`${API_BASE_URL}/welfare/predictive-suggestions/${log.dbId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      setAiSuggestion(data);
+      setLoadingAi(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch predictive suggestions:', err);
+      setLoadingAi(false);
+    });
+  };
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/welfare/dashboard`, {
@@ -119,18 +141,56 @@ const WelfareCounseling = () => {
       {/* ── Case Repository ───────────────────────────────────────────────── */}
       {activeTab === 'cases' && (
         <div className="dashboard-row" style={{ gridTemplateColumns: '1fr 2fr' }} >
-          {/* Left panels */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="glass-panel hover-lift" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
-              <h3 className="section-title" style={{ color: '#92400e' }}>Access Audit</h3>
+            {selectedCase && (
+              <div className="glass-panel hover-lift animate-fade-in" style={{ borderLeft: '4px solid var(--accent-blue)', background: '#eff6ff', border: '1.5px solid #bfdbfe', padding: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h3 className="section-title" style={{ margin: 0, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldAlert size={16} /> AI Counsel Advisor
+                  </h3>
+                  <button className="icon-button" onClick={() => setSelectedCase(null)} style={{ padding: 2, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                    <X size={15} />
+                  </button>
+                </div>
+                <div style={{ fontSize: '0.85rem', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                  Analyzing: <strong style={{ color: 'var(--text-primary)' }}>{selectedCase.student}</strong> ({selectedCase.id})
+                </div>
+                {loadingAi ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid rgba(59,130,246,0.2)', borderTopColor: 'var(--accent-blue)', animation: 'spin 1s linear infinite' }} />
+                    Generating recommendations...
+                  </div>
+                ) : aiSuggestion ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.04em', marginBottom: '3px' }}>Predicted Stressor</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--status-danger)' }}>{aiSuggestion.stressor}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.04em', marginBottom: '3px' }}>Suggested Action Plan</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: '#ffffff', padding: '10px', borderRadius: '6px', border: '1px solid #bfdbfe', lineHeight: 1.35 }}>
+                        {aiSuggestion.recommendation}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(5, 150, 105, 0.1)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(5, 150, 105, 0.25)' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>Recovery Probability:</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#059669' }}>{aiSuggestion.successRate}</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            <div className="glass-panel hover-lift" style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '18px' }}>
+              <h3 className="section-title" style={{ color: '#92400e', margin: 0, marginBottom: '8px' }}>Access Audit</h3>
               <p style={{ fontSize: '0.8rem', color: '#92400e', marginBottom: '12px' }}>
                 All access to welfare logs requires MFA and is permanently recorded.
               </p>
               <button className="secondary-button" style={{ width: '100%', justifyContent: 'center' }}>View Access Logs</button>
             </div>
 
-            <div className="glass-panel hover-lift">
-              <h3 className="section-title">Referral Pipeline</h3>
+            <div className="glass-panel hover-lift" style={{ padding: '18px' }}>
+              <h3 className="section-title" style={{ margin: 0, marginBottom: '8px' }}>Referral Pipeline</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                 Cases auto-added from Trauma Triage and Truancy Alerts.
               </p>
@@ -147,7 +207,7 @@ const WelfareCounseling = () => {
           </div>
 
           {/* Case table */}
-          <div className="glass-panel hover-lift" style={{ overflowX: 'auto' }}>
+          <div className="glass-panel hover-lift" style={{ overflowX: 'auto', flex: 1, padding: '18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
               <h3 className="section-title" style={{ margin: 0 }}>Secure Case Repository</h3>
               <div className="search-bar" style={{ width: '200px' }}>
@@ -173,7 +233,7 @@ const WelfareCounseling = () => {
                   </tr>
                 ) : (
                   filteredLogs.map(log => {
-                    const pb = PRIORITY_BADGE[log.priority];
+                    const pb = PRIORITY_BADGE[log.priority] || PRIORITY_BADGE.Medium;
                     return (
                       <tr key={log.id}>
                         <td style={{ fontWeight: 600 }}>{log.id}</td>
@@ -185,15 +245,15 @@ const WelfareCounseling = () => {
                             {log.priority}
                           </span>
                         </td>
-                        <td style={{ fontSize: '0.82rem' }}>{log.type}</td>
+                        <td style={{ fontSize: '0.85rem' }}>{log.type}</td>
                         <td>
                           {log.encrypted
                             ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}><Lock size={11} /> Encrypted</span>
                             : <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.72rem' }}><EyeOff size={11} /> Standard</span>}
                         </td>
                         <td>
-                          <button className="icon-button" style={{ color: log.encrypted ? 'var(--text-muted)' : 'var(--accent-blue)' }}>
-                            {log.encrypted ? <Lock size={14} /> : <Search size={14} />}
+                          <button onClick={() => handleSelectCase(log)} className="icon-button" style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                            <Search size={14} /> Analyze
                           </button>
                         </td>
                       </tr>
