@@ -131,11 +131,20 @@ const NAV_SECTIONS = [
 
 const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, currentUser }) => {
   const isAdmin = currentUser?.role === 'Admin';
+  const isStudent = currentUser?.role === 'Student';
+  const isTeacher = currentUser?.role === 'Teacher';
+
   const filteredSections = NAV_SECTIONS.map(section => ({
     ...section,
     items: section.items.filter(item => {
-      if (!isAdmin && ['war-room', 'analytics', 'settings'].includes(item.id)) return false;
-      return true;
+      if (isAdmin) return true;
+      if (isStudent) {
+        return ['pathfinder', 'attendance', 'reports', 'archive'].includes(item.id);
+      }
+      if (isTeacher) {
+        return !['war-room', 'analytics', 'settings'].includes(item.id);
+      }
+      return !['war-room', 'analytics', 'settings'].includes(item.id);
     })
   })).filter(section => section.items.length > 0);
 
@@ -260,10 +269,36 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
   );
 };
 
-// ─── War Room / Dashboard ─────────────────────────────────────────────────────
+
 const DashboardContent = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  const handleAskAdvisor = (customQuery) => {
+    const qStr = customQuery || query;
+    if (!qStr.trim()) return;
+    setLoadingAi(true);
+    fetch(`${API_BASE_URL}/dashboard/executive-ai-advisor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({ query: qStr })
+    })
+    .then(res => res.json())
+    .then(data => {
+      setAiResponse(data);
+      setLoadingAi(false);
+    })
+    .catch(err => {
+      console.error('Failed to query advisor:', err);
+      setLoadingAi(false);
+    });
+  };
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/dashboard/metrics`, {
@@ -381,6 +416,107 @@ const DashboardContent = () => {
         </div>
       </div>
 
+      {/* Executive AI Strategic Advisor Panel */}
+      <div className="glass-panel hover-lift" style={{ marginTop: '24px', borderLeft: '4px solid var(--accent-blue)', background: 'linear-gradient(135deg, rgba(29, 78, 216, 0.03) 0%, rgba(255, 255, 255, 0.8) 100%)', padding: '18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <GraduationCap size={22} style={{ color: 'var(--accent-blue)' }} />
+          <h3 className="section-title" style={{ margin: 0 }}>Executive AI Strategic Advisor</h3>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          Query the institutional strategic NLP engine to isolate outliers, detect curriculum blockages, and automate strategic decisions.
+        </p>
+
+        {/* Preset chips */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          {[
+            'Identify curriculum bottlenecks',
+            'Draft low outlier action plan',
+            'Analyze attendance correlation'
+          ].map((preset) => (
+            <button
+              key={preset}
+              onClick={() => {
+                setQuery(preset);
+                handleAskAdvisor(preset);
+              }}
+              style={{
+                background: 'rgba(29, 78, 216, 0.06)',
+                border: '1px solid rgba(29, 78, 216, 0.15)',
+                color: 'var(--accent-blue)',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+
+        {/* Input area */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <input
+            type="text"
+            placeholder="Ask a custom strategic question (e.g. 'failing math students', 'form 3 results')..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              fontSize: '0.8rem',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              outline: 'none',
+              background: '#ffffff',
+              color: 'var(--text-primary)'
+            }}
+          />
+          <button
+            onClick={() => handleAskAdvisor()}
+            disabled={loadingAi}
+            className="action-button"
+            style={{ padding: '10px 18px', fontSize: '0.8rem' }}
+          >
+            {loadingAi ? 'Analyzing...' : 'Run Query'}
+          </button>
+        </div>
+
+        {/* Response display */}
+        {aiResponse && (
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: '#ffffff', border: '1.5px solid var(--border-color)', padding: '16px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                Response Generated at {aiResponse.timestamp}
+              </span>
+              <button 
+                onClick={() => setAiResponse(null)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                Clear
+              </button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ padding: '12px', background: 'rgba(29, 78, 216, 0.02)', border: '1px solid rgba(29, 78, 216, 0.08)', borderRadius: '6px' }}>
+                <h4 style={{ fontSize: '0.8rem', color: '#0d1f45', margin: '0 0 6px 0', fontWeight: 700 }}>AI Strategic Analysis</h4>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
+                  {aiResponse.analysis}
+                </p>
+              </div>
+              <div style={{ padding: '12px', background: 'rgba(5, 150, 105, 0.02)', border: '1px solid rgba(5, 150, 105, 0.08)', borderRadius: '6px' }}>
+                <h4 style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 6px 0', fontWeight: 700 }}>Immediate Decisions</h4>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4', whiteSpace: 'pre-line' }}>
+                  {aiResponse.decision}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Institutional Heatmap */}
       <InstitutionalHeatmap heatmapData={data.heatmapData} />
     </div>
@@ -418,8 +554,12 @@ function App() {
     setIsAuthenticated(true); 
     setCurrentUser(user);
     setUserEmail(user?.email || ''); 
-    if (user?.role !== 'Admin') {
+    if (user?.role === 'Admin') {
+      setActiveItem('war-room');
+    } else if (user?.role === 'Teacher') {
       setActiveItem('teacher');
+    } else {
+      setActiveItem('archive');
     }
   }} />;
 
