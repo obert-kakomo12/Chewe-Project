@@ -11,6 +11,7 @@ import { WelfareModule } from './welfare/welfare.module';
 import { DocumentsModule } from './documents/documents.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuthModule } from './auth/auth.module';
+import { AiModule } from './ai/ai.module';
 
 import { DashboardModule } from './dashboard/dashboard.module';
 
@@ -27,6 +28,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     DocumentsModule,
     SettingsModule,
     DashboardModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

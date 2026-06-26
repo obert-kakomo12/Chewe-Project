@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Printer, FileSpreadsheet, CheckCircle, Clock } from 'lucide-react';
+import { FileText, Download, Printer, FileSpreadsheet, CheckCircle, Clock, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from './config';
 
 const statusBadge = (status) => {
@@ -11,6 +11,29 @@ const statusBadge = (status) => {
 const ReportingDocumentation = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [aiComments, setAiComments] = useState({});
+  const [generatingId, setGeneratingId] = useState(null);
+
+  const generateAiComment = async (report) => {
+    if (aiComments[report.id]) return; // already generated
+    setGeneratingId(report.id);
+    try {
+      const res = await fetch(`${API_BASE_URL}/ai/report-comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify(report)
+      });
+      const data = await res.json();
+      setAiComments(prev => ({...prev, [report.id]: data.response}));
+    } catch (err) {
+      console.error('AI Error:', err);
+      setAiComments(prev => ({...prev, [report.id]: 'Error generating AI comment.'}));
+    }
+    setGeneratingId(null);
+  };
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/documents/reports`, {
@@ -84,30 +107,58 @@ const ReportingDocumentation = () => {
             reports.map(r => {
               const badge = statusBadge(r.status);
               return (
-                <tr key={r.id}>
-                  <td style={{ fontWeight: 600 }}>{r.id}</td>
-                  <td style={{ fontWeight: 500 }}>{r.name}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{r.type}</td>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{r.date}</td>
-                  <td>
-                    <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700,
-                      background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button className="icon-button" disabled={r.status === 'Generating...'}
-                        style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--accent-blue)' }}>
-                        <Download size={16} />
-                      </button>
-                      <button className="icon-button" disabled={r.status === 'Generating...'}
-                        style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
-                        <Printer size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <React.Fragment key={r.id}>
+                  <tr>
+                    <td style={{ fontWeight: 600 }}>{r.id}</td>
+                    <td style={{ fontWeight: 500 }}>{r.name}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{r.type}</td>
+                    <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{r.date}</td>
+                    <td>
+                      <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700,
+                        background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="icon-button" disabled={generatingId === r.id}
+                          onClick={() => generateAiComment(r)}
+                          style={{ color: generatingId === r.id ? 'var(--text-muted)' : '#8b5cf6', cursor: 'pointer' }} title="Generate AI Comment">
+                          <Sparkles size={16} />
+                        </button>
+                        <button className="icon-button" disabled={r.status === 'Generating...'}
+                          onClick={() => alert(`Downloading ${r.name}...`)}
+                          style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--accent-blue)', cursor: 'pointer' }}>
+                          <Download size={16} />
+                        </button>
+                        <button className="icon-button" disabled={r.status === 'Generating...'}
+                          onClick={() => alert(`Sending ${r.name} to printer...`)}
+                          style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--text-secondary)', cursor: 'pointer' }}>
+                          <Printer size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {aiComments[r.id] && (
+                    <tr className="ai-comment-row">
+                      <td colSpan="6" style={{ padding: '0' }}>
+                        <div className="animate-fade-in" style={{
+                          background: 'linear-gradient(to right, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0.01))',
+                          borderLeft: '4px solid #8b5cf6',
+                          padding: '14px 20px',
+                          display: 'flex', gap: '12px', alignItems: 'flex-start',
+                          borderBottom: '1px solid var(--border-subtle)'
+                        }}>
+                          <Sparkles size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Assistant Comment</div>
+                            <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.5, fontStyle: 'italic' }}>"{aiComments[r.id]}"</div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })
           )}

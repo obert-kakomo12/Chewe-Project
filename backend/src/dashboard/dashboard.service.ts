@@ -142,24 +142,18 @@ export class DashboardService {
       const avg = Math.round(val.sum / val.count);
       const target = 75;
       let status = 'ok';
-      if (avg < 50) status = 'bottleneck';
-      else if (avg < 75) status = 'warning';
-      else if (avg >= 85) status = 'excellent';
-
-      return {
-        topic: name,
-        avg,
-        target,
-        status
-      };
+      if (avg < 60) status = 'bottleneck';
+      else if (avg < target) status = 'warning';
+      else if (avg >= target + 10) status = 'excellent';
+      return { topic: name, avg, target, status };
     });
 
     if (topicData.length === 0) {
       topicData.push(
         { topic: 'Algebra', avg: 82, target: 75, status: 'ok' },
-        { topic: 'Geometry', avg: 45, target: 75, status: 'bottleneck' },
+        { topic: 'Geometry', avg: 54, target: 75, status: 'bottleneck' },
         { topic: 'Grammar', avg: 88, target: 80, status: 'excellent' },
-        { topic: 'Cell Structure', avg: 62, target: 75, status: 'warning' }
+        { topic: 'Mechanics', avg: 70, target: 75, status: 'warning' }
       );
     }
 

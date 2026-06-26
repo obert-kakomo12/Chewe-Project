@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText, X } from 'lucide-react';
+import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText, X, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from './config';
 
 const PRIORITY_BADGE = {
@@ -28,6 +28,29 @@ const WelfareCounseling = () => {
   
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [aiSuggestions, setAiSuggestions] = useState({});
+  const [generatingId, setGeneratingId] = useState(null);
+
+  const generateAiSuggestion = async (log) => {
+    if (log.encrypted || aiSuggestions[log.id]) return;
+    setGeneratingId(log.id);
+    try {
+      const res = await fetch(`${API_BASE_URL}/ai/counseling-suggestion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify(log)
+      });
+      const responseData = await res.json();
+      setAiSuggestions(prev => ({...prev, [log.id]: responseData.response}));
+    } catch (err) {
+      console.error('AI Error:', err);
+      setAiSuggestions(prev => ({...prev, [log.id]: 'Error generating AI suggestion. Please try again.'}));
+    }
+    setGeneratingId(null);
+  };
 
   const [selectedCase, setSelectedCase] = useState(null);
   const [aiSuggestion, setAiSuggestion] = useState(null);
@@ -235,28 +258,56 @@ const WelfareCounseling = () => {
                   filteredLogs.map(log => {
                     const pb = PRIORITY_BADGE[log.priority] || PRIORITY_BADGE.Medium;
                     return (
-                      <tr key={log.id}>
-                        <td style={{ fontWeight: 600 }}>{log.id}</td>
-                        <td style={{ fontWeight: 500 }}>{log.student}</td>
-                        <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.trigger}</td>
-                        <td>
-                          <span style={{ padding: '2px 9px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700,
-                            background: pb.bg, color: pb.color, border: `1px solid ${pb.border}` }}>
-                            {log.priority}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: '0.85rem' }}>{log.type}</td>
-                        <td>
-                          {log.encrypted
-                            ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}><Lock size={11} /> Encrypted</span>
-                            : <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.72rem' }}><EyeOff size={11} /> Standard</span>}
-                        </td>
-                        <td>
-                          <button onClick={() => handleSelectCase(log)} className="icon-button" style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                            <Search size={14} /> Analyze
-                          </button>
-                        </td>
-                      </tr>
+                      <React.Fragment key={log.id}>
+                        <tr>
+                          <td style={{ fontWeight: 600 }}>{log.id}</td>
+                          <td style={{ fontWeight: 500 }}>{log.student}</td>
+                          <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.trigger}</td>
+                          <td>
+                            <span style={{ padding: '2px 9px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700,
+                              background: pb.bg, color: pb.color, border: `1px solid ${pb.border}` }}>
+                              {log.priority}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.82rem' }}>{log.type}</td>
+                          <td>
+                            {log.encrypted
+                              ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}><Lock size={11} /> Encrypted</span>
+                              : <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.72rem' }}><EyeOff size={11} /> Standard</span>}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button onClick={() => handleSelectCase(log)} className="icon-button" style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                                <Search size={14} /> Analyze
+                              </button>
+                              <button className="icon-button" disabled={log.encrypted || generatingId === log.id}
+                                onClick={() => generateAiSuggestion(log)}
+                                style={{ color: log.encrypted ? 'var(--text-muted)' : (generatingId === log.id ? 'var(--text-muted)' : '#8b5cf6'), cursor: log.encrypted ? 'not-allowed' : 'pointer' }} title="Generate Predictive AI Suggestion">
+                                <Sparkles size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {aiSuggestions[log.id] && (
+                          <tr className="ai-comment-row">
+                            <td colSpan="7" style={{ padding: '0' }}>
+                              <div className="animate-fade-in" style={{
+                                background: 'linear-gradient(to right, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0.01))',
+                                borderLeft: '4px solid #8b5cf6',
+                                padding: '14px 20px',
+                                display: 'flex', gap: '12px', alignItems: 'flex-start',
+                                borderBottom: '1px solid var(--border-subtle)'
+                              }}>
+                                <Sparkles size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
+                                <div>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Predictive Suggestion</div>
+                                  <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.5, fontStyle: 'italic' }}>"{aiSuggestions[log.id]}"</div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   })
                 )}

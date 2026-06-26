@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, TrendingDown, TrendingUp, AlertTriangle, Activity, Users } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { AlertCircle, TrendingDown, TrendingUp, AlertTriangle, Activity, Users, Sparkles } from 'lucide-react';
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { API_BASE_URL } from './config';
 
 const statusStyle = (status) => ({
@@ -14,6 +14,37 @@ const AnalyticsEngine = () => {
   const [activeTab, setActiveTab] = useState('bottleneck');
   const [data, setData] = useState({ topicData: [], correlationData: [], outliers: [] });
   const [loading, setLoading] = useState(true);
+  const [aiInsight, setAiInsight] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Clear AI insight when tab changes
+  useEffect(() => {
+    setAiInsight(null);
+  }, [activeTab]);
+
+  const generateExecutiveAnalysis = async () => {
+    setAiLoading(true);
+    try {
+      const payload = {
+        tab: activeTab,
+        data: activeTab === 'bottleneck' ? data.topicData : activeTab === 'outliers' ? data.outliers : data.correlationData
+      };
+      const res = await fetch(`${API_BASE_URL}/ai/executive-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const responseData = await res.json();
+      setAiInsight(responseData.response);
+    } catch (err) {
+      console.error('AI Error:', err);
+      setAiInsight('Error generating AI analysis. Please try again.');
+    }
+    setAiLoading(false);
+  };
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/dashboard/analytics`, {
@@ -45,17 +76,36 @@ const AnalyticsEngine = () => {
 
   return (
     <div className="content-area animate-fade-in">
-      <div className="teacher-header">
+      <div className="teacher-header" style={{ marginBottom: '16px' }}>
         <div className="teacher-info">
           <h2>Analytics Engine</h2>
           <p>Curriculum bottlenecks · Outlier detection · Attendance-Z-Score correlation</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <TabBtn id="bottleneck"  label="Bottlenecks" icon={AlertCircle} />
-          <TabBtn id="outliers"    label="Outliers"    icon={Users} />
-          <TabBtn id="correlation" label="Correlation" icon={Activity} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <TabBtn id="bottleneck"  label="Bottlenecks" icon={AlertCircle} />
+            <TabBtn id="outliers"    label="Outliers"    icon={Users} />
+            <TabBtn id="correlation" label="Correlation" icon={Activity} />
+          </div>
+          <button onClick={generateExecutiveAnalysis} disabled={aiLoading || loading} className="primary-button" 
+            style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', padding: '8px 16px', display: 'flex', gap: '8px', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)' }}>
+            <Sparkles size={16} /> {aiLoading ? 'Analyzing Data...' : 'Executive AI Analysis'}
+          </button>
         </div>
       </div>
+
+      {aiInsight && (
+        <div className="glass-panel animate-fade-in" style={{
+          marginBottom: '24px', background: 'linear-gradient(to right, rgba(139, 92, 246, 0.08), rgba(139, 92, 246, 0.02))',
+          borderLeft: '4px solid #8b5cf6', padding: '18px 24px', display: 'flex', gap: '16px', alignItems: 'flex-start'
+        }}>
+          <Sparkles size={22} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Strategic Summary</div>
+            <div style={{ fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{aiInsight}</div>
+          </div>
+        </div>
+      )}
 
       {/* ── Curriculum Bottleneck Detection ───────────────────────────────── */}
       {activeTab === 'bottleneck' && (
@@ -91,7 +141,7 @@ const AnalyticsEngine = () => {
                         isAnimationActive={true}>
                         {data.topicData.map((entry, index) => {
                           const { barColor } = statusStyle(entry.status);
-                          return <cell key={index} fill={barColor} />;
+                          return <Cell key={index} fill={barColor} />;
                         })}
                       </Bar>
                     </BarChart>
