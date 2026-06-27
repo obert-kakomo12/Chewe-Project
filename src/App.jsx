@@ -201,7 +201,7 @@ const pageTitle = {
   'settings':   'Settings & Audit Vault',
 };
 
-const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated, setIsDecrypted }) => {
+const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated, setIsDecrypted, currentUser, globalProfilePic }) => {
   const [isSearchOpen,       setIsSearchOpen]       = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen,       setIsProfileOpen]       = useState(false);
@@ -216,7 +216,7 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <button className="menu-toggle" onClick={() => setIsMobileOpen(true)}><Menu size={22} /></button>
-        <div className="topbar-title">{pageTitle[activeItem] || ''}</div>
+        <div className="topbar-title">{pageTitle[activeItem] || 'My Profile'}</div>
       </div>
 
       <div className="topbar-actions" style={{ position: 'relative' }}>
@@ -256,13 +256,15 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
         {/* Profile */}
         <div style={{ position: 'relative' }}>
           <div className="profile-avatar"
-            onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); }}>
-            OK
+            onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); }}
+            style={globalProfilePic ? { backgroundImage: `url(${globalProfilePic})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : {}}
+          >
+            {globalProfilePic ? '' : (currentUser?.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U')}
           </div>
           {isProfileOpen && (
             <div style={{ position: 'absolute', top: '48px', right: '0', width: '150px', background: '#ffffff', border: '1px solid #d1ddef', borderRadius: '10px', boxShadow: '0 8px 24px rgba(13,31,69,0.15)', zIndex: 50, overflow: 'hidden' }}>
               <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: '#0d1f45' }}
-                onClick={() => { setActiveItem('settings'); setIsProfileOpen(false); }}>My Profile</div>
+                onClick={() => { setActiveItem('profile'); setIsProfileOpen(false); }}>My Profile</div>
               <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: '#0d1f45' }}
                 onClick={() => { setActiveItem('settings'); setIsProfileOpen(false); }}>Settings</div>
               <div style={{ borderTop: '1px solid #e4ecf5', margin: '2px 0' }} />
@@ -532,12 +534,13 @@ const DashboardContent = () => {
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeItem, setActiveItem]           = useState('war-room');
   const [isMobileOpen, setIsMobileOpen]       = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser]         = useState(null);
+  const [globalProfilePic, setGlobalProfilePic] = useState(null);
   const [isDecrypted, setIsDecrypted]         = useState(false);
   const [userEmail, setUserEmail]             = useState('');
-  const [currentUser, setCurrentUser]         = useState(null);
 
   const queryParams = new URLSearchParams(window.location.search);
   const isResetting = queryParams.get('reset') === 'true';
@@ -560,6 +563,7 @@ function App() {
   if (!isAuthenticated) return <LoginScreen onLogin={(user) => { 
     setIsAuthenticated(true); 
     setCurrentUser(user);
+    setGlobalProfilePic(user?.profile_picture || null);
     setUserEmail(user?.email || ''); 
     if (user?.role === 'Admin') {
       setActiveItem('war-room');
@@ -596,6 +600,7 @@ function App() {
       case 'reports':    return <ReportingDocumentation />;
       case 'archive':    return <EducationalArchive />;
       case 'settings':   return <SettingsAudit />;
+      case 'profile':    return <UserProfile setGlobalProfilePic={setGlobalProfilePic} />;
       default: return (
         <div className="content-area">
           <div className="glass-panel" style={{ display: 'flex', height: '200px', alignItems: 'center', justifyContent: 'center' }}>
@@ -617,7 +622,7 @@ function App() {
         <TopBar
           activeItem={activeItem} setIsMobileOpen={setIsMobileOpen}
           setActiveItem={setActiveItem} setIsAuthenticated={setIsAuthenticated}
-          setIsDecrypted={setIsDecrypted}
+          setIsDecrypted={setIsDecrypted} currentUser={currentUser} globalProfilePic={globalProfilePic}
         />
         {renderContent()}
       </main>

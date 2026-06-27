@@ -23,6 +23,9 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   reset_token_expires: string | null;
 
+  @Column({ type: 'longtext', nullable: true })
+  profile_picture: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 }

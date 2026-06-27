@@ -45,4 +45,18 @@ export class UsersService {
   async updatePassword(userId: number, passwordHash: string): Promise<void> {
     await this.usersRepository.update(userId, { password_hash: passwordHash });
   }
+
+  async findById(userId: number): Promise<User | null> {
+    return this.usersRepository.findOneBy({ id: userId });
+  }
+
+  async updateProfile(userId: number, name?: string, profilePicture?: string): Promise<void> {
+    const updateData: Partial<User> = {};
+    if (name !== undefined) updateData.name = name;
+    if (profilePicture !== undefined) updateData.profile_picture = profilePicture;
+    
+    if (Object.keys(updateData).length > 0) {
+      await this.usersRepository.update(userId, updateData);
+    }
+  }
 }

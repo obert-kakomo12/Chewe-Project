@@ -42,7 +42,7 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email };
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, profile_picture: user.profile_picture }
     };
   }
 
@@ -60,7 +60,7 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email };
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, profile_picture: user.profile_picture }
     };
   }
 
