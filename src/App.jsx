@@ -208,6 +208,12 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
 
   return (
     <header className="topbar">
+      {(isNotificationsOpen || isProfileOpen) && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+          onClick={() => { setIsNotificationsOpen(false); setIsProfileOpen(false); }}
+        />
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <button className="menu-toggle" onClick={() => setIsMobileOpen(true)}><Menu size={22} /></button>
         <div className="topbar-title">{pageTitle[activeItem] || ''}</div>
