@@ -255,7 +255,8 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
           </div>
           {isProfileOpen && (
             <div style={{ position: 'absolute', top: '48px', right: '0', width: '150px', background: '#ffffff', border: '1px solid #d1ddef', borderRadius: '10px', boxShadow: '0 8px 24px rgba(13,31,69,0.15)', zIndex: 50, overflow: 'hidden' }}>
-              <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: '#0d1f45' }}>My Profile</div>
+              <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: '#0d1f45' }}
+                onClick={() => { setActiveItem('settings'); setIsProfileOpen(false); }}>My Profile</div>
               <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: '#0d1f45' }}
                 onClick={() => { setActiveItem('settings'); setIsProfileOpen(false); }}>Settings</div>
               <div style={{ borderTop: '1px solid #e4ecf5', margin: '2px 0' }} />
