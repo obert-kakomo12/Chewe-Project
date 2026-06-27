@@ -226,9 +226,17 @@ const AttendanceNotification = () => {
                          : '—'}
                       </td>
                       <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        {status === 'absent' ? 'SMS sent to parent'
+                        {status === 'absent' || status === 'sick' ? (
+                          <a 
+                            href={`https://wa.me/?text=${encodeURIComponent(`Hello, your child ${s.name} was marked ${status} today.`)}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#25D366', color: 'white', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', fontWeight: 600 }}
+                          >
+                            <MessageSquare size={12} /> Message Parent
+                          </a>
+                        )
                          : status === 'late' ? 'Email warning sent'
-                         : status === 'sick' ? 'SMS sent — Medical note requested'
                          : 'N/A'}
                       </td>
                     </tr>

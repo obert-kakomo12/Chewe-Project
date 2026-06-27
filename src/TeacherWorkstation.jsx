@@ -316,6 +316,20 @@ const TeacherWorkstation = () => {
         >
           Attendance Register
         </button>
+        <button 
+          onClick={() => setViewMode('materials')}
+          style={{ 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            border: 'none', 
+            cursor: 'pointer',
+            fontWeight: 500,
+            background: viewMode === 'materials' ? 'var(--accent-blue)' : '#e5e7eb',
+            color: viewMode === 'materials' ? '#fff' : 'var(--text-secondary)'
+          }}
+        >
+          Class Materials
+        </button>
       </div>
 
       {attendanceSubmitted && (
@@ -380,7 +394,7 @@ const TeacherWorkstation = () => {
             })}
           </tbody>
           </table>
-        ) : (
+        ) : viewMode === 'attendance' ? (
           <table className="data-table">
             <thead>
               <tr>
@@ -439,6 +453,40 @@ const TeacherWorkstation = () => {
               ))}
             </tbody>
           </table>
+        ) : (
+          <div style={{ padding: '24px' }}>
+            <h3 style={{ marginTop: 0 }}>Post Class Material</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
+              Paste a Google Drive link to share study materials with {selectedClass}.
+            </p>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const title = e.target.title.value;
+              const link = e.target.link.value;
+              const token = localStorage.getItem('access_token');
+              try {
+                await fetch('http://localhost:3000/materials', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                  body: JSON.stringify({ title, google_drive_link: link, class: selectedClass, posted_by: teacherProfile.name })
+                });
+                alert('Material posted successfully!');
+                e.target.reset();
+              } catch (err) {
+                alert('Failed to post material');
+              }
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.8rem', fontWeight: 600 }}>Title / Description</label>
+                <input name="title" type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }} placeholder="e.g. Chapter 3 Notes" required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.8rem', fontWeight: 600 }}>Google Drive Link</label>
+                <input name="link" type="url" className="mark-input" style={{ width: '100%', textAlign: 'left' }} placeholder="https://drive.google.com/..." required />
+              </div>
+              <button type="submit" className="action-button" style={{ alignSelf: 'flex-start' }}>Post Material</button>
+            </form>
+          </div>
         )}
       </div>
 

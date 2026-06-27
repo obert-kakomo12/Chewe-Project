@@ -1,9 +1,32 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { AssessmentsService } from './assessments.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('assessments')
 export class AssessmentsController {
-  constructor(private readonly assessmentsService: AssessmentsService) {}
+  constructor(
+    private readonly assessmentsService: AssessmentsService,
+    private readonly jwtService: JwtService
+  ) {}
+
+  private extractUserId(authHeader?: string): number {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Not authenticated');
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+      const payload = this.jwtService.verify(token);
+      return payload.sub;
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+
+  @Get('my-marks')
+  async getMyMarks(@Headers('authorization') authHeader?: string) {
+    const userId = this.extractUserId(authHeader);
+    return this.assessmentsService.findMarksByStudentId(userId);
+  }
 
   @Get()
   findAll() {

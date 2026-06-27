@@ -2,13 +2,24 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Assessment } from './entities/assessment.entity';
+import { Grade } from './entities/grade.entity';
 
 @Injectable()
 export class AssessmentsService {
   constructor(
     @InjectRepository(Assessment)
     private assessmentRepository: Repository<Assessment>,
+    @InjectRepository(Grade)
+    private gradeRepository: Repository<Grade>,
   ) {}
+
+  async findMarksByStudentId(studentId: number) {
+    return this.gradeRepository.find({
+      where: { student: { id: studentId } },
+      relations: ['assessment', 'assessment.course'],
+      order: { recorded_at: 'DESC' }
+    });
+  }
 
   async findAll() {
     const assessments = await this.assessmentRepository.find({

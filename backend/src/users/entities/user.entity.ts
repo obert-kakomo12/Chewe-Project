@@ -23,6 +23,12 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   reset_token_expires: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  phone_number: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  parent_id: number | null;
+
   @Column({ type: 'longtext', nullable: true })
   profile_picture: string | null;
 

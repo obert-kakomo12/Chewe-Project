@@ -24,6 +24,7 @@ import ReportingDocumentation  from './ReportingDocumentation';
 import EducationalArchive      from './EducationalArchive';
 import EncryptionBarrier       from './EncryptionBarrier';
 import ResetPasswordScreen     from './ResetPasswordScreen';
+import StudentDashboard        from './StudentDashboard';
 
 const InstitutionalHeatmap = ({ heatmapData }) => (
   <div className="glass-panel hover-lift" style={{ marginTop: '24px' }}>
@@ -120,6 +121,12 @@ const NAV_SECTIONS = [
     ]
   },
   {
+    label: 'Student Portal',
+    items: [
+      { id: 'student-dashboard', label: 'My Dashboard', icon: ClipboardList },
+    ]
+  },
+  {
     label: 'Administration',
     items: [
       { id: 'reports',    label: 'Reporting & Docs',      icon: FileText },
@@ -137,14 +144,14 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, cur
   const filteredSections = NAV_SECTIONS.map(section => ({
     ...section,
     items: section.items.filter(item => {
-      if (isAdmin) return true;
+      if (isAdmin) return item.id !== 'student-dashboard';
       if (isStudent) {
-        return ['pathfinder', 'attendance', 'reports', 'archive'].includes(item.id);
+        return ['student-dashboard', 'archive'].includes(item.id);
       }
       if (isTeacher) {
-        return !['war-room', 'analytics', 'settings'].includes(item.id);
+        return !['war-room', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
       }
-      return !['war-room', 'analytics', 'settings'].includes(item.id);
+      return !['war-room', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
     })
   })).filter(section => section.items.length > 0);
 
@@ -570,7 +577,7 @@ function App() {
     } else if (user?.role === 'Teacher') {
       setActiveItem('teacher');
     } else {
-      setActiveItem('archive');
+      setActiveItem('student-dashboard');
     }
   }} />;
 
@@ -601,6 +608,7 @@ function App() {
       case 'archive':    return <EducationalArchive />;
       case 'settings':   return <SettingsAudit />;
       case 'profile':    return <UserProfile setGlobalProfilePic={setGlobalProfilePic} />;
+      case 'student-dashboard': return <StudentDashboard currentUser={currentUser} />;
       default: return (
         <div className="content-area">
           <div className="glass-panel" style={{ display: 'flex', height: '200px', alignItems: 'center', justifyContent: 'center' }}>
