@@ -16,7 +16,7 @@ export class AssessmentsService {
   async findMarksByStudentId(studentId: number) {
     return this.gradeRepository.find({
       where: { student: { id: studentId } },
-      relations: ['assessment', 'assessment.course'],
+      relations: { assessment: { course: true } },
       order: { recorded_at: 'DESC' }
     });
   }

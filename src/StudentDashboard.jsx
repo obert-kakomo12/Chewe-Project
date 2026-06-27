@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Award, FileText, CheckCircle, Clock } from 'lucide-react';
-import config from './config';
+import { API_BASE_URL } from './config';
 
 const StudentDashboard = ({ currentUser }) => {
   const [marks, setMarks] = useState([]);
@@ -14,9 +14,9 @@ const StudentDashboard = ({ currentUser }) => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         const [marksRes, materialsRes] = await Promise.all([
-          fetch(`${config.API_URL}/assessments/my-marks`, { headers }),
+          fetch(`${API_BASE_URL}/assessments/my-marks`, { headers }),
           // Just fetching all materials for now, could filter by class later
-          fetch(`${config.API_URL}/materials`, { headers }) 
+          fetch(`${API_BASE_URL}/materials`, { headers }) 
         ]);
 
         if (marksRes.ok) setMarks(await marksRes.json());
