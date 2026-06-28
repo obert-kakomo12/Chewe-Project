@@ -1,5 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Subject } from './subject.entity';
+import { ClassRoom } from './class-room.entity';
 
 @Entity('courses')
 export class Course {
@@ -10,14 +12,13 @@ export class Course {
   @JoinColumn({ name: 'teacher_id' })
   teacher: User;
 
-  @Column()
-  subject_name: string;
+  @ManyToOne(() => Subject)
+  @JoinColumn({ name: 'subject_id' })
+  subject: Subject;
 
-  @Column()
-  grade_level: string;
-
-  @Column({ nullable: true })
-  schedule: string;
+  @ManyToOne(() => ClassRoom)
+  @JoinColumn({ name: 'class_room_id' })
+  class_room: ClassRoom;
 
   @CreateDateColumn()
   created_at: Date;

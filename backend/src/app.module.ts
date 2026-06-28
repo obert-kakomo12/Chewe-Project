@@ -16,6 +16,8 @@ import { AiModule } from './ai/ai.module';
 import { MaterialsModule } from './materials/materials.module';
 
 import { DashboardModule } from './dashboard/dashboard.module';
+import { FinanceModule } from './finance/finance.module';
+import { CommunicationsModule } from './communications/communications.module';
 
 // Entities are auto-loaded by DatabaseModule
 
@@ -34,6 +36,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     DashboardModule,
     AiModule,
     MaterialsModule,
+    FinanceModule,
+    CommunicationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

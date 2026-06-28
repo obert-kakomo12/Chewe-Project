@@ -34,4 +34,7 @@ export class User {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @Column({ type: 'int', nullable: true })
+  class_room_id: number | null;
 }

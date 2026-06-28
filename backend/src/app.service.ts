@@ -2,6 +2,8 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { User } from './users/entities/user.entity';
 import { Course } from './academics/entities/course.entity';
+import { Subject } from './academics/entities/subject.entity';
+import { ClassRoom } from './academics/entities/class-room.entity';
 import { Enrollment } from './academics/entities/enrollment.entity';
 import { Assessment } from './assessments/entities/assessment.entity';
 import { Grade } from './assessments/entities/grade.entity';
@@ -81,19 +83,51 @@ export class AppService implements OnModuleInit {
       console.log(`Seeded ${students.length} students.`);
     }
 
+    const subjectRepo = this.dataSource.getRepository(Subject);
+    const classRoomRepo = this.dataSource.getRepository(ClassRoom);
+
+    // Seed Subjects
+    let subject1 = await subjectRepo.findOne({ where: { code: 'MATH' } });
+    if (!subject1) {
+      subject1 = subjectRepo.create({ name: 'Mathematics', code: 'MATH' });
+      await subjectRepo.save(subject1);
+    }
+    let subject2 = await subjectRepo.findOne({ where: { code: 'ENG' } });
+    if (!subject2) {
+      subject2 = subjectRepo.create({ name: 'English Language', code: 'ENG' });
+      await subjectRepo.save(subject2);
+    }
+    let subject3 = await subjectRepo.findOne({ where: { code: 'SCI' } });
+    if (!subject3) {
+      subject3 = subjectRepo.create({ name: 'Integrated Science', code: 'SCI' });
+      await subjectRepo.save(subject3);
+    }
+
+    // Seed ClassRooms
+    let class1 = await classRoomRepo.findOne({ where: { name: 'Form 3A' } });
+    if (!class1) {
+      class1 = classRoomRepo.create({ name: 'Form 3A', grade_level: 'Form 3' });
+      await classRoomRepo.save(class1);
+    }
+    let class2 = await classRoomRepo.findOne({ where: { name: 'Form 4B' } });
+    if (!class2) {
+      class2 = classRoomRepo.create({ name: 'Form 4B', grade_level: 'Form 4' });
+      await classRoomRepo.save(class2);
+    }
+
     // 2. Seed Courses
-    let courses = await courseRepo.find();
+    let courses = await courseRepo.find({ relations: { subject: true, class_room: true } });
     if (courses.length === 0) {
-      const course1 = courseRepo.create({ subject_name: 'Mathematics', grade_level: 'Form 3A', schedule: 'Mon/Wed 08:00 AM', teacher: teacher1 });
-      const course2 = courseRepo.create({ subject_name: 'English Language', grade_level: 'Form 4B', schedule: 'Tue/Thu 10:00 AM', teacher: teacher2 });
-      const course3 = courseRepo.create({ subject_name: 'Integrated Science', grade_level: 'Form 3A', schedule: 'Fri 09:30 AM', teacher: teacher1 });
+      const course1 = courseRepo.create({ subject: subject1, class_room: class1, teacher: teacher1 });
+      const course2 = courseRepo.create({ subject: subject2, class_room: class2, teacher: teacher2 });
+      const course3 = courseRepo.create({ subject: subject3, class_room: class1, teacher: teacher1 });
       courses = await courseRepo.save([course1, course2, course3]);
       console.log('Seeded courses.');
     }
 
-    const course1 = courses.find(c => c.subject_name === 'Mathematics') || courses[0];
-    const course2 = courses.find(c => c.subject_name === 'English Language') || courses[1];
-    const course3 = courses.find(c => c.subject_name === 'Integrated Science') || courses[2];
+    const course1 = courses.find(c => c.subject?.code === 'MATH') || courses[0];
+    const course2 = courses.find(c => c.subject?.code === 'ENG') || courses[1];
+    const course3 = courses.find(c => c.subject?.code === 'SCI') || courses[2];
 
     // 3. Seed Enrollments
     const enrollmentsCount = await enrollRepo.count();

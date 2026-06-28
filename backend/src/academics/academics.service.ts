@@ -5,6 +5,8 @@ import { Course } from './entities/course.entity';
 import { Enrollment } from './entities/enrollment.entity';
 import { User } from '../users/entities/user.entity';
 import { Grade } from '../assessments/entities/grade.entity';
+import { Subject } from './entities/subject.entity';
+import { ClassRoom } from './entities/class-room.entity';
 
 @Injectable()
 export class AcademicsService {
@@ -17,7 +19,31 @@ export class AcademicsService {
     private userRepository: Repository<User>,
     @InjectRepository(Grade)
     private gradeRepository: Repository<Grade>,
+    @InjectRepository(Subject)
+    private subjectRepository: Repository<Subject>,
+    @InjectRepository(ClassRoom)
+    private classRoomRepository: Repository<ClassRoom>,
   ) {}
+
+  // Subjects
+  async createSubject(data: Partial<Subject>): Promise<Subject> {
+    const subject = this.subjectRepository.create(data);
+    return this.subjectRepository.save(subject);
+  }
+
+  async findAllSubjects(): Promise<Subject[]> {
+    return this.subjectRepository.find();
+  }
+
+  // ClassRooms
+  async createClassRoom(data: Partial<ClassRoom>): Promise<ClassRoom> {
+    const cr = this.classRoomRepository.create(data);
+    return this.classRoomRepository.save(cr);
+  }
+
+  async findAllClassRooms(): Promise<ClassRoom[]> {
+    return this.classRoomRepository.find({ relations: { class_teacher: true } });
+  }
 
   async getPathfinderData() {
     // 1. Fetch all students
