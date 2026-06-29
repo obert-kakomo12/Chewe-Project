@@ -289,7 +289,12 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
               )}
               <div style={{ borderTop: '1px solid #e4ecf5', margin: '2px 0' }} />
               <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: 'var(--status-danger)', fontWeight: 600 }}
-                onClick={() => { setIsAuthenticated(false); setIsDecrypted(false); }}>Log Out</div>
+                onClick={() => { 
+                  localStorage.removeItem('access_token');
+                  localStorage.removeItem('currentUser');
+                  setIsAuthenticated(false); 
+                  setIsDecrypted(false); 
+                }}>Log Out</div>
             </div>
           )}
         </div>
@@ -554,13 +559,27 @@ const DashboardContent = () => {
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 function App() {
-  const [activeItem, setActiveItem]           = useState('war-room');
-  const [isMobileOpen, setIsMobileOpen]       = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser]         = useState(null);
-  const [globalProfilePic, setGlobalProfilePic] = useState(null);
-  const [isDecrypted, setIsDecrypted]         = useState(false);
-  const [userEmail, setUserEmail]             = useState('');
+  const [activeItem, setActiveItem] = useState(() => localStorage.getItem('activeItem') || 'war-room');
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('access_token'));
+  
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [globalProfilePic, setGlobalProfilePic] = useState(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    return savedUser ? JSON.parse(savedUser).profile_picture || null : null;
+  });
+  const [isDecrypted, setIsDecrypted] = useState(false);
+  const [userEmail, setUserEmail] = useState(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    return savedUser ? JSON.parse(savedUser).email || '' : '';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('activeItem', activeItem);
+  }, [activeItem]);
 
   const queryParams = new URLSearchParams(window.location.search);
   const isResetting = queryParams.get('reset') === 'true';

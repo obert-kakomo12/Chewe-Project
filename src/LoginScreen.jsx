@@ -68,6 +68,9 @@ const LoginScreen = ({ onLogin }) => {
         if (data.access_token) {
           localStorage.setItem('access_token', data.access_token);
         }
+        if (data.user) {
+          localStorage.setItem('currentUser', JSON.stringify(data.user));
+        }
         setTimeout(() => {
           onLogin(data.user);
         }, 800);
