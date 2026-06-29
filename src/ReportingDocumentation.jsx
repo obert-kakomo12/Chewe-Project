@@ -66,18 +66,18 @@ const ReportingDocumentation = () => {
     <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', marginBottom: '24px' }}>
       <div className="glass-panel metric-card hover-lift">
         <div className="metric-header"><span>Statutory Compliance</span><CheckCircle size={17} /></div>
-        <div className="metric-value">100%</div>
-        <div className="metric-trend trend-up"><span>All Term 1 returns filed</span></div>
+        <div className="metric-value">0%</div>
+        <div className="metric-trend trend-up"><span>No returns filed yet</span></div>
       </div>
       <div className="glass-panel metric-card hover-lift">
         <div className="metric-header"><span>Active Compilations</span><Clock size={17} /></div>
-        <div className="metric-value">3</div>
-        <div className="metric-trend" style={{ color: 'var(--status-warning)' }}><span>Transcripts processing…</span></div>
+        <div className="metric-value">0</div>
+        <div className="metric-trend" style={{ color: 'var(--status-warning)' }}><span>No active processes</span></div>
       </div>
       <div className="glass-panel metric-card hover-lift">
         <div className="metric-header"><span>Data Sources Linked</span><FileSpreadsheet size={17} /></div>
-        <div className="metric-value">14</div>
-        <div className="metric-trend trend-up"><span>Assessment, Attendance &amp; Welfare</span></div>
+        <div className="metric-value">0</div>
+        <div className="metric-trend trend-up"><span>No sources linked yet</span></div>
       </div>
     </div>
 

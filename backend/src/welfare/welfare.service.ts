@@ -44,19 +44,19 @@ export class WelfareService {
 
     // Calculate mean and stddev of all grades
     const scores = allGrades.map(g => g.score);
-    const mean = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 70;
-    const variance = scores.length > 1 ? scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (scores.length - 1) : 225;
-    const stdDev = Math.sqrt(variance) || 15;
+    const mean = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const variance = scores.length > 1 ? scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (scores.length - 1) : 0;
+    const stdDev = Math.sqrt(variance) || 0;
 
     // Student performance details
     const studentStats = students.map(student => {
       const studentGrades = allGrades.filter(g => g.student?.id === student.id);
-      const studentAvg = studentGrades.length > 0 ? studentGrades.reduce((a, b) => a + b.score, 0) / studentGrades.length : 70;
-      const zScore = parseFloat(((studentAvg - mean) / stdDev).toFixed(2));
+      const studentAvg = studentGrades.length > 0 ? studentGrades.reduce((a, b) => a + b.score, 0) / studentGrades.length : 0;
+      const zScore = stdDev === 0 ? 0 : parseFloat(((studentAvg - mean) / stdDev).toFixed(2));
       
       const studentAtt = allAtt.filter(a => a.student?.id === student.id);
       const presentCount = studentAtt.filter(a => a.status === 'Present' || a.status === 'Late').length;
-      const attendancePct = studentAtt.length > 0 ? Math.round((presentCount / studentAtt.length) * 100) : 95;
+      const attendancePct = studentAtt.length > 0 ? Math.round((presentCount / studentAtt.length) * 100) : 0;
 
       return {
         student,
@@ -129,7 +129,7 @@ export class WelfareService {
     const studentGrades = await gradeRepo.find({ where: { student: { id: log.student.id } } });
     const avgScore = studentGrades.length > 0 
       ? studentGrades.reduce((sum, g) => sum + g.score, 0) / studentGrades.length 
-      : 70;
+      : 0;
 
     let stressor = 'Transition Adjustment';
     let recommendation = 'Provide cognitive guidance and routine progress monitoring.';

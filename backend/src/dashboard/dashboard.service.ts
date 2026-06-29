@@ -68,20 +68,17 @@ export class DashboardService {
     }
 
     if (alerts.length === 0) {
-      alerts.push(
-        { id: 'ALT-1', type: 'critical', title: 'Trauma Triage Flag', message: 'Tendai Moyo: >15% drop in math marks. High priority counseling referral.', time: '5 mins ago' },
-        { id: 'ALT-2', type: 'warning', title: 'Slow Drift Alert', message: 'Rufaro Sibanda: 3 consecutive Friday absences detected.', time: '12 mins ago' }
-      );
+      // No dummy alerts
     }
 
     // 5. Longitudinal Z-Score Cohort F3 for dashboard chart
     const performanceData = [
-      { term: 'Form 1 Term 1', zScore: -0.15 },
-      { term: 'Form 1 Term 2', zScore: -0.05 },
-      { term: 'Form 2 Term 1', zScore: 0.12 },
-      { term: 'Form 2 Term 2', zScore: 0.20 },
-      { term: 'Form 3 Term 1', zScore: 0.35 },
-      { term: 'Form 3 Term 2', zScore: avgZ }
+      { term: 'Form 1 Term 1', zScore: 0 },
+      { term: 'Form 1 Term 2', zScore: 0 },
+      { term: 'Form 2 Term 1', zScore: 0 },
+      { term: 'Form 2 Term 2', zScore: 0 },
+      { term: 'Form 3 Term 1', zScore: 0 },
+      { term: 'Form 3 Term 2', zScore: 0 }
     ];
 
     // 6. Color-Coded Institutional Heatmap (Columns = Subjects, Rows = Classes)
@@ -91,15 +88,13 @@ export class DashboardService {
     
     classesList.forEach(cls => {
       subjectsList.forEach(subj => {
-        let avg = 72; // default Amber
+        let avg = 0; // default 0 for empty database
         if (cls === 'Form 3A' && subj === 'Maths') {
-          avg = 82; // Emerald
+          avg = 0;
         } else if (cls === 'Form 4B' && subj === 'Physics') {
-          avg = 45; // Crimson
+          avg = 0;
         } else {
-          // Deterministic generation
-          const code = cls.charCodeAt(cls.length - 1) + subj.charCodeAt(0);
-          avg = 48 + (code % 38); 
+          avg = 0; 
         }
         heatmapData.push({ class: cls, subject: subj, avg });
       });
@@ -149,12 +144,7 @@ export class DashboardService {
     });
 
     if (topicData.length === 0) {
-      topicData.push(
-        { topic: 'Algebra', avg: 82, target: 75, status: 'ok' },
-        { topic: 'Geometry', avg: 54, target: 75, status: 'bottleneck' },
-        { topic: 'Grammar', avg: 88, target: 80, status: 'excellent' },
-        { topic: 'Mechanics', avg: 70, target: 75, status: 'warning' }
-      );
+      // No dummy data
     }
 
     // Correlation
@@ -203,13 +193,7 @@ export class DashboardService {
     });
 
     if (correlationData.length === 0) {
-      correlationData.push(
-        { attendance: 98, avgZ: 1.4 },
-        { attendance: 95, avgZ: 0.9 },
-        { attendance: 88, avgZ: 0.1 },
-        { attendance: 75, avgZ: -0.9 },
-        { attendance: 60, avgZ: -1.5 }
-      );
+      // No dummy data
     }
 
     // Outliers deviating significantly
@@ -224,10 +208,7 @@ export class DashboardService {
     }).filter(o => o.status === 'high' || o.status === 'low');
 
     if (outliers.length === 0) {
-      outliers.push(
-        { name: 'Nyasha Mandaza', subject: 'Mathematics', status: 'high', zScore: 1.8 },
-        { name: 'Tendai Moyo', subject: 'English Language', status: 'low', zScore: -1.6 }
-      );
+      // No dummy data
     }
 
     return {

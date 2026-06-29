@@ -490,7 +490,7 @@ const TeacherWorkstation = () => {
                     <td>
                       <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600 }}>FULL</span>
                     </td>
-                    <td>{Math.floor(Math.random() * 40 + 40)}%</td>
+                    <td>0%</td>
                   </tr>
                 ))}
               </tbody>
