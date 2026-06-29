@@ -5,6 +5,8 @@ import { API_BASE_URL } from './config';
 const StudentDashboard = ({ currentUser }) => {
   const [marks, setMarks] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [information, setInformation] = useState([]);
+  const [marksError, setMarksError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,14 +15,25 @@ const StudentDashboard = ({ currentUser }) => {
         const token = localStorage.getItem('access_token');
         const headers = { 'Authorization': `Bearer ${token}` };
 
-        const [marksRes, materialsRes] = await Promise.all([
+        const [marksRes, materialsRes, infoRes] = await Promise.all([
           fetch(`${API_BASE_URL}/assessments/my-marks`, { headers }),
-          // Just fetching all materials for now, could filter by class later
-          fetch(`${API_BASE_URL}/materials`, { headers }) 
+          fetch(`${API_BASE_URL}/materials`, { headers }),
+          fetch(`${API_BASE_URL}/communications/student-feed`, { 
+            method: 'POST', 
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ classRoomId: currentUser?.class_room_id || null, courseIds: [] })
+          })
         ]);
 
-        if (marksRes.ok) setMarks(await marksRes.json());
+        if (marksRes.ok) {
+          setMarks(await marksRes.json());
+        } else if (marksRes.status === 401 || marksRes.status === 403) {
+          const errData = await marksRes.json();
+          setMarksError(errData.message || 'Your results have been withheld. Please contact administration regarding your fee balance.');
+        }
+
         if (materialsRes.ok) setMaterials(await materialsRes.json());
+        if (infoRes.ok) setInformation(await infoRes.json());
       } catch (error) {
         console.error('Failed to fetch student data:', error);
       } finally {
@@ -53,7 +66,15 @@ const StudentDashboard = ({ currentUser }) => {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {marks.length === 0 ? (
+            {marksError ? (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '20px', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ color: '#ef4444', marginBottom: '8px' }}>
+                  <Award size={32} style={{ opacity: 0.5 }} />
+                </div>
+                <h4 style={{ color: '#991b1b', margin: '0 0 8px 0', fontSize: '1.05rem' }}>Results Withheld</h4>
+                <p style={{ color: '#b91c1c', fontSize: '0.9rem', margin: 0 }}>{marksError}</p>
+              </div>
+            ) : marks.length === 0 ? (
               <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No assessments graded yet.</p>
             ) : (
               marks.map(mark => (
@@ -105,6 +126,33 @@ const StudentDashboard = ({ currentUser }) => {
                     </div>
                   </div>
                 </a>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Information & Rules Section */}
+        <div className="glass-panel hover-lift" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: 'rgba(245,158,11,0.1)', padding: '10px', borderRadius: '8px', color: '#f59e0b' }}>
+              <FileText size={20} />
+            </div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0d1f45', margin: 0 }}>School Rules & Announcements</h3>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+            {information.length === 0 ? (
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No new announcements or rules posted.</p>
+            ) : (
+              information.map(info => (
+                <div key={info.id} style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', borderLeft: info.type === 'RULE' ? '4px solid #ef4444' : '4px solid #3b82f6' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: info.type === 'RULE' ? '#ef4444' : '#3b82f6' }}>{info.target_level} {info.type}</span>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{new Date(info.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', color: '#1e293b' }}>{info.title}</h4>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: 0, whiteSpace: 'pre-line' }}>{info.content}</p>
+                </div>
               ))
             )}
           </div>

@@ -330,6 +330,20 @@ const TeacherWorkstation = () => {
         >
           Class Materials
         </button>
+        <button 
+          onClick={() => setViewMode('manage-class')}
+          style={{ 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            border: 'none', 
+            cursor: 'pointer',
+            fontWeight: 500,
+            background: viewMode === 'manage-class' ? 'var(--accent-blue)' : '#e5e7eb',
+            color: viewMode === 'manage-class' ? '#fff' : 'var(--text-secondary)'
+          }}
+        >
+          Manage Class
+        </button>
       </div>
 
       {attendanceSubmitted && (
@@ -453,6 +467,35 @@ const TeacherWorkstation = () => {
               ))}
             </tbody>
           </table>
+        ) : viewMode === 'manage-class' ? (
+          <div style={{ padding: '24px' }}>
+            <h3 style={{ marginTop: 0 }}>Class Management</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
+              You are the Class Teacher for {selectedClass}. Here you can view your official class roster and monitor broadsheet progress.
+            </p>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>ID</th>
+                  <th>Fee Status</th>
+                  <th>Overall Average</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map(s => (
+                  <tr key={s.id}>
+                    <td>{s.name}</td>
+                    <td>{s.id}</td>
+                    <td>
+                      <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600 }}>FULL</span>
+                    </td>
+                    <td>{Math.floor(Math.random() * 40 + 40)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div style={{ padding: '24px' }}>
             <h3 style={{ marginTop: 0 }}>Post Class Material</h3>

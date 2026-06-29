@@ -15,6 +15,7 @@ import TeacherWorkstation     from './TeacherWorkstation';
 import LoginScreen             from './LoginScreen';
 import Pathfinder              from './Pathfinder';
 import AnalyticsEngine         from './AnalyticsEngine';
+import ExecutiveOperations       from './ExecutiveOperations';
 import SettingsAudit           from './SettingsAudit';
 import AssessmentManagement    from './AssessmentManagement';
 import AttendanceNotification  from './AttendanceNotification';
@@ -102,6 +103,7 @@ const NAV_SECTIONS = [
     label: 'Overview',
     items: [
       { id: 'war-room',   label: 'Executive War Room',    icon: LayoutDashboard },
+      { id: 'executive-ops', label: 'Executive Operations', icon: Users },
       { id: 'analytics',  label: 'Analytics Engine',     icon: LineChart },
     ]
   },
@@ -149,9 +151,9 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, cur
         return ['student-dashboard', 'archive'].includes(item.id);
       }
       if (isTeacher) {
-        return !['war-room', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
+        return !['war-room', 'executive-ops', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
       }
-      return !['war-room', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
+      return !['war-room', 'executive-ops', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
     })
   })).filter(section => section.items.length > 0);
 
@@ -197,6 +199,7 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, cur
 // ─── Topbar ───────────────────────────────────────────────────────────────────
 const pageTitle = {
   'war-room':   'Executive War Room',
+  'executive-ops': 'Executive Operations',
   'analytics':  'Analytics Engine',
   'teacher':    'Teacher Workstation',
   'assessment': 'Assessment Management',
@@ -582,7 +585,7 @@ function App() {
   }} />;
 
   const renderContent = () => {
-    const executiveViews = ['war-room', 'analytics', 'settings'];
+    const executiveViews = ['war-room', 'executive-ops', 'analytics', 'settings'];
     if (executiveViews.includes(activeItem)) {
       if (currentUser?.role !== 'Admin') {
         return (
@@ -598,6 +601,7 @@ function App() {
 
     switch (activeItem) {
       case 'war-room':   return <DashboardContent />;
+      case 'executive-ops': return <ExecutiveOperations />;
       case 'teacher':    return <TeacherWorkstation />;
       case 'assessment': return <AssessmentManagement />;
       case 'attendance': return <AttendanceNotification />;
