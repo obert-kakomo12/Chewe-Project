@@ -143,19 +143,26 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, cur
   const isStudent = currentUser?.role === 'Student';
   const isTeacher = currentUser?.role === 'Teacher';
 
-  const filteredSections = NAV_SECTIONS.map(section => ({
-    ...section,
-    items: section.items.filter(item => {
-      if (isAdmin) return item.id !== 'student-dashboard';
-      if (isStudent) {
-        return ['student-dashboard', 'archive'].includes(item.id);
-      }
-      if (isTeacher) {
+  const filteredSections = NAV_SECTIONS.map(section => {
+    let sectionLabel = section.label;
+    if (section.label === 'Administration' && isStudent) {
+      sectionLabel = 'Past Records';
+    }
+    return {
+      ...section,
+      label: sectionLabel,
+      items: section.items.filter(item => {
+        if (isAdmin) return item.id !== 'student-dashboard';
+        if (isStudent) {
+          return ['student-dashboard', 'archive'].includes(item.id);
+        }
+        if (isTeacher) {
+          return !['war-room', 'executive-ops', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
+        }
         return !['war-room', 'executive-ops', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
-      }
-      return !['war-room', 'executive-ops', 'analytics', 'settings', 'student-dashboard'].includes(item.id);
-    })
-  })).filter(section => section.items.length > 0);
+      })
+    };
+  }).filter(section => section.items.length > 0);
 
   return (
   <>
