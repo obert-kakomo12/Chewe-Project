@@ -1,0 +1,10 @@
+username: root
+password: Chewetech4321
+
+ Control Panel (https://new.contabo.com)
+password: Chewetech4321#
+
+
+IP Address: 13.140.177.98
+
+IPv6: 2a02:c207:2336:8470:0000:0000:0000:0001/64

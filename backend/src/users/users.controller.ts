@@ -68,4 +68,14 @@ export class UsersController {
     await this.usersService.updatePassword(userId, hash);
     return { success: true, message: 'Password updated successfully' };
   }
+
+  @Get('staff')
+  async getStaff(@Headers('authorization') authHeader?: string) {
+    const userId = this.extractUserId(authHeader);
+    const user = await this.usersService.findById(userId);
+    if (!user || user.role !== 'Executive') {
+      throw new UnauthorizedException('Only Executives can view the staff roster');
+    }
+    return this.usersService.findStaff();
+  }
 }

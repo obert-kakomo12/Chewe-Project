@@ -59,4 +59,10 @@ export class UsersService {
       await this.usersRepository.update(userId, updateData);
     }
   }
+
+  async findStaff(): Promise<User[]> {
+    return this.usersRepository.createQueryBuilder('user')
+      .where("user.role != 'Student'")
+      .getMany();
+  }
 }

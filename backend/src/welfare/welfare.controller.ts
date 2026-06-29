@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { WelfareService } from './welfare.service';
 
 @Controller('welfare')
@@ -10,8 +10,13 @@ export class WelfareController {
     return this.welfareService.getDashboardData();
   }
 
-  @Get('predictive-suggestions/:id')
-  getPredictiveSuggestions(@Param('id') id: string) {
-    return this.welfareService.getPredictiveSuggestions(+id);
+  @Get('predictive/:logId')
+  getPredictiveSuggestions(@Param('logId') logId: string) {
+    return this.welfareService.getPredictiveSuggestions(+logId);
+  }
+
+  @Get('sponsorship-pipeline')
+  getSponsorshipPipeline() {
+    return this.welfareService.getSponsorshipPipeline();
   }
 }

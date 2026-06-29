@@ -1,11 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Headers, UnauthorizedException, Query } from '@nestjs/common';
 import { AssessmentsService } from './assessments.service';
+import { FinanceService } from '../finance/finance.service';
 import { JwtService } from '@nestjs/jwt';
 
 @Controller('assessments')
 export class AssessmentsController {
   constructor(
     private readonly assessmentsService: AssessmentsService,
+    private readonly financeService: FinanceService,
     private readonly jwtService: JwtService
   ) {}
 
@@ -23,8 +25,12 @@ export class AssessmentsController {
   }
 
   @Get('my-marks')
-  async getMyMarks(@Headers('authorization') authHeader?: string) {
+  async getMyMarks(@Headers('authorization') authHeader?: string, @Query('term') term?: string, @Query('year') year?: number) {
     const userId = this.extractUserId(authHeader);
+    const feeStatus = await this.financeService.getFeeStatusForStudent(userId, term || 'Term 1', year || new Date().getFullYear());
+    if (feeStatus && feeStatus.status === 'ARREARS') {
+      throw new UnauthorizedException('Your results have been withheld. Please contact the administration regarding your fee balance.');
+    }
     return this.assessmentsService.findMarksByStudentId(userId);
   }
 

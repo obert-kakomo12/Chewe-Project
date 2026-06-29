@@ -6,6 +6,8 @@ import { GuidanceResource } from './entities/guidance-resource.entity';
 import { User } from '../users/entities/user.entity';
 import { Grade } from '../assessments/entities/grade.entity';
 import { AttendanceRecord } from '../attendance/entities/attendance-record.entity';
+import { WelfareProfile } from './entities/welfare-profile.entity';
+import { TermFeeStatus } from '../finance/entities/term-fee-status.entity';
 
 @Injectable()
 export class WelfareService {
@@ -161,5 +163,31 @@ export class WelfareService {
       recommendation,
       successRate
     };
+  }
+
+  async getSponsorshipPipeline() {
+    const welfareProfileRepo = this.dataSource.getRepository(WelfareProfile);
+    const feeStatusRepo = this.dataSource.getRepository(TermFeeStatus);
+
+    const profiles = await welfareProfileRepo.find({
+      relations: { student: true }
+    });
+
+    const pipeline: WelfareProfile[] = [];
+    for (const p of profiles) {
+      if (p.confidence_index >= 75) {
+        if (p.financial_need_flag || p.beam_status === 'Eligible' || p.beam_status === 'Applied') {
+          pipeline.push(p);
+        } else {
+          const feeStatus = await feeStatusRepo.findOne({
+            where: { student: { id: p.student.id }, status: 'ARREARS' }
+          });
+          if (feeStatus) {
+            pipeline.push(p);
+          }
+        }
+      }
+    }
+    return pipeline;
   }
 }
