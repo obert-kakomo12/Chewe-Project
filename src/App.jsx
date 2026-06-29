@@ -26,6 +26,7 @@ import EducationalArchive      from './EducationalArchive';
 import EncryptionBarrier       from './EncryptionBarrier';
 import ResetPasswordScreen     from './ResetPasswordScreen';
 import StudentDashboard        from './StudentDashboard';
+import UserProfile             from './UserProfile';
 
 const InstitutionalHeatmap = ({ heatmapData }) => (
   <div className="glass-panel hover-lift" style={{ marginTop: '24px' }}>
