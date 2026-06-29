@@ -101,7 +101,7 @@ const ExecutiveOperations = () => {
               <div style={{ background: 'rgba(245,158,11,0.1)', padding: '10px', borderRadius: '8px', color: '#f59e0b' }}><Award size={20} /></div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0d1f45', margin: 0 }}>Sponsorship & Bursary Pipeline</h3>
             </div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Auto-generated list of high-potential students (Confidence Index ≥ 75) who require financial assistance (BEAM/Arrears).</p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Auto-generated list of high-potential students (Confidence Index ≥ 75) who require financial assistance.</p>
             
             <table className="data-table">
               <thead>
