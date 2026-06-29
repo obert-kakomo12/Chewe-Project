@@ -55,16 +55,16 @@ const EducationalArchive = () => {
           <p>Cold-storage, triple-safe backup and decadal data retention framework</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '20px', color: 'var(--accent-blue)', fontWeight: 700, fontSize: '0.8rem' }}>
-          <Database size={14} /> 12 TB Total · 99.9% Uptime
+          <Database size={14} /> [Placeholder] 12 TB Total · 99.9% Uptime
         </div>
       </div>
 
       {/* KPI row */}
       <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', margin: '24px 0' }}>
         {[
-          { label: 'Hot Storage (NVMe)', value: '840 GB', color: 'var(--status-success)' },
-          { label: 'Cold Storage A',     value: '2.4 TB', color: 'var(--accent-blue)' },
-          { label: 'Deep Glacier',       value: '8.7 TB', color: '#8b5cf6' },
+          { label: 'Hot Storage (NVMe)', value: '[Placeholder] 840 GB', color: 'var(--status-success)' },
+          { label: 'Cold Storage A',     value: '[Placeholder] 2.4 TB', color: 'var(--accent-blue)' },
+          { label: 'Deep Glacier',       value: '[Placeholder] 8.7 TB', color: '#8b5cf6' },
           { label: 'Cohorts Archived',   value: String(filteredArchives.length), color: 'var(--text-primary)' },
         ].map((m, i) => (
           <div key={i} className="glass-panel metric-card hover-lift">
