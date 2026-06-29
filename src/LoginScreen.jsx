@@ -35,19 +35,8 @@ const LoginScreen = ({ onLogin }) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
         
-        if (data.resetLink) {
-          setSuccess(
-            <div>
-              Reset link generated: <br />
-              <a href={data.resetLink} style={{ color: '#60a5fa', textDecoration: 'underline', fontWeight: 'bold', wordBreak: 'break-all' }}>
-                Click here to reset password
-              </a>
-            </div>
-          );
-        } else {
-          setSuccess('If the email exists, a reset link has been sent!');
-          setTimeout(() => setIsForgotPassword(false), 3000);
-        }
+        setSuccess('If the email exists, a reset link has been sent!');
+        setTimeout(() => setIsForgotPassword(false), 3000);
       } catch (err) {
         setError(err.message);
       } finally {

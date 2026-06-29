@@ -127,8 +127,7 @@ export class AuthService {
     }
 
     return { 
-      message: 'If that email exists, a reset link has been sent.',
-      resetLink: resetLink
+      message: 'If that email exists, a reset link has been sent.'
     };
   }
 
