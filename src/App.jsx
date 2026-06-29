@@ -561,7 +561,9 @@ const DashboardContent = () => {
 function App() {
   const [activeItem, setActiveItem] = useState(() => localStorage.getItem('activeItem') || 'war-room');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('access_token'));
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('access_token') && !!localStorage.getItem('currentUser');
+  });
   
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('currentUser');
