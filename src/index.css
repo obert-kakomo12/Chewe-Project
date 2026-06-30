@@ -49,6 +49,14 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+html {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────── */
@@ -65,6 +73,8 @@ body {
   padding: 24px;
   box-shadow: var(--shadow-sm);
   overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hover-lift {
@@ -426,6 +436,8 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   box-shadow: var(--shadow-sm);
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table { width: 100%; border-collapse: collapse; text-align: left; }
@@ -585,7 +597,11 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
 .close-btn:hover { background: rgba(255,255,255,0.35); }
 
 /* ─── Heatmap ────────────────────────────────────────────── */
-.heatmap-grid { overflow-x: auto; }
+.heatmap-grid { 
+  overflow-x: auto; 
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
 .heatmap-table {
   width: 100%;
   border-collapse: separate;
