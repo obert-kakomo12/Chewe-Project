@@ -44,6 +44,7 @@ const AssessmentManagement = () => {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // New Assessment Form states
   const [formSubject, setFormSubject] = useState('Mathematics');
@@ -83,6 +84,9 @@ const AssessmentManagement = () => {
 
   const handleAddAssessment = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
     const newAst = {
       subject: formSubject,
       class: formClass,
@@ -111,6 +115,13 @@ const AssessmentManagement = () => {
       setFormDate(getTodayDateString());
       setFormStatus('Scheduled');
       setFormAvgScore('75');
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Failed to create assessment.');
+    })
+    .finally(() => {
+      setIsSubmitting(false);
     });
   };
 
@@ -126,6 +137,9 @@ const AssessmentManagement = () => {
 
   const handleGradingSubmit = (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
     const assessment = assessments.find(a => a.id === selectedAssessmentId);
     
     fetch(`${API_BASE_URL}/assessments/${assessment.dbId}/grade`, {
@@ -147,6 +161,13 @@ const AssessmentManagement = () => {
       setIsGradeModalOpen(false);
       setGradeValue('');
       setSelectedAssessmentId(null);
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Failed to submit grade.');
+    })
+    .finally(() => {
+      setIsSubmitting(false);
     });
   };
 
@@ -227,19 +248,19 @@ const AssessmentManagement = () => {
                 const badge = statusBadge(a.status);
                 return (
                   <tr key={a.id}>
-                    <td style={{ fontWeight: 700, color: 'var(--accent-blue)' }}>{a.id}</td>
-                    <td style={{ fontWeight: 500 }}>{a.subject}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{a.class}</td>
-                    <td>{a.type}</td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{a.date}</td>
-                    <td style={{ fontWeight: 700 }}>{a.avgScore}</td>
-                    <td>
+                    <td data-label="ID" style={{ fontWeight: 700, color: 'var(--accent-blue)' }}>{a.id}</td>
+                    <td data-label="Subject" style={{ fontWeight: 500 }}>{a.subject}</td>
+                    <td data-label="Class" style={{ color: 'var(--text-secondary)' }}>{a.class}</td>
+                    <td data-label="Type">{a.type}</td>
+                    <td data-label="Date" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{a.date}</td>
+                    <td data-label="Avg Score" style={{ fontWeight: 700 }}>{a.avgScore}</td>
+                    <td data-label="Status">
                       <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700,
                         background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
                         {a.status}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                         {a.status !== 'Graded' && (
                           <button 
@@ -347,7 +368,9 @@ const AssessmentManagement = () => {
                 )}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', justifyContent: 'flex-end' }}>
                   <button type="button" className="secondary-button" onClick={() => setIsNewModalOpen(false)}>Cancel</button>
-                  <button type="submit" className="action-button">Create Assessment</button>
+                  <button type="submit" className="action-button" disabled={isSubmitting}>
+                    {isSubmitting ? 'Creating...' : 'Create Assessment'}
+                  </button>
                 </div>
               </form>
             </div>
@@ -385,7 +408,9 @@ const AssessmentManagement = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', justifyContent: 'flex-end' }}>
                   <button type="button" className="secondary-button" onClick={() => setIsGradeModalOpen(false)}>Cancel</button>
-                  <button type="submit" className="action-button">Save &amp; Grade</button>
+                  <button type="submit" className="action-button" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : 'Save & Grade'}
+                  </button>
                 </div>
               </form>
             </div>

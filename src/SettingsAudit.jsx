@@ -20,8 +20,8 @@ const Toggle = ({ on, onToggle, color }) => (
 );
 
 const SettingsAudit = () => {
-  const [doubleLockEnabled, setDoubleLockEnabled] = useState(true);
-  const [mfaEnabled,        setMfaEnabled]        = useState(true);
+  const [doubleLockEnabled] = useState(false);
+  const [mfaEnabled]        = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,9 +63,9 @@ const SettingsAudit = () => {
                   <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.875rem', color: 'var(--text-primary)', marginBottom: '3px' }}>
                     <Key size={15} color="var(--accent-blue)" /> Double-Lock Welfare
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Encrypts trauma data (requires 2 keys)</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--status-warning)', fontWeight: 600, marginTop: '4px' }}>Feature in Development</div>
                 </div>
-                <Toggle on={doubleLockEnabled} onToggle={() => setDoubleLockEnabled(v => !v)} color="var(--status-success)" />
+                <Toggle on={doubleLockEnabled} onToggle={() => alert('Double-Lock Welfare requires Enterprise encryption module update.')} color="var(--status-success)" />
               </div>
 
               {/* MFA */}
@@ -74,9 +74,9 @@ const SettingsAudit = () => {
                   <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.875rem', color: 'var(--text-primary)', marginBottom: '3px' }}>
                     <Lock size={15} color="var(--accent-blue)" /> MFA Enforcement
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Requires mobile OTP for all staff</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--status-warning)', fontWeight: 600, marginTop: '4px' }}>Feature in Development</div>
                 </div>
-                <Toggle on={mfaEnabled} onToggle={() => setMfaEnabled(v => !v)} color="var(--accent-blue)" />
+                <Toggle on={mfaEnabled} onToggle={() => alert('MFA integration requires backend SMS gateway connection.')} color="var(--accent-blue)" />
               </div>
 
               {/* Brute-force */}
@@ -134,9 +134,9 @@ const SettingsAudit = () => {
               ) : (
                 auditLogs.map(log => (
                   <tr key={log.id}>
-                    <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{log.time}</td>
-                    <td style={{ fontWeight: 600 }}>{log.user}</td>
-                    <td>
+                    <td data-label="Timestamp" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{log.time}</td>
+                    <td data-label="Actor" style={{ fontWeight: 600 }}>{log.user}</td>
+                    <td data-label="Action">
                       <span style={{
                         padding: '3px 9px', borderRadius: '10px',
                         fontSize: '0.68rem', fontWeight: 700,
@@ -147,8 +147,8 @@ const SettingsAudit = () => {
                         {log.action}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{log.details}</td>
-                    <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.ip}</td>
+                    <td data-label="Details" style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{log.details}</td>
+                    <td data-label="IP Address" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.ip}</td>
                   </tr>
                 ))
               )}

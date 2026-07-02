@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Assessment } from './entities/assessment.entity';
 import { Grade } from './entities/grade.entity';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class AssessmentsService {
@@ -11,6 +12,7 @@ export class AssessmentsService {
     private assessmentRepository: Repository<Assessment>,
     @InjectRepository(Grade)
     private gradeRepository: Repository<Grade>,
+    private readonly aiService: AiService,
   ) {}
 
   async findMarksByStudentId(studentId: number) {
@@ -82,35 +84,73 @@ export class AssessmentsService {
   }
 
   async generateAIComment(studentName: string, score: number, userPrompt?: string) {
-    let comment = '';
-    const p = userPrompt?.toLowerCase() || '';
+    const data = {
+      studentName,
+      score,
+      additionalInstructions: userPrompt || 'None'
+    };
+    
+    try {
+      const systemPrompt = "You are a professional administrative assistant for a school. Given a report's details, write a concise, professional, 1-2 sentence summary comment about the report status or contents. Be encouraging but formal.";
+      const aiResponse = await this.aiService.generateReportComment(data);
+      return { comment: aiResponse };
+    } catch (error) {
+      // Fallback in case OpenRouter fails
+      return { comment: `Report generated for ${studentName}. Score: ${score}%. (AI Service unavailable)` };
+    }
+  }
 
-    if (score >= 75) {
-      if (p.includes('encourage') || p.includes('warm') || p.includes('positive')) {
-        comment = `Excellent work, ${studentName}! Your outstanding score of ${score}% shows high dedication and brilliant problem solving. Keep setting this wonderful standard for your classmates!`;
-      } else if (p.includes('exam') || p.includes('final') || p.includes('focus')) {
-        comment = `Superb result of ${score}% by ${studentName}. Highly prepared for the final exams. Focus on solving high-complexity problems to secure the top tier A grade.`;
-      } else {
-        comment = `Demonstrates exceptional aptitude and consistent mastery across all assessment tiers. ${studentName} continues to set the benchmark for the class.`;
-      }
-    } else if (score >= 50) {
-      if (p.includes('encourage') || p.includes('warm') || p.includes('positive')) {
-        comment = `Good job, ${studentName}! With a score of ${score}%, you demonstrate a solid understanding. With a little more revision and confidence, you can definitely achieve an excellent grade next term!`;
-      } else if (p.includes('exam') || p.includes('final') || p.includes('focus')) {
-        comment = `${studentName} scored a solid ${score}%. Recommend targeted revision and practice papers ahead of the end-of-term examinations to strengthen topic accuracy.`;
-      } else {
-        comment = `Shows solid understanding of the subject material. A focused revision strategy heading into the next term will consolidate this progress for ${studentName}.`;
-      }
-    } else {
-      if (p.includes('encourage') || p.includes('warm') || p.includes('positive')) {
-        comment = `Keep trying, ${studentName}. Although your score of ${score}% is below the pass threshold, your efforts are appreciated. Let's work together through remedial sessions to lift this up next term!`;
-      } else if (p.includes('exam') || p.includes('final') || p.includes('focus')) {
-        comment = `Urgent: ${studentName}'s average of ${score}% is below threshold. Focused intervention and exam prep support are mandatory to safeguard the transition pass rate.`;
-      } else {
-        comment = `Performance of ${studentName} is currently below the required threshold. Immediate intervention is recommended — a structured study plan and support sessions should be arranged.`;
-      }
+  async saveBulkMarks(className: string, marks: any[]) {
+    // Check if an overall assessment exists for this class
+    let assessment = await this.assessmentRepository.findOne({
+      where: { class: className, subject: 'Term Report', type: 'End Term' },
+    });
+
+    if (!assessment) {
+      assessment = this.assessmentRepository.create({
+        subject: 'Term Report',
+        class: className,
+        type: 'End Term',
+        date: new Date().toISOString().split('T')[0],
+        status: 'Graded',
+        avgScore: '0',
+      });
+      await this.assessmentRepository.save(assessment);
     }
 
-    return { comment };
+    let sum = 0;
+    let count = 0;
+
+    for (const mark of marks) {
+      const studentId = parseInt(mark.studentId?.toString().replace(/\D/g, '') || '0', 10);
+      if (studentId === 0) continue;
+
+      let grade = await this.gradeRepository.findOne({
+        where: { assessment: { id: assessment.id }, student: { id: studentId } },
+      });
+
+      if (!grade) {
+        grade = this.gradeRepository.create({
+          student: { id: studentId } as any,
+          assessment: { id: assessment.id } as any,
+          score: mark.total,
+          teacher_feedback: `In-Class: ${mark.inClass}, Monthly: ${mark.monthly}, End Term: ${mark.endTerm}`,
+        });
+      } else {
+        grade.score = mark.total;
+        grade.teacher_feedback = `In-Class: ${mark.inClass}, Monthly: ${mark.monthly}, End Term: ${mark.endTerm}`;
+      }
+
+      await this.gradeRepository.save(grade);
+      sum += mark.total;
+      count++;
+    }
+
+    if (count > 0) {
+      assessment.avgScore = Math.round(sum / count).toString() + '%';
+      await this.assessmentRepository.save(assessment);
+    }
+
+    return { success: true, message: 'Marks successfully saved to database.' };
   }
 }

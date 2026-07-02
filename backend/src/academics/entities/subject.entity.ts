@@ -11,6 +11,12 @@ export class Subject {
   @Column()
   code: string;
 
+  @Column({ default: 'O-Level' })
+  level: string;
+
+  @Column({ default: 'General' })
+  stream: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

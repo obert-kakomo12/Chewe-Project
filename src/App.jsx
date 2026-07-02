@@ -223,6 +223,22 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
   const [isSearchOpen,       setIsSearchOpen]       = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen,       setIsProfileOpen]       = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`${API_BASE_URL}/search?q=${searchQuery}`)
+        .then(res => res.json())
+        .then(data => setSearchResults(data))
+        .catch(err => console.error(err));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   return (
     <header className="topbar">
@@ -239,11 +255,38 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
 
       <div className="topbar-actions" style={{ position: 'relative' }}>
         {isSearchOpen ? (
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.12)', borderRadius: '6px', padding: '5px 10px', border: '1px solid rgba(255,255,255,0.2)' }}>
-            <Search size={15} color="rgba(255,255,255,0.7)" />
-            <input autoFocus type="text" placeholder="Search…"
-              style={{ border: 'none', outline: 'none', padding: '3px 8px', fontSize: '0.875rem', width: '140px', background: 'transparent', color: '#ffffff' }} />
-            <button className="icon-button" onClick={() => setIsSearchOpen(false)}><X size={14} /></button>
+          <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.12)', borderRadius: '6px', padding: '5px 10px', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <Search size={15} color="rgba(255,255,255,0.7)" />
+              <input autoFocus type="text" placeholder="Search system..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ border: 'none', outline: 'none', padding: '3px 8px', fontSize: '0.875rem', width: '200px', background: 'transparent', color: '#ffffff' }} />
+              <button className="icon-button" onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }}><X size={14} /></button>
+            </div>
+            {searchResults.length > 0 && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#fff', borderRadius: '8px', boxShadow: 'var(--shadow-lg)', width: '300px', zIndex: 60, overflow: 'hidden', border: '1px solid var(--border-color)', textAlign: 'left' }}>
+                {searchResults.map((r, i) => (
+                  <div key={i} className="hover-lift" style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery('');
+                      let targetRoute = r.link.replace('/', '');
+                      if (targetRoute === 'users') targetRoute = 'executive-ops';
+                      if (targetRoute === 'academics') targetRoute = 'teacher';
+                      if (targetRoute === 'assessments') targetRoute = 'assessment';
+                      setActiveItem(targetRoute);
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f0f4f8'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-blue)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>{r.type}</div>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600 }}>{r.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{r.subtitle}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <button className="icon-button" onClick={() => setIsSearchOpen(true)}><Search size={19} /></button>
@@ -259,13 +302,8 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
           {isNotificationsOpen && (
             <div style={{ position: 'absolute', top: '44px', right: '-10px', width: '290px', background: '#ffffff', border: '1px solid #d1ddef', borderRadius: '10px', boxShadow: '0 8px 24px rgba(13,31,69,0.15)', zIndex: 50, overflow: 'hidden' }}>
               <div style={{ padding: '12px 16px', borderBottom: '1px solid #e4ecf5', fontWeight: 700, fontSize: '0.875rem', color: '#0d1f45' }}>Notifications</div>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #e4ecf5', fontSize: '0.8rem' }}>
-                <div style={{ fontWeight: 600, color: '#0d1f45' }}>Term 2 Reports Ready</div>
-                <div style={{ color: '#4a6080', marginTop: '2px' }}>All assessments fully processed.</div>
-              </div>
-              <div style={{ padding: '12px 16px', fontSize: '0.8rem' }}>
-                <div style={{ fontWeight: 600, color: 'var(--status-danger)' }}>Welfare Alert — High Priority</div>
-                <div style={{ color: '#4a6080', marginTop: '2px' }}>New trauma triage case logged.</div>
+              <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                You have no new notifications.
               </div>
             </div>
           )}
@@ -307,6 +345,7 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
 const DashboardContent = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
   const [aiResponse, setAiResponse] = useState(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -348,9 +387,22 @@ const DashboardContent = () => {
     })
     .catch(err => {
       console.error('Failed to fetch dashboard metrics:', err);
+      setError(true);
       setLoading(false);
     });
   }, []);
+
+  if (error) {
+    return (
+      <div className="content-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <AlertTriangle size={40} color="var(--status-danger)" style={{ marginBottom: '16px' }} />
+          <h2 style={{ color: 'var(--status-danger)', fontSize: '1.2rem', marginBottom: '8px' }}>Connection Error</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Failed to load live database metrics. The backend server might be offline.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || !data) {
     return (

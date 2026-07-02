@@ -1,36 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Save, Download, X, AlertTriangle, UserCheck, PenLine, RefreshCw } from 'lucide-react';
+import { FileText, Save, Download, X, AlertTriangle, UserCheck, PenLine, RefreshCw, Plus } from 'lucide-react';
 import { API_BASE_URL } from './config';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
-// ─── Student generator ────────────────────────────────────────────────────────
-// ... (student generator remains the same)
-const generateStudentsForSubject = (subjectName) => {
-  const hash = subjectName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const fNames = ['Tanaka','Chipo','Farai','Rudo','Tendai','Kudzai','Nyasha','Thabo','Munashe','Rutendo'];
-  const lNames = ['Moyo','Ndlovu','Sibanda','Nyoni','Phiri','Ncube','Dube','Mutasa','Chikore','Banda'];
-  const count = 5 + (hash % 4);
-  return Array.from({ length: count }, (_, i) => ({
-    id:      `CT24-${String(hash % 100).padStart(2,'0')}${i}`,
-    name:    `${fNames[(hash + i) % fNames.length]} ${lNames[(hash + Math.floor(i * 1.5)) % lNames.length]}`,
-    inClass: 0, monthly: 0, endTerm: 0,
-    attendanceStatus: 'Present', attendanceRemark: '',
-  }));
-};
+// Students are fetched from backend
 
-// ─── Curriculum ───────────────────────────────────────────────────────────────
-const CURRICULUM = {
-  'O-Level (Forms 1-4)': {
-    Sciences:    ['Maths','Computer Science','Biology','Chemistry','Physics'],
-    Commercials: ['Commerce','Accounts','Business Studies','Economics','Geography'],
-    Arts:        ['Shona','Ndebele','English','History','Heritage'],
-  },
-  'A-Level (Forms 5-6)': {
-    Sciences:    ['Maths','Computer Science','Biology','Chemistry','Crop Science','Physics'],
-    Commercials: ['Accounts','Business Studies','Economics','Geography'],
-    Arts:        ['Shona','English Literature','Ndebele','History'],
-  },
-};
-
+// Curriculum is now dynamically fetched
 const W_IN_CLASS = 0.20;
 const W_MONTHLY  = 0.30;
 const W_END_TERM = 0.50;
@@ -84,6 +60,78 @@ const TeacherWorkstation = () => {
   const [editedComment,   setEditedComment]   = useState('');
   const [aiInstruction,   setAiInstruction]   = useState('');
   const [adjusting,       setAdjusting]       = useState(false);
+  const [isSubmitting,    setIsSubmitting]    = useState(false);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [newStudentData, setNewStudentData] = useState({ name: '', email: '' });
+  
+  const [masterSubjects, setMasterSubjects] = useState([]);
+  const [masterClassRooms, setMasterClassRooms] = useState([]);
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  React.useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const [subjRes, classRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/academics/subjects`, { headers }),
+          fetch(`${API_BASE_URL}/academics/classrooms`, { headers })
+        ]);
+        if (subjRes.ok) setMasterSubjects(await subjRes.json());
+        if (classRes.ok) setMasterClassRooms(await classRes.json());
+      } catch (err) {
+        console.error('Failed to load curriculum config', err);
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    if (!newStudentData.name || isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/academics/classes/${encodeURIComponent(selectedClass)}/students`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newStudentData.name,
+          email: newStudentData.email || `${newStudentData.name.toLowerCase().replace(/\s+/g, '.')}@chewe.com`
+        })
+      });
+      
+      if (res.ok) {
+        const newStudent = await res.json();
+        setStudents(prev => [...prev, newStudent]);
+        
+        const updatedCache = { ...classDataCache };
+        if (updatedCache[selectedClass]) {
+          updatedCache[selectedClass] = [...updatedCache[selectedClass], newStudent];
+        } else {
+          updatedCache[selectedClass] = [newStudent];
+        }
+        setClassDataCache(updatedCache);
+        
+        alert('Student added successfully!');
+        setIsAddStudentModalOpen(false);
+        setNewStudentData({ name: '', email: '' });
+      } else {
+        alert('Failed to enroll student.');
+      }
+    } catch (err) {
+      console.error('Failed to create backend student account', err);
+      alert('Network error while enrolling student.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleAdjustCommentWithAi = () => {
     if (!reportModalData) return;
@@ -113,7 +161,103 @@ const TeacherWorkstation = () => {
     });
   };
 
-  const availableSubjects = CURRICULUM[setupLevel]?.[setupStream] || [];
+  const handleSaveMarks = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/assessments/marks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          className: selectedClass,
+          marks: processedStudents.map(s => ({
+            studentId: s.dbId || s.id,
+            inClass: s.inClass,
+            monthly: s.monthly,
+            endTerm: s.endTerm,
+            total: s.total
+          }))
+        })
+      });
+      if (res.ok) {
+        alert('Marks saved successfully to the database.');
+      } else {
+        alert('Failed to save marks.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to server.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitRegister = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/attendance/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          className: selectedClass,
+          date: new Date().toISOString(),
+          records: processedStudents.map(s => ({
+            studentId: s.dbId || s.id,
+            status: s.attendanceStatus,
+            remark: s.attendanceRemark
+          }))
+        })
+      });
+      if (res.ok) {
+        setAttendanceSubmitted(true);
+        setTimeout(() => setAttendanceSubmitted(false), 3000);
+      } else {
+        alert('Failed to submit register.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting register.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    const modalElement = document.querySelector('.report-modal');
+    if (!modalElement) return;
+    
+    try {
+      const canvas = await html2canvas(modalElement, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${reportModalData.name.replace(/\s+/g, '_')}_Report.pdf`);
+    } catch (err) {
+      console.error('Failed to generate PDF', err);
+      alert('Failed to generate PDF');
+    }
+  };
+
+  const availableSubjects = masterSubjects
+    .filter(s => s.level === setupLevel && s.stream === setupStream)
+    .map(s => s.name);
 
   const handleSubjectToggle = (s) =>
     setSetupSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
@@ -132,12 +276,26 @@ const TeacherWorkstation = () => {
     handleClassSwitch(classes[0], {});
   };
 
-  const handleClassSwitch = (newClass, currentCache = classDataCache) => {
-    const updatedCache = { ...currentCache };
-    if (selectedClass) updatedCache[selectedClass] = students;
+  const handleClassSwitch = async (newClass, currentCache = classDataCache) => {
     setSelectedClass(newClass);
-    setStudents(updatedCache[newClass] || generateStudentsForSubject(newClass));
-    setClassDataCache(updatedCache);
+    if (currentCache[newClass]) {
+      setStudents(currentCache[newClass]);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/academics/classes/${encodeURIComponent(newClass)}/students`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const fetchedStudents = await res.json();
+        setStudents(fetchedStudents);
+        setClassDataCache({ ...currentCache, [newClass]: fetchedStudents });
+      }
+    } catch (err) {
+      console.error('Failed to fetch class students', err);
+    }
   };
 
   const handleMarkChange = (id, field, value) => {
@@ -191,6 +349,10 @@ const TeacherWorkstation = () => {
   };
 
   // ── Setup screen ────────────────────────────────────────────────────────────
+  if (loadingConfig) {
+    return <div className="content-area" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading Workstation Config...</div>;
+  }
+
   if (!teacherProfile) {
     return (
       <div className="content-area animate-fade-in" style={{ display: 'flex', justifyContent: 'center' }}>
@@ -211,7 +373,8 @@ const TeacherWorkstation = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Academic Level</label>
                 <select className="premium-select" style={{ width: '100%' }} value={setupLevel} onChange={e => handleLevelChange(e.target.value)}>
-                  {Object.keys(CURRICULUM).map(l => <option key={l} value={l}>{l}</option>)}
+                  <option value="O-Level">O-Level</option>
+                  <option value="A-Level">A-Level</option>
                 </select>
               </div>
               <div>
@@ -228,7 +391,10 @@ const TeacherWorkstation = () => {
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Department / Stream</label>
               <select className="premium-select" style={{ width: '100%' }} value={setupStream}
                 onChange={e => { setSetupStream(e.target.value); setSetupSubjects([]); }}>
-                {Object.keys(CURRICULUM[setupLevel]).map(s => <option key={s}>{s}</option>)}
+                <option value="Sciences">Sciences</option>
+                <option value="Commercials">Commercials</option>
+                <option value="Arts">Arts</option>
+                <option value="General">General</option>
               </select>
             </div>
 
@@ -237,6 +403,7 @@ const TeacherWorkstation = () => {
                 Subjects — {setupFormNumber} {setupStream}
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '10px', background: '#f0f4f8', border: '1.5px solid var(--border-color)', padding: '16px', borderRadius: '8px' }}>
+                {availableSubjects.length === 0 && <span style={{fontSize: '0.8rem', color: '#64748b'}}>No subjects found for this stream. Executives must add them.</span>}
                 {availableSubjects.map(subject => (
                   <label key={subject} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
                     <input type="checkbox" checked={setupSubjects.includes(subject)} onChange={() => handleSubjectToggle(subject)}
@@ -275,15 +442,14 @@ const TeacherWorkstation = () => {
             {teacherProfile.subjects.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           {viewMode === 'academics' ? (
-            <button className="action-button"><Save size={16} /> Save Marks</button>
-          ) : (
-            <button className="action-button" onClick={() => {
-              setAttendanceSubmitted(true);
-              setTimeout(() => setAttendanceSubmitted(false), 3000);
-            }}>
-              <Save size={16} /> Submit Register
+            <button className="action-button" onClick={handleSaveMarks} disabled={isSubmitting}>
+              <Save size={16} /> {isSubmitting ? 'Saving...' : 'Save Marks'}
             </button>
-          )}
+          ) : viewMode === 'attendance' ? (
+            <button className="action-button" onClick={handleSubmitRegister} disabled={isSubmitting}>
+              <Save size={16} /> {isSubmitting ? 'Submitting...' : 'Submit Register'}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -374,30 +540,30 @@ const TeacherWorkstation = () => {
                            : 'var(--status-warning)';
               return (
                 <tr key={student.id}>
-                  <td>
+                  <td data-label="Student">
                     <span className="student-name">{student.name}</span>
                     <span className="student-id">{student.id}</span>
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td data-label="In-Class (20%)" style={{ textAlign: 'center' }}>
                     <input type="number" className="mark-input" value={student.inClass || ''}
                       onChange={e => handleMarkChange(student.id, 'inClass', e.target.value)} />
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td data-label="Monthly (30%)" style={{ textAlign: 'center' }}>
                     <input type="number" className="mark-input" value={student.monthly || ''}
                       onChange={e => handleMarkChange(student.id, 'monthly', e.target.value)} />
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td data-label="End Term (50%)" style={{ textAlign: 'center' }}>
                     <input type="number" className="mark-input" value={student.endTerm || ''}
                       onChange={e => handleMarkChange(student.id, 'endTerm', e.target.value)} />
                   </td>
-                  <td style={{ textAlign: 'center' }} className="calc-cell">{student.total}%</td>
-                  <td style={{ textAlign: 'center', fontWeight: 700, color: zColor }}>
+                  <td data-label="Total" style={{ textAlign: 'center' }} className="calc-cell">{student.total}%</td>
+                  <td data-label="Z-Score" style={{ textAlign: 'center', fontWeight: 700, color: zColor }}>
                     {student.zScore > 0 ? '+' : ''}{student.zScore}
                   </td>
-                  <td style={{ textAlign: 'center' }} className="calc-cell">
+                  <td data-label="Rank" style={{ textAlign: 'center' }} className="calc-cell">
                     {student.rank}/{processedStudents.length}
                   </td>
-                  <td>
+                  <td data-label="Report">
                     <button onClick={() => generateReport(student)} className="icon-button"
                       style={{ color: 'var(--accent-blue)', gap: '6px', fontSize: '0.8rem', display: 'flex' }}>
                       <FileText size={16} /> View
@@ -420,11 +586,11 @@ const TeacherWorkstation = () => {
             <tbody>
               {processedStudents.map((student) => (
                 <tr key={student.id}>
-                  <td>
+                  <td data-label="Student Details">
                     <span className="student-name">{student.name}</span>
                     <span className="student-id">{student.id}</span>
                   </td>
-                  <td>
+                  <td data-label="Attendance Status">
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {['Present', 'Absent', 'Late'].map(status => (
                         <button
@@ -453,7 +619,7 @@ const TeacherWorkstation = () => {
                       ))}
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Remarks">
                     <input 
                       type="text" 
                       className="mark-input" 
@@ -469,10 +635,17 @@ const TeacherWorkstation = () => {
           </table>
         ) : viewMode === 'manage-class' ? (
           <div style={{ padding: '24px' }}>
-            <h3 style={{ marginTop: 0 }}>Class Management</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
-              You are the Class Teacher for {selectedClass}. Here you can view your official class roster and monitor broadsheet progress.
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ marginTop: 0 }}>Class Management</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  You are the Class Teacher for {selectedClass}. Here you can view your official class roster and monitor broadsheet progress.
+                </p>
+              </div>
+              <button className="primary-button" onClick={() => setIsAddStudentModalOpen(true)}>
+                <Plus size={16} /> Add Student
+              </button>
+            </div>
             <table className="data-table">
               <thead>
                 <tr>
@@ -485,12 +658,12 @@ const TeacherWorkstation = () => {
               <tbody>
                 {students.map(s => (
                   <tr key={s.id}>
-                    <td>{s.name}</td>
-                    <td>{s.id}</td>
-                    <td>
+                    <td data-label="Student Name">{s.name}</td>
+                    <td data-label="ID">{s.id}</td>
+                    <td data-label="Fee Status">
                       <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600 }}>FULL</span>
                     </td>
-                    <td>0%</td>
+                    <td data-label="Overall Average">0%</td>
                   </tr>
                 ))}
               </tbody>
@@ -504,11 +677,13 @@ const TeacherWorkstation = () => {
             </p>
             <form onSubmit={async (e) => {
               e.preventDefault();
+              if (isSubmitting) return;
+              setIsSubmitting(true);
               const title = e.target.title.value;
               const link = e.target.link.value;
               const token = localStorage.getItem('access_token');
               try {
-                await fetch('http://localhost:3000/materials', {
+                await fetch(`${API_BASE_URL}/materials`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ title, google_drive_link: link, class: selectedClass, posted_by: teacherProfile.name })
@@ -517,6 +692,8 @@ const TeacherWorkstation = () => {
                 e.target.reset();
               } catch (err) {
                 alert('Failed to post material');
+              } finally {
+                setIsSubmitting(false);
               }
             }} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
               <div>
@@ -574,19 +751,19 @@ const TeacherWorkstation = () => {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>In-Class Checkpoints</td><td>20%</td>
-                    <td>{reportModalData.inClass}%</td>
-                    <td>{Math.round(reportModalData.inClass * W_IN_CLASS)}%</td>
+                    <td data-label="Assessment">In-Class Checkpoints</td><td data-label="Weight">20%</td>
+                    <td data-label="Raw">{reportModalData.inClass}%</td>
+                    <td data-label="Contribution">{Math.round(reportModalData.inClass * W_IN_CLASS)}%</td>
                   </tr>
                   <tr>
-                    <td>Monthly / Topic Tests</td><td>30%</td>
-                    <td>{reportModalData.monthly}%</td>
-                    <td>{Math.round(reportModalData.monthly * W_MONTHLY)}%</td>
+                    <td data-label="Assessment">Monthly / Topic Tests</td><td data-label="Weight">30%</td>
+                    <td data-label="Raw">{reportModalData.monthly}%</td>
+                    <td data-label="Contribution">{Math.round(reportModalData.monthly * W_MONTHLY)}%</td>
                   </tr>
                   <tr>
-                    <td>End of Term Examination</td><td>50%</td>
-                    <td>{reportModalData.endTerm}%</td>
-                    <td>{Math.round(reportModalData.endTerm * W_END_TERM)}%</td>
+                    <td data-label="Assessment">End of Term Examination</td><td data-label="Weight">50%</td>
+                    <td data-label="Raw">{reportModalData.endTerm}%</td>
+                    <td data-label="Contribution">{Math.round(reportModalData.endTerm * W_END_TERM)}%</td>
                   </tr>
                   <tr style={{ background: 'var(--accent-blue-light)' }}>
                     <td colSpan="3" style={{ textAlign: 'right', fontWeight: 700 }}>Final Weighted Total:</td>
@@ -607,7 +784,9 @@ const TeacherWorkstation = () => {
                     {reportModalData.requiredVelocity}
                   </strong>
                 </div>
-                <button className="action-button"><Download size={15} /> Export PDF</button>
+                <button className="action-button" onClick={handleDownloadPDF}>
+                  <Download size={15} /> Export PDF
+                </button>
               </div>
 
               {reportModalData.atRisk && (
@@ -676,6 +855,33 @@ const TeacherWorkstation = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Student Modal ────────────────────────────────────────────── */}
+      {isAddStudentModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsAddStudentModalOpen(false)}>
+          <div className="glass-panel animate-fade-in" style={{ width: '400px', background: '#fff' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Add New Student to {selectedClass}</h3>
+              <button className="icon-button" onClick={() => setIsAddStudentModalOpen(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleAddStudent} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Full Name</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={newStudentData.name} onChange={e => setNewStudentData({...newStudentData, name: e.target.value})} required placeholder="e.g. Tendai Moyo" />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Email Address (Optional)</label>
+                <input type="email" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={newStudentData.email} onChange={e => setNewStudentData({...newStudentData, email: e.target.value})} placeholder="Leaves blank for auto-generation" />
+              </div>
+              <button type="submit" className="primary-button" style={{ marginTop: '10px', justifyContent: 'center' }} disabled={isSubmitting}>
+                {isSubmitting ? 'Enrolling...' : 'Create & Enroll Student'}
+              </button>
+            </form>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Printer, FileSpreadsheet, CheckCircle, Clock, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from './config';
+import { jsPDF } from 'jspdf';
 
 const statusBadge = (status) => {
   if (status === 'Generated')    return { bg: '#f0fdf4', color: '#065f46', border: '#6ee7b7' };
@@ -127,7 +128,19 @@ const ReportingDocumentation = () => {
                           <Sparkles size={16} />
                         </button>
                         <button className="icon-button" disabled={r.status === 'Generating...'}
-                          onClick={() => alert(`Downloading ${r.name}...`)}
+                          onClick={() => {
+                            const pdf = new jsPDF();
+                            pdf.text(`Official Report: ${r.name}`, 20, 20);
+                            pdf.text(`ID: ${r.id}`, 20, 30);
+                            pdf.text(`Type: ${r.type}`, 20, 40);
+                            pdf.text(`Date: ${r.date}`, 20, 50);
+                            pdf.text(`Status: ${r.status}`, 20, 60);
+                            if (aiComments[r.id]) {
+                              const splitText = pdf.splitTextToSize(`AI Comment: ${aiComments[r.id]}`, 170);
+                              pdf.text(splitText, 20, 70);
+                            }
+                            pdf.save(`${r.name.replace(/\s+/g, '_')}.pdf`);
+                          }}
                           style={{ color: r.status === 'Generating...' ? 'var(--text-muted)' : 'var(--accent-blue)', cursor: 'pointer' }}>
                           <Download size={16} />
                         </button>

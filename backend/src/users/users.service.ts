@@ -65,4 +65,8 @@ export class UsersService {
       .where("user.role != 'Student'")
       .getMany();
   }
+
+  async deleteUser(userId: number): Promise<void> {
+    await this.usersRepository.delete(userId);
+  }
 }

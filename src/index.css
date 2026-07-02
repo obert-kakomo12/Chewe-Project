@@ -735,4 +735,54 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
   .report-modal { width: calc(100% - 32px); }
   .student-report-info { flex-direction: column; }
   .metrics-grid { grid-template-columns: 1fr; }
+
+  /* Responsive tables as stacked cards */
+  .data-table, .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr,
+  .report-table, .report-table thead, .report-table tbody, .report-table th, .report-table td, .report-table tr {
+    display: block;
+    width: 100%;
+  }
+  .data-table thead tr, .report-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  .data-table tr, .report-table tr {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+  }
+  .data-table td, .report-table td {
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+    position: relative;
+    padding: 10px 0;
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+  }
+  .data-table td:last-child, .report-table td:last-child {
+    border-bottom: none;
+  }
+  .data-table td::before, .report-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+  .data-table td, .report-table td {
+    padding-left: 120px;
+  }
+  /* Remove flex for specific items that need to stretch */
+  .data-table td .mark-input, .data-table td .comment-box {
+    width: 60%;
+    margin-left: auto;
+  }
 }

@@ -62,4 +62,9 @@ export class AssessmentsController {
   ) {
     return this.assessmentsService.generateAIComment(studentName, score, userPrompt);
   }
+
+  @Post('marks')
+  async saveMarks(@Body() body: { className: string, marks: any[] }) {
+    return this.assessmentsService.saveBulkMarks(body.className, body.marks);
+  }
 }

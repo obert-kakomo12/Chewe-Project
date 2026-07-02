@@ -35,6 +35,10 @@ export class AcademicsService {
     return this.subjectRepository.find();
   }
 
+  async deleteSubject(id: number): Promise<void> {
+    await this.subjectRepository.delete(id);
+  }
+
   // ClassRooms
   async createClassRoom(data: Partial<ClassRoom>): Promise<ClassRoom> {
     const cr = this.classRoomRepository.create(data);
@@ -43,6 +47,70 @@ export class AcademicsService {
 
   async findAllClassRooms(): Promise<ClassRoom[]> {
     return this.classRoomRepository.find({ relations: { class_teacher: true } });
+  }
+
+  async deleteClassRoom(id: number): Promise<void> {
+    await this.classRoomRepository.delete(id);
+  }
+
+  async findStudentsByClass(className: string) {
+    const enrollments = await this.enrollmentRepository.find({
+      where: { course: { class_room: { name: className } } },
+      relations: { student: true, course: { class_room: true } },
+    });
+
+    return enrollments.map(e => ({
+      id: `CT24-${String(e.student.id).padStart(4, '0')}`,
+      dbId: e.student.id,
+      name: e.student.name,
+      inClass: 0,
+      monthly: 0,
+      endTerm: 0,
+      attendanceStatus: 'Present',
+      attendanceRemark: '',
+    }));
+  }
+
+  async enrollNewStudent(className: string, name: string, email: string) {
+    let user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      user = this.userRepository.create({
+        name,
+        email,
+        role: 'Student',
+        password_hash: 'mockhash',
+      });
+      await this.userRepository.save(user);
+    }
+
+    let classRoom = await this.classRoomRepository.findOne({ where: { name: className } });
+    if (!classRoom) {
+      classRoom = this.classRoomRepository.create({ name: className });
+      await this.classRoomRepository.save(classRoom);
+    }
+
+    let course = await this.courseRepository.findOne({ where: { class_room: { id: classRoom.id } }, relations: { class_room: true } });
+    if (!course) {
+      course = this.courseRepository.create({ class_room: classRoom });
+      await this.courseRepository.save(course);
+    }
+
+    const enrollment = this.enrollmentRepository.create({
+      student: user,
+      course: course
+    });
+    await this.enrollmentRepository.save(enrollment);
+
+    return {
+      id: `CT24-${String(user.id).padStart(4, '0')}`,
+      dbId: user.id,
+      name: user.name,
+      inClass: 0,
+      monthly: 0,
+      endTerm: 0,
+      attendanceStatus: 'Present',
+      attendanceRemark: '',
+    };
   }
 
   async getPathfinderData() {
@@ -117,9 +185,15 @@ export class AcademicsService {
         }
       }
 
-      // Determine requested track (deterministic mapping to introduce mismatches)
-      const modReq = student.id % 3;
-      const requested = modReq === 0 ? 'Sciences' : modReq === 1 ? 'Commercials' : 'Arts';
+      // Determine requested track. In a real system, students would request this via a portal.
+      // Since everyone wants to do Sciences or Commercials, we default to Sciences 
+      // unless their math is absolutely terrible, in which case they might ask for Arts.
+      let requested = 'Sciences';
+      if (mathAvg < 50 && englishAvg > 60) {
+        requested = 'Arts';
+      } else if (mathAvg >= 50 && mathAvg < 70) {
+        requested = 'Commercials';
+      }
       
       const match = recommended === requested;
       let reason = '';

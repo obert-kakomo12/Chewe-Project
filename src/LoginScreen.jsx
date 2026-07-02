@@ -36,7 +36,7 @@ const LoginScreen = ({ onLogin }) => {
         if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
         
         setSuccess('If the email exists, a reset link has been sent!');
-        setTimeout(() => setIsForgotPassword(false), 3000);
+        setIsForgotPassword(false);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -71,17 +71,13 @@ const LoginScreen = ({ onLogin }) => {
         if (data.user) {
           localStorage.setItem('currentUser', JSON.stringify(data.user));
         }
-        setTimeout(() => {
-          onLogin(data.user);
-        }, 800);
+        onLogin(data.user);
       } else {
         setSuccess('Registration successful! Please log in.');
-        setTimeout(() => {
-          setIsLogin(true);
-          setPassword('');
-          setAccessCode('');
-          setSuccess('');
-        }, 2000);
+        setIsLogin(true);
+        setPassword('');
+        setAccessCode('');
+        setSuccess('');
       }
     } catch (err) {
       setError(err.message);

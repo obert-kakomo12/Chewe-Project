@@ -5,6 +5,7 @@ import { Assessment } from '../assessments/entities/assessment.entity';
 import { AttendanceRecord } from '../attendance/entities/attendance-record.entity';
 import { Grade } from '../assessments/entities/grade.entity';
 import { CounselingLog } from '../welfare/entities/counseling-log.entity';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class DashboardService {
@@ -17,6 +18,7 @@ export class DashboardService {
     private gradeRepository: Repository<Grade>,
     @InjectRepository(CounselingLog)
     private counselingLogRepository: Repository<CounselingLog>,
+    private readonly aiService: AiService,
   ) {}
 
   async getMetrics() {
@@ -72,33 +74,46 @@ export class DashboardService {
     }
 
     // 5. Longitudinal Z-Score Cohort F3 for dashboard chart
-    const performanceData = [
-      { term: 'Form 1 Term 1', zScore: 0 },
-      { term: 'Form 1 Term 2', zScore: 0 },
-      { term: 'Form 2 Term 1', zScore: 0 },
-      { term: 'Form 2 Term 2', zScore: 0 },
-      { term: 'Form 3 Term 1', zScore: 0 },
-      { term: 'Form 3 Term 2', zScore: 0 }
-    ];
+    // For a dynamic longitudinal graph, we will group grades by assessment date/month.
+    const performanceDataMap = {};
+    for (const g of grades) {
+      if (g.assessment && g.assessment.date) {
+        const monthYear = new Date(g.assessment.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        if (!performanceDataMap[monthYear]) {
+          performanceDataMap[monthYear] = { sumZ: 0, count: 0 };
+        }
+        const z = parseFloat(((g.score - 70) / 15).toFixed(2));
+        performanceDataMap[monthYear].sumZ += z;
+        performanceDataMap[monthYear].count++;
+      }
+    }
+    const performanceData = Object.keys(performanceDataMap).map(k => ({
+      term: k,
+      zScore: parseFloat((performanceDataMap[k].sumZ / performanceDataMap[k].count).toFixed(2))
+    }));
+
+    if (performanceData.length === 0) {
+      performanceData.push({ term: 'No Data Yet', zScore: 0 });
+    }
 
     // 6. Color-Coded Institutional Heatmap (Columns = Subjects, Rows = Classes)
-    const classesList = ['Form 1', 'Form 2', 'Form 3A', 'Form 4B', 'Form 5', 'Form 6'];
-    const subjectsList = ['Maths', 'Computer Science', 'Physics', 'Chemistry', 'English', 'History'];
-    const heatmapData: any[] = [];
-    
-    classesList.forEach(cls => {
-      subjectsList.forEach(subj => {
-        let avg = 0; // default 0 for empty database
-        if (cls === 'Form 3A' && subj === 'Maths') {
-          avg = 0;
-        } else if (cls === 'Form 4B' && subj === 'Physics') {
-          avg = 0;
-        } else {
-          avg = 0; 
+    const heatmapMap = {};
+    for (const g of grades) {
+      if (g.assessment && g.assessment.class && g.assessment.subject) {
+        const key = `${g.assessment.class}_${g.assessment.subject}`;
+        if (!heatmapMap[key]) {
+          heatmapMap[key] = { class: g.assessment.class, subject: g.assessment.subject, sum: 0, count: 0 };
         }
-        heatmapData.push({ class: cls, subject: subj, avg });
-      });
-    });
+        heatmapMap[key].sum += g.score;
+        heatmapMap[key].count++;
+      }
+    }
+    
+    const heatmapData = Object.values(heatmapMap).map((h: any) => ({
+      class: h.class,
+      subject: h.subject,
+      avg: Math.round(h.sum / h.count)
+    }));
 
     return {
       kpis: {
@@ -221,121 +236,55 @@ export class DashboardService {
   async getExecutiveAIInsight(query: string) {
     const q = query.toLowerCase();
     
-    // Fetch live database records
+    // Fetch live database records for context
     const grades = await this.gradeRepository.find({ relations: { student: true, assessment: true } });
     const attendance = await this.attendanceRepository.find({ relations: { student: true } });
     const activeWelfareCount = await this.counselingLogRepository.count({ where: { follow_up_required: true } });
 
     // 1. Calculate overall mean and standard deviation for Z-scores
     const allScores = grades.map(g => g.score);
-    const mean = allScores.length > 0 ? allScores.reduce((sum, v) => sum + v, 0) / allScores.length : 70;
-    let stdDev = 15;
-    if (allScores.length > 1) {
-      const variance = allScores.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (allScores.length - 1);
-      stdDev = Math.sqrt(variance) || 15;
-    }
-
-    // 2. Identify actual bottlenecks
-    const subjectStats = {};
-    grades.forEach(g => {
-      const subj = g.assessment?.subject || 'General';
-      const cls = g.assessment?.class || 'General';
-      const key = `${cls} ${subj}`;
-      if (!subjectStats[key]) {
-        subjectStats[key] = { sum: 0, count: 0, class: cls, subject: subj };
-      }
-      subjectStats[key].sum += g.score;
-      subjectStats[key].count++;
-    });
-
-    const bottlenecks = Object.values(subjectStats)
-      .map((s: any) => ({
-        key: `${s.class} ${s.subject}`,
-        class: s.class,
-        subject: s.subject,
-        avg: Math.round(s.sum / s.count)
-      }))
-      .filter(b => b.avg < 60)
-      .sort((a, b) => a.avg - b.avg);
-
-    // Fallback if no bottlenecks found in database
-    const primaryBottleneck = bottlenecks.length > 0 
-      ? bottlenecks[0] 
-      : { class: 'Form 3A', subject: 'Maths', avg: 52 };
-
-    // 3. Identify actual outliers
-    const studentGrades = {};
-    grades.forEach(g => {
-      if (g.student) {
-        if (!studentGrades[g.student.id]) {
-          studentGrades[g.student.id] = { name: g.student.name, sum: 0, count: 0 };
-        }
-        studentGrades[g.student.id].sum += g.score;
-        studentGrades[g.student.id].count++;
-      }
-    });
-
-    const studentZScores = Object.values(studentGrades).map((s: any) => {
-      const avg = s.sum / s.count;
-      const zScore = parseFloat(((avg - mean) / stdDev).toFixed(2));
-      return { name: s.name, zScore };
-    });
-
-    const highOutliers = [...studentZScores].filter(s => s.zScore > 1.0).sort((a, b) => b.zScore - a.zScore);
-    const lowOutliers = [...studentZScores].filter(s => s.zScore < -1.0).sort((a, b) => a.zScore - b.zScore);
-
-    const primaryHigh = highOutliers.length > 0 ? highOutliers[0] : { name: 'Nyasha Mandaza', zScore: 1.8 };
-    const primaryLow = lowOutliers.length > 0 ? lowOutliers[0] : { name: 'Tendai Moyo', zScore: -1.6 };
-
-    // 4. Calculate attendance correlations
-    const studentAttendance = {};
-    attendance.forEach(a => {
-      if (a.student) {
-        if (!studentAttendance[a.student.id]) {
-          studentAttendance[a.student.id] = { name: a.student.name, present: 0, total: 0 };
-        }
-        studentAttendance[a.student.id].total++;
-        if (a.status === 'Present' || a.status === 'Late') {
-          studentAttendance[a.student.id].present++;
-        }
-      }
-    });
-
-    const lowAttendanceStudents = Object.values(studentAttendance)
-      .map((s: any) => {
-        const rate = s.total > 0 ? Math.round((s.present / s.total) * 100) : 100;
-        return { name: s.name, rate };
-      })
-      .filter(s => s.rate < 85)
-      .sort((a, b) => a.rate - b.rate);
-
-    let analysis = '';
-    let decision = '';
-
-    if (q.includes('bottleneck') || q.includes('curriculum') || q.includes('algebra') || q.includes('geometry')) {
-      analysis = `AI analysis scanned active subject grades and identified a performance bottleneck in ${primaryBottleneck.class} ${primaryBottleneck.subject}. The cohort average has dropped to ${primaryBottleneck.avg}% (Critical Zone), which deviates significantly from expected curriculum velocity targets. This indicates urgent subject-matter mastery deficits.`;
-      decision = `Immediate Strategic Decision:\n1. Allocate 2 hours of teacher-facilitated remedial slots for ${primaryBottleneck.class} ${primaryBottleneck.subject}.\n2. Reallocate digital learning resources to target foundational concepts in this subject.\n3. Run a topic-specific checkpoint test in 14 days to audit progress.`;
-    } else if (q.includes('outlier') || q.includes('high potential') || q.includes('z-score')) {
-      analysis = `AI Outlier scanning has flagged ${primaryHigh.name} (+${primaryHigh.zScore} SD) as a high-potential candidate showing significant mastery. Conversely, ${primaryLow.name} (${primaryLow.zScore} SD) has drifted significantly below the class average, indicating severe academic risk and a high likelihood of exam failure if left unsupported.`;
-      decision = `Immediate Strategic Decision:\n1. Route ${primaryLow.name} to the Counseling Referral Pipeline (Safe Space) to address academic slide.\n2. Recommend ${primaryHigh.name} for the Pathfinder Level 3 Streaming fast-track mentorship program.`;
-    } else if (q.includes('attendance') || q.includes('truancy') || q.includes('correlation')) {
-      const lowAttNames = lowAttendanceStudents.map(s => `${s.name} (${s.rate}%)`).join(', ');
-      analysis = `Statistical correlation confirms that attendance is the primary predictor of performance. Students with attendance below 85% (such as: ${lowAttNames || 'Tendai Moyo (80%)'}) show a high correlation with negative Z-scores, indicating a strong likelihood of academic disengagement and eventual failure.`;
-      decision = `Immediate Strategic Decision:\n1. Automate Parent Push notifications to trigger by 08:30 AM on first-day absence.\n2. Mandate counselor referrals automatically if any student misses 3 consecutive sessions.`;
-    } else {
-      const schoolAvgZ = allScores.length > 0 ? (allScores.reduce((sum, v) => sum + v, 0) / allScores.length - 70) / 15 : 0;
-      const presentRecords = attendance.filter(a => a.status === 'Present').length;
-      const schoolAttRate = attendance.length > 0 ? (presentRecords / attendance.length) * 100 : 92.4;
-
-      analysis = `AI Strategic Review for query "${query}". Overall system average Z-Score is at ${schoolAvgZ.toFixed(2)} SD. General student attendance is stable at ${schoolAttRate.toFixed(1)}%. Live database audit shows ${activeWelfareCount} active counseling logs requiring follow-up.`;
-      decision = `Immediate Strategic Decision:\n1. Continue monitoring term-over-term velocity targets.\n2. Advise counseling staff to host stress-relief workshops before the upcoming examinations.`;
-    }
-
-    return {
+    const mean = allScores.length > 0 ? allScores.reduce((sum, v) => sum + v, 0) / allScores.length : 0;
+    
+    // Pass real data to AI Service
+    const aiContextData = {
       query,
-      analysis,
-      decision,
-      timestamp: new Date().toLocaleTimeString()
+      schoolAverage: mean,
+      totalGradesRecorded: grades.length,
+      activeWelfareCases: activeWelfareCount,
+      totalAttendanceRecords: attendance.length
     };
+
+    try {
+      const aiResponseText = await this.aiService.generateExecutiveAnalysis(aiContextData);
+      
+      // Attempt to split AI response into analysis and decision if it formatted it that way
+      // If not, we just put everything in analysis.
+      let analysis = aiResponseText;
+      let decision = 'Review AI Analysis for recommendations.';
+      
+      if (aiResponseText.includes('Decision:')) {
+        const parts = aiResponseText.split('Decision:');
+        analysis = parts[0].trim();
+        decision = parts[1].trim();
+      } else if (aiResponseText.includes('Recommendation:')) {
+        const parts = aiResponseText.split('Recommendation:');
+        analysis = parts[0].trim();
+        decision = parts[1].trim();
+      }
+
+      return {
+        query,
+        analysis,
+        decision,
+        timestamp: new Date().toLocaleTimeString()
+      };
+    } catch (error) {
+      return {
+        query,
+        analysis: "The AI strategic engine is currently unavailable or misconfigured.",
+        decision: "Please verify OpenRouter API keys in the system environment.",
+        timestamp: new Date().toLocaleTimeString()
+      };
+    }
   }
 }

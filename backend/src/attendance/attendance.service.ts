@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { AttendanceRecord } from './entities/attendance-record.entity';
 import { User } from '../users/entities/user.entity';
+import { Enrollment } from '../academics/entities/enrollment.entity';
 
 @Injectable()
 export class AttendanceService {
@@ -11,17 +12,31 @@ export class AttendanceService {
     private attendanceRepository: Repository<AttendanceRecord>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Enrollment)
+    private enrollmentRepository: Repository<Enrollment>,
   ) {}
 
   async getRollCall() {
-    const students = await this.userRepository.find({ where: { role: 'Student' } });
+    const enrollments = await this.enrollmentRepository.find({ relations: { student: true, course: { class_room: true } } });
     
-    const mappedStudents = students.map(s => ({
-      id: `STU-${String(s.id).padStart(3, '0')}`,
-      dbId: s.id,
-      name: s.name,
-      class: s.id % 2 === 0 ? 'Form 3A' : 'Form 4B',
-    }));
+    // Fallback if no enrollments exist to prevent empty dashboards during testing
+    let mappedStudents: any[] = [];
+    if (enrollments.length > 0) {
+      mappedStudents = enrollments.map(e => ({
+        id: `STU-${String(e.student.id).padStart(3, '0')}`,
+        dbId: e.student.id,
+        name: e.student.name,
+        class: e.course?.class_room?.name || 'Unassigned',
+      }));
+    } else {
+      const students = await this.userRepository.find({ where: { role: 'Student' } });
+      mappedStudents = students.map(s => ({
+        id: `STU-${String(s.id).padStart(3, '0')}`,
+        dbId: s.id,
+        name: s.name,
+        class: 'Form 3A',
+      }));
+    }
 
     const absences = await this.attendanceRepository.find({
       where: { status: 'Absent' },
@@ -49,5 +64,34 @@ export class AttendanceService {
       students: mappedStudents,
       truancyAlerts
     };
+  }
+
+  async saveBulkAttendance(className: string, date: string, records: any[]) {
+    let savedCount = 0;
+    
+    for (const record of records) {
+      const studentId = parseInt(record.studentId?.toString().replace(/\D/g, '') || '0', 10);
+      if (studentId === 0) continue;
+
+      let att = await this.attendanceRepository.findOne({
+        where: { student: { id: studentId }, date: new Date(date) }
+      });
+
+      if (!att) {
+        att = this.attendanceRepository.create({
+          student: { id: studentId } as any,
+          date: new Date(date),
+          status: record.status,
+          notes: record.remark || '',
+        });
+      } else {
+        att.status = record.status;
+        att.notes = record.remark || '';
+      }
+      await this.attendanceRepository.save(att);
+      savedCount++;
+    }
+
+    return { success: true, message: `Register successfully submitted and synced for ${savedCount} records.` };
   }
 }

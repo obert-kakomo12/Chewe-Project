@@ -45,9 +45,7 @@ const EncryptionBarrier = ({ onUnlock, userEmail }) => {
       if (key === savedKey || key === 'admin123') {
         setError(false);
         setDecrypting(true);
-        setTimeout(() => {
-          onUnlock();
-        }, 1500); // 1.5s artificial delay for effect
+        onUnlock();
       } else {
         setError(true);
         setErrorMsg('Invalid decryption key');

@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Body, Headers, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, Headers, UnauthorizedException, BadRequestException, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -69,6 +69,36 @@ export class UsersController {
     return { success: true, message: 'Password updated successfully' };
   }
 
+  @Post()
+  async createUser(@Headers('authorization') authHeader: string, @Body() body: any) {
+    const userId = this.extractUserId(authHeader);
+    const currentUser = await this.usersService.findById(userId);
+    if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Executive')) {
+      throw new UnauthorizedException('Only Admins/Executives can create users');
+    }
+
+    if (!body.name || !body.email || !body.role) {
+      throw new BadRequestException('Name, email, and role are required');
+    }
+
+    const existing = await this.usersService.findOneByEmail(body.email);
+    if (existing) {
+      throw new BadRequestException('Email already in use');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hash = await bcrypt.hash(body.password || 'password123', salt);
+    
+    const newUser = await this.usersService.create({
+      name: body.name,
+      email: body.email,
+      role: body.role,
+      password_hash: hash
+    });
+
+    return { success: true, message: 'User created', user: newUser };
+  }
+
   @Get('staff')
   async getStaff(@Headers('authorization') authHeader?: string) {
     const userId = this.extractUserId(authHeader);
@@ -77,5 +107,16 @@ export class UsersController {
       throw new UnauthorizedException('Only Executives can view the staff roster');
     }
     return this.usersService.findStaff();
+  }
+
+  @Delete(':id')
+  async deleteStaff(@Headers('authorization') authHeader: string, @Param('id') id: string) {
+    const userId = this.extractUserId(authHeader);
+    const currentUser = await this.usersService.findById(userId);
+    if (!currentUser || currentUser.role !== 'Executive') {
+      throw new UnauthorizedException('Only Executives can delete staff');
+    }
+    await this.usersService.deleteUser(Number(id));
+    return { success: true, message: 'User deleted' };
   }
 }

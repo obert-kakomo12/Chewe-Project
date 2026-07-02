@@ -22,6 +22,9 @@ const AttendanceNotification = () => {
   const [attendance, setAttendance] = useState({});
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const uniqueClasses = [...new Set(data.students.map(s => s.class))].sort();
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/attendance/rollcall`, {
@@ -48,7 +51,40 @@ const AttendanceNotification = () => {
     });
   };
 
-  const handleSave = () => setSaved(true);
+  const handleSave = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/attendance/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          className: 'All', // The service handles mapping to classes anyway
+          date: new Date().toISOString(),
+          records: data.students.map(s => ({
+            studentId: s.dbId || s.id,
+            status: STATUS_LABEL[attendance[s.id]],
+            remark: ''
+          }))
+        })
+      });
+      if (res.ok) {
+        setSaved(true);
+      } else {
+        alert('Failed to submit register.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting register.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const counts = data.students.reduce((acc, s) => {
     acc[attendance[s.id]] = (acc[attendance[s.id]] || 0) + 1;
@@ -134,8 +170,8 @@ const AttendanceNotification = () => {
               }}>
                 <RefreshCw size={14} /> Reset
               </button>
-              <button className="action-button" onClick={handleSave}>
-                <UserCheck size={15} /> {saved ? 'Saved ✓' : 'Submit Register'}
+              <button className="action-button" onClick={handleSave} disabled={isSubmitting}>
+                <UserCheck size={15} /> {saved ? 'Saved ✓' : isSubmitting ? 'Submitting...' : 'Submit Register'}
               </button>
             </div>
           </div>
@@ -145,7 +181,7 @@ const AttendanceNotification = () => {
               No students are currently registered for this session's roll call.
             </div>
           ) : (
-            ['Form 3A', 'Form 4B'].map(cls => (
+            uniqueClasses.map(cls => (
               <div key={cls} style={{ marginBottom: '24px' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
                   {cls}
@@ -205,9 +241,9 @@ const AttendanceNotification = () => {
                   const status = attendance[s.id];
                   return (
                     <tr key={s.id}>
-                      <td style={{ fontWeight: 500 }}>{s.name}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{s.class}</td>
-                      <td>
+                      <td data-label="Student" style={{ fontWeight: 500 }}>{s.name}</td>
+                      <td data-label="Class" style={{ color: 'var(--text-secondary)' }}>{s.class}</td>
+                      <td data-label="Status">
                         <span style={{
                           padding: '3px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700,
                           background: status === 'present' ? 'rgba(16,185,129,0.15)'
@@ -220,12 +256,12 @@ const AttendanceNotification = () => {
                           {STATUS_LABEL[status]}
                         </span>
                       </td>
-                      <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      <td data-label="Time Logged" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                         {status === 'present' ? '07:45 AM'
                          : status === 'late'  ? '08:15 AM'
                          : '—'}
                       </td>
-                      <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      <td data-label="Automated Notification" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                         {status === 'absent' || status === 'sick' ? (
                           <a 
                             href={`https://wa.me/?text=${encodeURIComponent(`Hello, your child ${s.name} was marked ${status} today.`)}`} 

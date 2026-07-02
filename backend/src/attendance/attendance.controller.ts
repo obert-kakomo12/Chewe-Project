@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 
 @Controller('attendance')
@@ -8,5 +8,10 @@ export class AttendanceController {
   @Get('rollcall')
   getRollCall() {
     return this.attendanceService.getRollCall();
+  }
+
+  @Post('bulk')
+  saveBulkAttendance(@Body() body: { className: string, date: string, records: any[] }) {
+    return this.attendanceService.saveBulkAttendance(body.className, body.date, body.records);
   }
 }

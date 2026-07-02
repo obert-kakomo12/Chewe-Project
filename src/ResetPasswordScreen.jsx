@@ -37,9 +37,7 @@ const ResetPasswordScreen = ({ token, email, onResetComplete }) => {
       }
 
       setSuccess('Password successfully reset! Returning to login...');
-      setTimeout(() => {
-        onResetComplete();
-      }, 2000);
+      onResetComplete();
     } catch (err) {
       setError(err.message);
     } finally {

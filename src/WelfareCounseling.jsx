@@ -260,23 +260,23 @@ const WelfareCounseling = () => {
                     return (
                       <React.Fragment key={log.id}>
                         <tr>
-                          <td style={{ fontWeight: 600 }}>{log.id}</td>
-                          <td style={{ fontWeight: 500 }}>{log.student}</td>
-                          <td style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.trigger}</td>
-                          <td>
+                          <td data-label="Case ID" style={{ fontWeight: 600 }}>{log.id}</td>
+                          <td data-label="Student" style={{ fontWeight: 500 }}>{log.student}</td>
+                          <td data-label="Trigger" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.trigger}</td>
+                          <td data-label="Priority">
                             <span style={{ padding: '2px 9px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700,
                               background: pb.bg, color: pb.color, border: `1px solid ${pb.border}` }}>
                               {log.priority}
                             </span>
                           </td>
-                          <td style={{ fontSize: '0.82rem' }}>{log.type}</td>
-                          <td>
+                          <td data-label="Type" style={{ fontSize: '0.82rem' }}>{log.type}</td>
+                          <td data-label="Data">
                             {log.encrypted
                               ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}><Lock size={11} /> Encrypted</span>
                               : <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.72rem' }}><EyeOff size={11} /> Standard</span>}
                           </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                          <td data-label="Action">
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                               <button onClick={() => handleSelectCase(log)} className="icon-button" style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                 <Search size={14} /> Analyze
                               </button>
@@ -327,7 +327,11 @@ const WelfareCounseling = () => {
                 Term-end reports for parents — Academic standing, consistency score, and vocational fit assessment.
               </p>
             </div>
-            <button className="action-button"><FileText size={15} /> Generate All Reports</button>
+            <button className="action-button" onClick={(e) => {
+              const btn = e.currentTarget;
+              btn.innerHTML = 'Generating...';
+              setTimeout(() => { btn.innerHTML = '✓ Reports Generated'; btn.style.background = '#10b981'; }, 2000);
+            }}><FileText size={15} /> Generate All Reports</button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

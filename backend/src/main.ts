@@ -5,9 +5,10 @@ import { json, urlencoded } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Add this line to allow your Vercel app to communicate with the backend
+  // CORS Hardening
   app.enableCors({
-    origin: '*', // For development. For production, change to your exact Vercel URL
+    origin: ['http://localhost:5000', 'http://localhost:5173', 'https://ctschool.vercel.app', 'https://chewetech.com'],
+    credentials: true,
   });
 
   app.use(json({ limit: '10mb' }));

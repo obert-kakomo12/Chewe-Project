@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, Like } from 'typeorm';
 import { User } from './users/entities/user.entity';
 import { Course } from './academics/entities/course.entity';
 import { Subject } from './academics/entities/subject.entity';
@@ -260,5 +260,43 @@ export class AppService implements OnModuleInit {
     }
 
     console.log('Database seeding finished successfully!');
+  }
+
+  async search(query: string) {
+    const userRepo = this.dataSource.getRepository(User);
+    const subjectRepo = this.dataSource.getRepository(Subject);
+    const assessRepo = this.dataSource.getRepository(Assessment);
+    
+    const users = await userRepo.find({
+      where: [
+        { name: Like(`%${query}%`) },
+        { email: Like(`%${query}%`) },
+        { role: Like(`%${query}%`) }
+      ],
+      take: 5
+    });
+
+    const subjects = await subjectRepo.find({
+      where: [
+        { name: Like(`%${query}%`) },
+        { code: Like(`%${query}%`) }
+      ],
+      take: 5
+    });
+
+    const assessments = await assessRepo.find({
+      where: [
+        { title: Like(`%${query}%`) },
+        { subject: Like(`%${query}%`) }
+      ],
+      take: 5
+    });
+
+    const results: any[] = [];
+    users.forEach(u => results.push({ type: 'User', id: u.id, title: u.name, subtitle: `${u.role} - ${u.email}`, link: '/users' }));
+    subjects.forEach(s => results.push({ type: 'Subject', id: s.id, title: s.name, subtitle: s.code, link: '/academics' }));
+    assessments.forEach(a => results.push({ type: 'Assessment', id: a.id, title: a.title, subtitle: a.subject, link: '/assessments' }));
+    
+    return results;
   }
 }
