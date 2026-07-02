@@ -123,7 +123,7 @@ const EducationalArchive = () => {
                 {[2025, 2024, 2023, 2022].map(y => <option key={y} value={y}>{y} Academic Year</option>)}
               </select>
             </div>
-            <button className="action-button" style={{ width: '100%', justifyContent: 'center' }} onClick={handleExport}>
+            <button className="action-button" style={{ width: '100%', justifyContent: 'center', opacity: exportTriggered ? 0.7 : 1 }} onClick={handleExport} disabled={exportTriggered}>
               <FileText size={15} /> {exportTriggered ? '✓ Generating PDF…' : 'Generate Master Ledger'}
             </button>
             {exportTriggered && (
@@ -170,20 +170,20 @@ const EducationalArchive = () => {
               ) : (
                 filteredArchives.map((a, i) => (
                   <tr key={i}>
-                    <td style={{ fontWeight: 600 }}>{a.cohort}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{a.size}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{a.compression}</td>
-                    <td>
+                    <td data-label="Cohort" style={{ fontWeight: 600 }}>{a.cohort}</td>
+                    <td data-label="Size" style={{ color: 'var(--text-secondary)' }}>{a.size}</td>
+                    <td data-label="Compression" style={{ color: 'var(--text-secondary)' }}>{a.compression}</td>
+                    <td data-label="Location">
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
                         <HardDrive size={13} color="var(--text-secondary)" /> {a.location}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="State">
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.75rem', fontWeight: 600 }}>
                         <ShieldCheck size={12} /> {a.status}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button className="secondary-button" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
                           <Archive size={12} /> Retrieve

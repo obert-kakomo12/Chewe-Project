@@ -29,10 +29,10 @@ export class DocumentsService {
     const archives = await this.educationalArchiveRepository.find({ relations: { uploaded_by: true } });
     return archives.map(a => ({
       cohort: `${a.grade_level} - ${a.subject}`,
-      size: '1.2 MB',
-      compression: 'GZIP (High)',
-      location: 'AWS Glacier',
-      status: 'Verified',
+      size: a.size,
+      compression: a.compression,
+      location: a.location,
+      status: a.status,
       file_url: a.file_url,
     }));
   }

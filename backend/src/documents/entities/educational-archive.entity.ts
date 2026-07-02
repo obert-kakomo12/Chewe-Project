@@ -18,6 +18,18 @@ export class EducationalArchive {
   @Column()
   file_url: string;
 
+  @Column({ default: '1.2 MB' })
+  size: string;
+
+  @Column({ default: 'GZIP (High)' })
+  compression: string;
+
+  @Column({ default: 'AWS Glacier' })
+  location: string;
+
+  @Column({ default: 'Verified' })
+  status: string;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'uploaded_by' })
   uploaded_by: User;
