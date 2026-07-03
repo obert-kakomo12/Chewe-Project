@@ -24,7 +24,7 @@ const TeacherWorkstation = () => {
   const [viewMode,        setViewMode]        = useState('academics'); // 'academics' or 'attendance'
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [setupName,       setSetupName]       = useState('');
-  const [setupLevel,      setSetupLevel]      = useState('O-Level (Forms 1-4)');
+  const [setupLevel,      setSetupLevel]      = useState('O-Level');
   const [setupFormNumber, setSetupFormNumber] = useState('Form 1');
   const [setupStream,     setSetupStream]     = useState('Sciences');
   const [setupSubjects,   setSetupSubjects]   = useState([]);
