@@ -7,7 +7,16 @@ async function bootstrap() {
 
   // CORS Hardening
   app.enableCors({
-    origin: ['http://localhost:5000', 'http://localhost:5173', 'https://ctschool.vercel.app', 'https://chewetech.com'],
+    origin: [
+      'http://localhost:5000', 
+      'http://localhost:5173', 
+      'https://ctschool.vercel.app', 
+      'https://chewetech.com',
+      'https://chewe-project.vercel.app',
+      'http://13.140.177.98:5173',
+      'http://13.140.177.98:4173',
+      'http://13.140.177.98'
+    ],
     credentials: true,
   });
 
