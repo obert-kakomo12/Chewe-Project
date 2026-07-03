@@ -39,6 +39,7 @@ const TeacherWorkstation = () => {
   const [isSubmitting,    setIsSubmitting]    = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [newStudentData, setNewStudentData] = useState({ name: '', email: '' });
+  const [classMaterials, setClassMaterials] = useState([]);
   
   const [masterSubjects, setMasterSubjects] = useState([]);
   const [masterClassRooms, setMasterClassRooms] = useState([]);
@@ -63,6 +64,25 @@ const TeacherWorkstation = () => {
     };
     fetchConfig();
   }, []);
+
+  React.useEffect(() => {
+    if (viewMode === 'materials' && selectedClass) {
+      const fetchMaterials = async () => {
+        try {
+          const token = localStorage.getItem('access_token');
+          const res = await fetch(`${API_BASE_URL}/materials/class/${encodeURIComponent(selectedClass)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            setClassMaterials(await res.json());
+          }
+        } catch (err) {
+          console.error('Failed to load class materials', err);
+        }
+      };
+      fetchMaterials();
+    }
+  }, [viewMode, selectedClass]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -664,9 +684,13 @@ const TeacherWorkstation = () => {
                     <td data-label="Student Name">{s.name}</td>
                     <td data-label="ID">{s.id}</td>
                     <td data-label="Fee Status">
-                      <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600 }}>FULL</span>
+                      <span style={{ 
+                        background: s.feeStatus === 'FULL' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                        color: s.feeStatus === 'FULL' ? '#10b981' : '#ef4444', 
+                        padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600 
+                      }}>{s.feeStatus || 'FULL'}</span>
                     </td>
-                    <td data-label="Overall Average">0%</td>
+                    <td data-label="Overall Average">{s.average !== undefined ? s.average : 0}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -693,6 +717,9 @@ const TeacherWorkstation = () => {
                 });
                 alert('Material posted successfully!');
                 e.target.reset();
+                // Refresh list
+                const fresh = await fetch(`${API_BASE_URL}/materials/class/${encodeURIComponent(selectedClass)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (fresh.ok) setClassMaterials(await fresh.json());
               } catch (err) {
                 alert('Failed to post material');
               } finally {
@@ -709,6 +736,28 @@ const TeacherWorkstation = () => {
               </div>
               <button type="submit" className="action-button" style={{ alignSelf: 'flex-start' }}>Post Material</button>
             </form>
+            
+            <div style={{ marginTop: '32px' }}>
+              <h4 style={{ color: '#0d1f45', marginBottom: '16px' }}>Previously Posted Materials</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {classMaterials.length === 0 ? (
+                  <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No materials posted yet for this class.</p>
+                ) : (
+                  classMaterials.map(mat => (
+                    <div key={mat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ color: '#3b82f6' }}><FileText size={18} /></div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>{mat.title}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{new Date(mat.created_at).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                      <a href={mat.google_drive_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>Open Link</a>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

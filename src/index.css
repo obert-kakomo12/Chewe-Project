@@ -747,6 +747,17 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
     top: -9999px;
     left: -9999px;
   }
+  .spreadsheet-container {
+    overflow-x: hidden;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+  .data-table td[style] {
+    position: relative !important;
+    left: auto !important;
+  }
   .data-table tr, .report-table tr {
     border: 1px solid var(--border-color);
     border-radius: 8px;
