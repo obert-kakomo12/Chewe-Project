@@ -8,11 +8,11 @@ export class Course {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'teacher_id' })
   teacher: User;
 
-  @ManyToOne(() => Subject)
+  @ManyToOne(() => Subject, { nullable: true })
   @JoinColumn({ name: 'subject_id' })
   subject: Subject;
 
