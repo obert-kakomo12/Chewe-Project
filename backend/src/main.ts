@@ -13,6 +13,7 @@ async function bootstrap() {
       'https://ctschool.vercel.app', 
       'https://chewetech.com',
       'https://chewe-project.vercel.app',
+      'https://ct.chewetechnologies.co.zw',
       'http://13.140.177.98:5173',
       'http://13.140.177.98:4173',
       'http://13.140.177.98'
