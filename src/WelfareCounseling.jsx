@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText, X, Sparkles } from 'lucide-react';
+import { ShieldAlert, Lock, EyeOff, Search, BarChart2, BookOpen, TrendingUp, FileText, X, Brain } from 'lucide-react';
 import { API_BASE_URL } from './config';
 
 const PRIORITY_BADGE = {
@@ -283,7 +283,7 @@ const WelfareCounseling = () => {
                               <button className="icon-button" disabled={log.encrypted || generatingId === log.id}
                                 onClick={() => generateAiSuggestion(log)}
                                 style={{ color: log.encrypted ? 'var(--text-muted)' : (generatingId === log.id ? 'var(--text-muted)' : '#8b5cf6'), cursor: log.encrypted ? 'not-allowed' : 'pointer' }} title="Generate Predictive AI Suggestion">
-                                <Sparkles size={14} />
+                                <Brain size={14} />
                               </button>
                             </div>
                           </td>
@@ -298,7 +298,7 @@ const WelfareCounseling = () => {
                                 display: 'flex', gap: '12px', alignItems: 'flex-start',
                                 borderBottom: '1px solid var(--border-subtle)'
                               }}>
-                                <Sparkles size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
+                                <Brain size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
                                 <div>
                                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Predictive Suggestion</div>
                                   <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.5, fontStyle: 'italic' }}>"{aiSuggestions[log.id]}"</div>

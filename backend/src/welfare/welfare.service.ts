@@ -190,4 +190,16 @@ export class WelfareService {
     }
     return pipeline;
   }
+
+  async updateProfile(id: number, data: any) {
+    const welfareProfileRepo = this.dataSource.getRepository(WelfareProfile);
+    const profile = await welfareProfileRepo.findOne({ where: { id }, relations: { student: true } });
+    if (!profile) {
+      throw new Error('Profile not found');
+    }
+    if (data.beam_status !== undefined) profile.beam_status = data.beam_status;
+    if (data.financial_need_flag !== undefined) profile.financial_need_flag = data.financial_need_flag;
+    if (data.confidence_index !== undefined) profile.confidence_index = data.confidence_index;
+    return welfareProfileRepo.save(profile);
+  }
 }

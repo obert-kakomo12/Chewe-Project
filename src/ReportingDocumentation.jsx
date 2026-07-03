@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Printer, FileSpreadsheet, CheckCircle, Clock, Sparkles } from 'lucide-react';
+import { FileText, Download, Printer, FileSpreadsheet, CheckCircle, Clock, Brain } from 'lucide-react';
 import { API_BASE_URL } from './config';
 import { jsPDF } from 'jspdf';
 
@@ -125,7 +125,7 @@ const ReportingDocumentation = () => {
                         <button className="icon-button" disabled={generatingId === r.id}
                           onClick={() => generateAiComment(r)}
                           style={{ color: generatingId === r.id ? 'var(--text-muted)' : '#8b5cf6', cursor: 'pointer' }} title="Generate AI Comment">
-                          <Sparkles size={16} />
+                          <Brain size={16} />
                         </button>
                         <button className="icon-button" disabled={r.status === 'Generating...'}
                           onClick={() => {
@@ -162,7 +162,7 @@ const ReportingDocumentation = () => {
                           display: 'flex', gap: '12px', alignItems: 'flex-start',
                           borderBottom: '1px solid var(--border-subtle)'
                         }}>
-                          <Sparkles size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
+                          <Brain size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
                           <div>
                             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Assistant Comment</div>
                             <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.5, fontStyle: 'italic' }}>"{aiComments[r.id]}"</div>

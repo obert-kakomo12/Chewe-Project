@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { FileText, Save, Download, X, AlertTriangle, UserCheck, PenLine, RefreshCw, Plus } from 'lucide-react';
+import { FileText, Save, Download, X, AlertTriangle, UserCheck, Brain, RefreshCw, Plus } from 'lucide-react';
 import { API_BASE_URL } from './config';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -11,31 +10,7 @@ const W_IN_CLASS = 0.20;
 const W_MONTHLY  = 0.30;
 const W_END_TERM = 0.50;
 
-// ─── Comment Generator ───────────────────────────────────────────────────────
-const AI_COMMENTS = {
-  excellent: [
-    'Demonstrates exceptional aptitude and consistent mastery across all assessment tiers. Continue to set the benchmark for the class.',
-    'Outstanding academic performance. Displays a deep understanding of core concepts and applies them with precision.',
-    'A model student — persistent effort and intellectual curiosity are clearly reflected in these results.',
-  ],
-  good: [
-    'Shows solid understanding of the subject material. A focused revision strategy heading into the next term will consolidate this progress.',
-    'Performs commendably across all assessment types. Identifying one or two weaker topic areas will help push further.',
-    'Good foundational understanding evident. Recommend targeted practice on areas where marks dip below class average.',
-  ],
-  atRisk: [
-    'Performance is below the required threshold. Immediate intervention is recommended — a structured study plan and additional support sessions should be arranged.',
-    'Significant gaps in core concepts are present. Teacher-facilitated one-on-one sessions and parental communication are strongly advised this term.',
-    'Current trajectory places this student in the Critical Zone. Counseling and academic mentorship should be prioritised before the end of term.',
-  ],
-};
-
-const generateAiComment = (total) => {
-  const pool = total >= 75 ? AI_COMMENTS.excellent
-             : total >= 50 ? AI_COMMENTS.good
-             : AI_COMMENTS.atRisk;
-  return pool[Math.floor(Math.random() * pool.length)];
-};
+// AI comment helper is now routed through the backend NestJS service
 
 // ─── Z-score helper ───────────────────────────────────────────────────────────
 const calcZScore = (value, mean, stdDev) => {
@@ -343,9 +318,36 @@ const TeacherWorkstation = () => {
   const generateReport = (student) => {
     const shortfall = 80 - student.total;
     const requiredVelocity = shortfall > 0 ? `+${shortfall}% improvement needed to reach A grade` : "On track for 'A' Grade ✓";
-    const aiComment = generateAiComment(student.total);
-    setEditedComment(aiComment);
-    setReportModalData({ ...student, mean: classMean, requiredVelocity, atRisk: student.total < 50, aiComment });
+    
+    setEditedComment('Generating AI suggestion...');
+    setReportModalData({ ...student, mean: classMean, requiredVelocity, atRisk: student.total < 50, aiComment: 'Generating...' });
+
+    const token = localStorage.getItem('access_token');
+    fetch(`${API_BASE_URL}/assessments/ai-comment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        studentName: student.name,
+        score: student.total,
+        userPrompt: 'None'
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.comment) {
+        setEditedComment(data.comment);
+        setReportModalData(prev => prev && prev.id === student.id ? { ...prev, aiComment: data.comment } : prev);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      const fallback = `Report generated for ${student.name}. Score: ${student.total}%.`;
+      setEditedComment(fallback);
+      setReportModalData(prev => prev && prev.id === student.id ? { ...prev, aiComment: fallback } : prev);
+    });
   };
 
   // ── Setup screen ────────────────────────────────────────────────────────────
@@ -802,12 +804,29 @@ const TeacherWorkstation = () => {
               <div style={{ background: '#f0f6ff', border: '1.5px solid #bfdbfe', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-blue)' }}>
-                    <PenLine size={15} /> Comment Assistant
+                    <Brain size={15} /> AI Comment Assistant
                   </div>
                   <button className="icon-button"
                     style={{ fontSize: '0.7rem', gap: '5px', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}
                     title="Regenerate suggestion"
-                    onClick={() => setEditedComment(generateAiComment(reportModalData.total))}>
+                    onClick={() => {
+                      setEditedComment('Regenerating...');
+                      fetch(`${API_BASE_URL}/assessments/ai-comment`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        },
+                        body: JSON.stringify({
+                          studentName: reportModalData.name,
+                          score: reportModalData.total,
+                          userPrompt: 'Generate a progress comment'
+                        })
+                      })
+                      .then(res => res.json())
+                      .then(data => data && data.comment && setEditedComment(data.comment))
+                      .catch(() => setEditedComment(`Report generated for ${reportModalData.name}. Score: ${reportModalData.total}%.`));
+                    }}>
                     <RefreshCw size={13} /> Regenerate
                   </button>
                 </div>
@@ -846,8 +865,8 @@ const TeacherWorkstation = () => {
                   onChange={e => setEditedComment(e.target.value)}
                 />
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'flex-end' }}>
-                  <button className="secondary-button" onClick={() => setEditedComment(generateAiComment(reportModalData.total))}>
-                    Discard
+                  <button className="secondary-button" onClick={() => setEditedComment(reportModalData.aiComment)}>
+                    Reset
                   </button>
                   <button className="action-button" style={{ padding: '7px 14px' }}>
                     Approve Comment
