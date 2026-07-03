@@ -103,8 +103,8 @@ export class UsersController {
   async getStaff(@Headers('authorization') authHeader?: string) {
     const userId = this.extractUserId(authHeader);
     const user = await this.usersService.findById(userId);
-    if (!user || user.role !== 'Executive') {
-      throw new UnauthorizedException('Only Executives can view the staff roster');
+    if (!user || (user.role !== 'Admin' && user.role !== 'Executive')) {
+      throw new UnauthorizedException('Only Admins/Executives can view the staff roster');
     }
     return this.usersService.findStaff();
   }
@@ -113,8 +113,8 @@ export class UsersController {
   async deleteStaff(@Headers('authorization') authHeader: string, @Param('id') id: string) {
     const userId = this.extractUserId(authHeader);
     const currentUser = await this.usersService.findById(userId);
-    if (!currentUser || currentUser.role !== 'Executive') {
-      throw new UnauthorizedException('Only Executives can delete staff');
+    if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Executive')) {
+      throw new UnauthorizedException('Only Admins/Executives can delete staff');
     }
     await this.usersService.deleteUser(Number(id));
     return { success: true, message: 'User deleted' };
