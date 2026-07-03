@@ -27,7 +27,7 @@ const TeacherWorkstation = () => {
   const [setupName,       setSetupName]       = useState('');
   const [setupLevel,      setSetupLevel]      = useState('O-Level');
   const [setupFormNumber, setSetupFormNumber] = useState('Form 1');
-  const [setupStream,     setSetupStream]     = useState('Sciences');
+  const [setupStream,     setSetupStream]     = useState('General');
   const [setupSubjects,   setSetupSubjects]   = useState([]);
   const [selectedClass,   setSelectedClass]   = useState('');
   const [classDataCache,  setClassDataCache]  = useState({});
