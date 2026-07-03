@@ -1,3 +1,4 @@
+import React, { useState, useMemo } from 'react';
 import { FileText, Save, Download, X, AlertTriangle, UserCheck, Brain, RefreshCw, Plus } from 'lucide-react';
 import { API_BASE_URL } from './config';
 import { jsPDF } from 'jspdf';
