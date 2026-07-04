@@ -12,11 +12,11 @@ export class Course {
   @JoinColumn({ name: 'teacher_id' })
   teacher: User;
 
-  @ManyToOne(() => Subject, { nullable: true })
+  @ManyToOne(() => Subject, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'subject_id' })
   subject: Subject;
 
-  @ManyToOne(() => ClassRoom)
+  @ManyToOne(() => ClassRoom, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'class_room_id' })
   class_room: ClassRoom;
 
