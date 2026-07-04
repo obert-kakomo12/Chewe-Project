@@ -7,11 +7,11 @@ export class Grade {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'student_id' })
   student: User;
 
-  @ManyToOne(() => Assessment)
+  @ManyToOne(() => Assessment, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'assessment_id' })
   assessment: Assessment;
 

@@ -6,7 +6,7 @@ export class Assessment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Course)
+  @ManyToOne(() => Course, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'course_id' })
   course: Course;
 
