@@ -297,7 +297,7 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
           <button className="icon-button" style={{ position: 'relative' }}
             onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); }}>
             <Bell size={19} />
-            <span style={{ position: 'absolute', top: '0', right: '0', width: '7px', height: '7px', background: 'var(--status-danger)', borderRadius: '50%' }} />
+            {false && <span style={{ position: 'absolute', top: '0', right: '0', width: '7px', height: '7px', background: 'var(--status-danger)', borderRadius: '50%' }} />}
           </button>
           {isNotificationsOpen && (
             <div style={{ position: 'absolute', top: '44px', right: '-10px', width: '290px', background: '#ffffff', border: '1px solid #d1ddef', borderRadius: '10px', boxShadow: '0 8px 24px rgba(13,31,69,0.15)', zIndex: 50, overflow: 'hidden' }}>
