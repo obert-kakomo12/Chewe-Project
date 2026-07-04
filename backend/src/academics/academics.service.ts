@@ -53,6 +53,50 @@ export class AcademicsService {
     await this.classRoomRepository.delete(id);
   }
 
+  async assignClassTeacher(classRoomId: number, teacherId: number): Promise<ClassRoom> {
+    const classRoom = await this.classRoomRepository.findOneBy({ id: classRoomId });
+    if (!classRoom) throw new Error('ClassRoom not found');
+    const teacher = await this.userRepository.findOneBy({ id: teacherId });
+    if (!teacher) throw new Error('Teacher not found');
+    classRoom.class_teacher = teacher;
+    return this.classRoomRepository.save(classRoom);
+  }
+
+  // Courses
+  async createCourse(teacherId: number, subjectId: number, classRoomId: number): Promise<Course> {
+    const teacher = await this.userRepository.findOneBy({ id: teacherId });
+    const subject = await this.subjectRepository.findOneBy({ id: subjectId });
+    const classRoom = await this.classRoomRepository.findOneBy({ id: classRoomId });
+
+    if (!teacher || !subject || !classRoom) {
+      throw new Error('Missing teacher, subject, or classroom');
+    }
+
+    const course = this.courseRepository.create({
+      teacher,
+      subject,
+      class_room: classRoom,
+    });
+    return this.courseRepository.save(course);
+  }
+
+  async findAllCourses(): Promise<Course[]> {
+    return this.courseRepository.find({
+      relations: { teacher: true, subject: true, class_room: true }
+    });
+  }
+
+  async findTeacherCourses(teacherId: number): Promise<Course[]> {
+    return this.courseRepository.find({
+      where: { teacher: { id: teacherId } },
+      relations: { subject: true, class_room: true }
+    });
+  }
+
+  async deleteCourse(id: number): Promise<void> {
+    await this.courseRepository.delete(id);
+  }
+
   async findStudentsByClass(className: string) {
     const classRoom = await this.classRoomRepository.findOne({ where: { name: className } });
     if (!classRoom) return [];

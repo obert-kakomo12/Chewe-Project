@@ -8,6 +8,7 @@ const ExecutiveOperations = () => {
   const [pipeline, setPipeline] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classRooms, setClassRooms] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Modals & Forms
@@ -15,6 +16,8 @@ const ExecutiveOperations = () => {
   const [newStaffData, setNewStaffData] = useState({ name: '', email: '', role: 'Teacher', password: '' });
   const [newSubject, setNewSubject] = useState({ name: '', code: '', level: 'O-Level', stream: 'Sciences' });
   const [newClass, setNewClass] = useState({ name: '', grade_level: 'Form 1' });
+  const [newCourse, setNewCourse] = useState({ teacherId: '', subjectId: '', classRoomId: '' });
+  const [classTeacherAssignment, setClassTeacherAssignment] = useState({ classRoomId: '', teacherId: '' });
   
   // Sponsorship Review modal states
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -26,7 +29,7 @@ const ExecutiveOperations = () => {
   const [isSubmittingStaff, setIsSubmittingStaff] = useState(false);
   const [isSubmittingSubject, setIsSubmittingSubject] = useState(false);
   const [isSubmittingClass, setIsSubmittingClass] = useState(false);
-
+  const [isSubmittingCourse, setIsSubmittingCourse] = useState(false);
   const fetchStaffData = async () => {
     try {
       const token = localStorage.getItem('access_token');
@@ -43,17 +46,19 @@ const ExecutiveOperations = () => {
         const token = localStorage.getItem('access_token');
         const headers = { 'Authorization': `Bearer ${token}` };
 
-        const [staffRes, pipeRes, subjRes, classRes] = await Promise.all([
+        const [staffRes, pipeRes, subjRes, classRes, courseRes] = await Promise.all([
           fetch(`${API_BASE_URL}/users/staff`, { headers }),
           fetch(`${API_BASE_URL}/welfare/sponsorship-pipeline`, { headers }),
           fetch(`${API_BASE_URL}/academics/subjects`, { headers }),
-          fetch(`${API_BASE_URL}/academics/classrooms`, { headers })
+          fetch(`${API_BASE_URL}/academics/classrooms`, { headers }),
+          fetch(`${API_BASE_URL}/academics/courses`, { headers })
         ]);
 
         if (staffRes.ok) setStaff(await staffRes.json());
         if (pipeRes.ok) setPipeline(await pipeRes.json());
         if (subjRes.ok) setSubjects(await subjRes.json());
         if (classRes.ok) setClassRooms(await classRes.json());
+        if (courseRes.ok) setCourses(await courseRes.json());
       } catch (err) {
         console.error('Failed to fetch executive ops data:', err);
       } finally {
@@ -228,6 +233,69 @@ const ExecutiveOperations = () => {
     }
   };
 
+  const handleCreateCourse = async (e) => {
+    e.preventDefault();
+    if (isSubmittingCourse) return;
+    setIsSubmittingCourse(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/academics/courses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newCourse)
+      });
+      if (res.ok) {
+        setNewCourse({ teacherId: '', subjectId: '', classRoomId: '' });
+        const fresh = await fetch(`${API_BASE_URL}/academics/courses`, { headers: { 'Authorization': `Bearer ${token}` } });
+        setCourses(await fresh.json());
+      } else {
+        alert('Failed to assign course');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmittingCourse(false);
+    }
+  };
+
+  const handleAssignClassTeacher = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/academics/classrooms/${classTeacherAssignment.classRoomId}/teacher`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ teacherId: classTeacherAssignment.teacherId })
+      });
+      if (res.ok) {
+        setClassTeacherAssignment({ classRoomId: '', teacherId: '' });
+        const fresh = await fetch(`${API_BASE_URL}/academics/classrooms`, { headers: { 'Authorization': `Bearer ${token}` } });
+        setClassRooms(await fresh.json());
+      } else {
+        alert('Failed to assign class teacher');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteCourse = async (id) => {
+    if (!window.confirm("Delete this course assignment?")) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/academics/courses/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const fresh = await fetch(`${API_BASE_URL}/academics/courses`, { headers: { 'Authorization': `Bearer ${token}` } });
+        setCourses(await fresh.json());
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (loading) {
     return <div className="content-area" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>Loading...</div>;
   }
@@ -359,16 +427,74 @@ const ExecutiveOperations = () => {
                     {isSubmittingClass ? 'Saving...' : <Plus size={16} />}
                   </button>
                 </form>
+
+                {/* Assign Class Teacher Form */}
+                <form onSubmit={handleAssignClassTeacher} style={{ display: 'flex', gap: '8px', marginBottom: '16px', padding: '12px', background: 'rgba(59,130,246,0.05)', borderRadius: '6px' }}>
+                  <select className="premium-select" value={classTeacherAssignment.classRoomId} onChange={e => setClassTeacherAssignment({...classTeacherAssignment, classRoomId: e.target.value})} required style={{ flex: 1 }}>
+                    <option value="">Select Class...</option>
+                    {classRooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <select className="premium-select" value={classTeacherAssignment.teacherId} onChange={e => setClassTeacherAssignment({...classTeacherAssignment, teacherId: e.target.value})} required style={{ flex: 1 }}>
+                    <option value="">Select Teacher...</option>
+                    {staff.filter(s => s.role === 'Teacher').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  <button type="submit" className="primary-button">Assign Homeroom</button>
+                </form>
+
                 <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                   <table className="data-table">
-                    <thead><tr><th>Class Name</th><th>Level</th><th style={{ width: '40px' }}></th></tr></thead>
+                    <thead><tr><th>Class Name</th><th>Homeroom Teacher</th><th style={{ width: '40px' }}></th></tr></thead>
                     <tbody>
                       {classRooms.length === 0 ? <tr><td colSpan="3">No classrooms defined.</td></tr> : classRooms.map(c => (
                         <tr key={c.id}>
-                          <td data-label="Class Name" style={{ fontWeight: 600 }}>{c.name}</td>
-                          <td data-label="Level">{c.grade_level}</td>
+                          <td data-label="Class Name" style={{ fontWeight: 600 }}>{c.name} ({c.grade_level})</td>
+                          <td data-label="Homeroom Teacher">
+                            {c.class_teacher ? <span style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>{c.class_teacher.name}</span> : <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>Unassigned</span>}
+                          </td>
                           <td data-label="Action">
                             <button className="icon-button" style={{ color: 'var(--status-danger)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => handleDeleteClass(c.id)}>
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Course Assignments */}
+              <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', gridColumn: '1 / -1' }}>
+                <h4 style={{ margin: '0 0 16px 0', color: '#0d1f45' }}>Course Assignments (Teacher to Subject mapping)</h4>
+                <form onSubmit={handleCreateCourse} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                  <select className="premium-select" value={newCourse.teacherId} onChange={e => setNewCourse({...newCourse, teacherId: e.target.value})} required style={{ flex: 1, minWidth: '150px' }}>
+                    <option value="">Select Teacher...</option>
+                    {staff.filter(s => s.role === 'Teacher').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  <select className="premium-select" value={newCourse.subjectId} onChange={e => setNewCourse({...newCourse, subjectId: e.target.value})} required style={{ flex: 1, minWidth: '150px' }}>
+                    <option value="">Select Subject...</option>
+                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  <select className="premium-select" value={newCourse.classRoomId} onChange={e => setNewCourse({...newCourse, classRoomId: e.target.value})} required style={{ flex: 1, minWidth: '150px' }}>
+                    <option value="">Select Class...</option>
+                    {classRooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <button type="submit" className="primary-button" disabled={isSubmittingCourse}>
+                    {isSubmittingCourse ? 'Assigning...' : 'Create Course'}
+                  </button>
+                </form>
+                
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  <table className="data-table">
+                    <thead><tr><th>Teacher</th><th>Subject</th><th>ClassRoom</th><th style={{ width: '40px' }}></th></tr></thead>
+                    <tbody>
+                      {courses.length === 0 ? <tr><td colSpan="4">No courses assigned.</td></tr> : courses.map(c => (
+                        <tr key={c.id}>
+                          <td data-label="Teacher" style={{ fontWeight: 600 }}>{c.teacher?.name}</td>
+                          <td data-label="Subject">{c.subject?.name}</td>
+                          <td data-label="ClassRoom">{c.class_room?.name}</td>
+                          <td data-label="Action">
+                            <button className="icon-button" style={{ color: 'var(--status-danger)' }} onClick={() => handleDeleteCourse(c.id)}>
                               <Trash2 size={16} />
                             </button>
                           </td>

@@ -105,27 +105,11 @@ const LoginScreen = ({ onLogin }) => {
           Secure Authentication System
         </p>
 
-        {/* Tabs for Login / Register */}
+        {/* Title instead of tabs */}
         {!isForgotPassword && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-            <button 
-              onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }} 
-              style={{ 
-                flex: 1, padding: '8px', background: 'none', 
-                borderBottom: isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
-                color: isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
-              }}>
-              Log In
-            </button>
-            <button 
-              onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }} 
-              style={{ 
-                flex: 1, padding: '8px', background: 'none', 
-                borderBottom: !isLogin ? '2px solid var(--accent-blue)' : '2px solid transparent', 
-                color: !isLogin ? 'white' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.3s' 
-              }}>
-              Sign Up
-            </button>
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: 'white', marginBottom: '8px' }}>Log In</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Enter your credentials to access your portal.</p>
           </div>
         )}
 

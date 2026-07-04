@@ -40,6 +40,33 @@ export class AcademicsController {
     return this.academicsService.deleteClassRoom(Number(id));
   }
 
+  @Post('classrooms/:id/teacher')
+  assignClassTeacher(@Param('id') id: string, @Body() data: { teacherId: number }) {
+    return this.academicsService.assignClassTeacher(Number(id), data.teacherId);
+  }
+
+  // --- Courses ---
+
+  @Post('courses')
+  createCourse(@Body() data: { teacherId: number, subjectId: number, classRoomId: number }) {
+    return this.academicsService.createCourse(data.teacherId, data.subjectId, data.classRoomId);
+  }
+
+  @Get('courses')
+  getCourses() {
+    return this.academicsService.findAllCourses();
+  }
+
+  @Get('courses/teacher/:teacherId')
+  getTeacherCourses(@Param('teacherId') teacherId: string) {
+    return this.academicsService.findTeacherCourses(Number(teacherId));
+  }
+
+  @Delete('courses/:id')
+  deleteCourse(@Param('id') id: string) {
+    return this.academicsService.deleteCourse(Number(id));
+  }
+
   @Get('classes/:className/students')
   getClassStudents(@Param('className') className: string) {
     return this.academicsService.findStudentsByClass(className);
