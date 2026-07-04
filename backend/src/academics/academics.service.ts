@@ -120,14 +120,19 @@ export class AcademicsService {
     try {
       let course = await this.courseRepository.findOne({ where: { class_room: { id: classRoom.id } }, relations: { class_room: true } });
       if (course) {
-        const enrollment = this.enrollmentRepository.create({
-          student: user,
-          course: course
+        const existingEnrollment = await this.enrollmentRepository.findOne({
+          where: { student: { id: user.id }, course: { id: course.id } }
         });
-        await this.enrollmentRepository.save(enrollment);
+        if (!existingEnrollment) {
+          const enrollment = this.enrollmentRepository.create({
+            student: user,
+            course: course
+          });
+          await this.enrollmentRepository.save(enrollment);
+        }
       }
     } catch (e) {
-      console.warn('Enrollment linking skipped due to missing course constraints:', e.message);
+      console.warn('Enrollment linking skipped due to error:', e.message);
     }
 
     return {

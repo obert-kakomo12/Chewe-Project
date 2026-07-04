@@ -775,6 +775,11 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
     justify-content: flex-end;
     align-items: center;
     gap: 12px;
+    word-break: break-word;
+    min-width: 0;
+  }
+  .glass-panel {
+    padding: 16px !important;
   }
   .data-table td:last-child, .report-table td:last-child {
     border-bottom: none;
