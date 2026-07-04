@@ -17,7 +17,7 @@ const StudentDashboard = ({ currentUser }) => {
 
         const [marksRes, materialsRes, infoRes] = await Promise.all([
           fetch(`${API_BASE_URL}/assessments/my-marks`, { headers }),
-          fetch(`${API_BASE_URL}/materials`, { headers }),
+          fetch(`${API_BASE_URL}/materials/student/${currentUser.id}`, { headers }),
           fetch(`${API_BASE_URL}/communications/student-feed`, { 
             method: 'POST', 
             headers: { ...headers, 'Content-Type': 'application/json' },

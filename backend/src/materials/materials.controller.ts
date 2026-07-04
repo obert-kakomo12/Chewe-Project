@@ -10,9 +10,14 @@ export class MaterialsController {
     return this.materialsService.create(createDto);
   }
 
-  @Get('class/:className')
-  findByClass(@Param('className') className: string) {
-    return this.materialsService.findByClass(className);
+  @Get('course/:courseId')
+  findByCourse(@Param('courseId') courseId: string) {
+    return this.materialsService.findByCourse(Number(courseId));
+  }
+
+  @Get('student/:studentId')
+  findByStudent(@Param('studentId') studentId: string) {
+    return this.materialsService.findByStudent(Number(studentId));
   }
 
   @Get()

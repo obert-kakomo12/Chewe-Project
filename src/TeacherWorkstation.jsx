@@ -65,23 +65,55 @@ const TeacherWorkstation = () => {
   const [newStudentData, setNewStudentData] = useState({ name: '', email: '' });
   const [classMaterials, setClassMaterials] = useState([]);
   
-  const [masterSubjects, setMasterSubjects] = useState([]);
-  const [masterClassRooms, setMasterClassRooms] = useState([]);
+  const [teacherCourses, setTeacherCourses] = useState([]);
+  const [homeroomClasses, setHomeroomClasses] = useState([]);
   const [loadingConfig, setLoadingConfig] = useState(true);
 
   React.useEffect(() => {
     const fetchConfig = async () => {
       try {
+        const currentUserStr = localStorage.getItem('currentUser');
+        if (!currentUserStr) return;
+        const currentUser = JSON.parse(currentUserStr);
+        
         const token = localStorage.getItem('access_token');
         const headers = { 'Authorization': `Bearer ${token}` };
-        const [subjRes, classRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/academics/subjects`, { headers }),
+        
+        const [courseRes, classRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/academics/courses/teacher/${currentUser.id}`, { headers }),
           fetch(`${API_BASE_URL}/academics/classrooms`, { headers })
         ]);
-        if (subjRes.ok) setMasterSubjects(await subjRes.json());
-        if (classRes.ok) setMasterClassRooms(await classRes.json());
+        
+        let fetchedCourses = [];
+        let fetchedClasses = [];
+        
+        if (courseRes.ok) fetchedCourses = await courseRes.json();
+        if (classRes.ok) fetchedClasses = await classRes.json();
+        
+        setTeacherCourses(fetchedCourses);
+        
+        const myHomerooms = fetchedClasses.filter(c => c.class_teacher?.id === currentUser.id);
+        setHomeroomClasses(myHomerooms);
+        
+        // Auto-generate teacherProfile from courses so they don't need the setup screen
+        if (fetchedCourses.length > 0 || myHomerooms.length > 0) {
+          const subjectsList = fetchedCourses.map(c => `${c.subject.name} - ${c.class_room.name}`);
+          const homeroomList = myHomerooms.map(h => `Homeroom - ${h.name}`);
+          const combinedList = [...subjectsList, ...homeroomList];
+          
+          setTeacherProfile({
+            name: currentUser.name,
+            department: 'Academic', // default
+            subjects: combinedList,
+            courses: fetchedCourses
+          });
+          
+          if (combinedList.length > 0) {
+            setSelectedClass(combinedList[0]);
+          }
+        }
       } catch (err) {
-        console.error('Failed to load curriculum config', err);
+        console.error('Failed to load teacher config', err);
       } finally {
         setLoadingConfig(false);
       }
@@ -90,11 +122,14 @@ const TeacherWorkstation = () => {
   }, []);
 
   React.useEffect(() => {
-    if (viewMode === 'materials' && selectedClass) {
+    if (viewMode === 'materials' && selectedClass && teacherProfile) {
+      const selectedCourse = teacherProfile.courses?.find(c => `${c.subject.name} - ${c.class_room.name}` === selectedClass);
+      if (!selectedCourse) return;
+      
       const fetchMaterials = async () => {
         try {
           const token = localStorage.getItem('access_token');
-          const res = await fetch(`${API_BASE_URL}/materials/class/${encodeURIComponent(selectedClass)}`, {
+          const res = await fetch(`${API_BASE_URL}/materials/course/${selectedCourse.id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
@@ -106,7 +141,7 @@ const TeacherWorkstation = () => {
       };
       fetchMaterials();
     }
-  }, [viewMode, selectedClass]);
+  }, [viewMode, selectedClass, teacherProfile]);
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
@@ -298,6 +333,8 @@ const TeacherWorkstation = () => {
 
   const handleClassSwitch = async (newClass, currentCache = classDataCache) => {
     setSelectedClass(newClass);
+    const actualClassName = newClass.includes(' - ') ? newClass.split(' - ')[1] : newClass;
+    
     if (currentCache[newClass]) {
       setStudents(currentCache[newClass]);
       return;
@@ -305,7 +342,7 @@ const TeacherWorkstation = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch(`${API_BASE_URL}/academics/classes/${encodeURIComponent(newClass)}/students`, {
+      const res = await fetch(`${API_BASE_URL}/academics/classes/${encodeURIComponent(actualClassName)}/students`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -375,75 +412,13 @@ const TeacherWorkstation = () => {
 
   if (!teacherProfile) {
     return (
-      <div className="content-area animate-fade-in" style={{ display: 'flex', justifyContent: 'center' }}>
-        <div className="glass-panel" style={{ maxWidth: '600px', width: '100%' }}>
-          <h2 style={{ marginBottom: '6px' }}>Teacher Workstation Setup</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.875rem' }}>
-            Configure your teaching load based on official curriculum mappings.
+      <div className="content-area animate-fade-in" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <div className="glass-panel" style={{ maxWidth: '600px', width: '100%', textAlign: 'center', padding: '40px' }}>
+          <AlertTriangle size={48} style={{ color: 'var(--status-warning)', margin: '0 auto 16px auto' }} />
+          <h2 style={{ marginBottom: '16px' }}>No Assignments Yet</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            You have not been assigned to any courses or homerooms. Please wait for the Executive Administrator to assign your subjects and classes.
           </p>
-
-          <form onSubmit={handleSetupComplete} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Full Name</label>
-              <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
-                placeholder="e.g. Mrs. N. Dube" value={setupName} onChange={e => setSetupName(e.target.value)} required />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Academic Level</label>
-                <select className="premium-select" style={{ width: '100%' }} value={setupLevel} onChange={e => handleLevelChange(e.target.value)}>
-                  <option value="O-Level">O-Level</option>
-                  <option value="A-Level">A-Level</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Specific Form</label>
-                <select className="premium-select" style={{ width: '100%' }} value={setupFormNumber} onChange={e => setSetupFormNumber(e.target.value)}>
-                  {setupLevel.includes('O-Level')
-                    ? ['Form 1','Form 2','Form 3','Form 4'].map(f => <option key={f}>{f}</option>)
-                    : ['Form 5','Form 6'].map(f => <option key={f}>{f}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Department / Stream</label>
-              <select className="premium-select" style={{ width: '100%' }} value={setupStream}
-                onChange={e => { setSetupStream(e.target.value); setSetupSubjects([]); }}>
-                <option value="Sciences">Sciences</option>
-                <option value="Commercials">Commercials</option>
-                <option value="Arts">Arts</option>
-                <option value="General">General</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '10px', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Subjects — {setupFormNumber} {setupStream}
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '10px', background: '#f0f4f8', border: '1.5px solid var(--border-color)', padding: '16px', borderRadius: '8px' }}>
-                {availableSubjects.length === 0 && <span style={{fontSize: '0.8rem', color: '#64748b'}}>No subjects found for this stream. Executives must add them.</span>}
-                {availableSubjects.map(subject => (
-                  <label key={subject} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
-                    <input type="checkbox" checked={setupSubjects.includes(subject)} onChange={() => handleSubjectToggle(subject)}
-                      style={{ width: '15px', height: '15px', accentColor: 'var(--accent-blue)' }} />
-                    {subject}
-                  </label>
-                ))}
-              </div>
-              {setupSubjects.length === 0 && (
-                <p style={{ color: 'var(--status-warning)', fontSize: '0.75rem', marginTop: '8px' }}>
-                  Select at least one subject to proceed.
-                </p>
-              )}
-            </div>
-
-            <button type="submit" className="action-button"
-              style={{ justifyContent: 'center', opacity: setupSubjects.length === 0 ? 0.45 : 1, pointerEvents: setupSubjects.length === 0 ? 'none' : 'auto' }}>
-              <UserCheck size={17} /> Initialize Workstation
-            </button>
-          </form>
         </div>
       </div>
     );
@@ -502,34 +477,38 @@ const TeacherWorkstation = () => {
         >
           Attendance Register
         </button>
-        <button 
-          onClick={() => setViewMode('materials')}
-          style={{ 
-            padding: '8px 16px', 
-            borderRadius: '4px', 
-            border: 'none', 
-            cursor: 'pointer',
-            fontWeight: 500,
-            background: viewMode === 'materials' ? 'var(--accent-blue)' : '#e5e7eb',
-            color: viewMode === 'materials' ? '#fff' : 'var(--text-secondary)'
-          }}
-        >
-          Class Materials
-        </button>
-        <button 
-          onClick={() => setViewMode('manage-class')}
-          style={{ 
-            padding: '8px 16px', 
-            borderRadius: '4px', 
-            border: 'none', 
-            cursor: 'pointer',
-            fontWeight: 500,
-            background: viewMode === 'manage-class' ? 'var(--accent-blue)' : '#e5e7eb',
-            color: viewMode === 'manage-class' ? '#fff' : 'var(--text-secondary)'
-          }}
-        >
-          Manage Class
-        </button>
+        {!selectedClass.startsWith('Homeroom') && (
+          <button 
+            onClick={() => setViewMode('materials')}
+            style={{ 
+              padding: '8px 16px', 
+              borderRadius: '4px', 
+              border: 'none', 
+              cursor: 'pointer',
+              fontWeight: 500,
+              background: viewMode === 'materials' ? 'var(--accent-blue)' : '#e5e7eb',
+              color: viewMode === 'materials' ? '#fff' : 'var(--text-secondary)'
+            }}
+          >
+            Class Materials
+          </button>
+        )}
+        {selectedClass.startsWith('Homeroom') && (
+          <button 
+            onClick={() => setViewMode('manage-class')}
+            style={{ 
+              padding: '8px 16px', 
+              borderRadius: '4px', 
+              border: 'none', 
+              cursor: 'pointer',
+              fontWeight: 500,
+              background: viewMode === 'manage-class' ? 'var(--accent-blue)' : '#e5e7eb',
+              color: viewMode === 'manage-class' ? '#fff' : 'var(--text-secondary)'
+            }}
+          >
+            Manage Class
+          </button>
+        )}
       </div>
 
       {attendanceSubmitted && (
@@ -707,15 +686,18 @@ const TeacherWorkstation = () => {
               const link = e.target.link.value;
               const token = localStorage.getItem('access_token');
               try {
+                const selectedCourse = teacherProfile.courses?.find(c => `${c.subject.name} - ${c.class_room.name}` === selectedClass);
+                if (!selectedCourse) return;
+
                 await fetch(`${API_BASE_URL}/materials`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                  body: JSON.stringify({ title, google_drive_link: link, class: selectedClass, posted_by: teacherProfile.name })
+                  body: JSON.stringify({ title, google_drive_link: link, course: { id: selectedCourse.id }, posted_by: teacherProfile.name })
                 });
                 alert('Material posted successfully!');
                 e.target.reset();
                 // Refresh list
-                const fresh = await fetch(`${API_BASE_URL}/materials/class/${encodeURIComponent(selectedClass)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const fresh = await fetch(`${API_BASE_URL}/materials/course/${selectedCourse.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (fresh.ok) setClassMaterials(await fresh.json());
               } catch (err) {
                 alert('Failed to post material');
