@@ -97,8 +97,8 @@ export class AcademicsService {
     await this.courseRepository.delete(id);
   }
 
-  async findStudentsByClass(className: string) {
-    const classRoom = await this.classRoomRepository.findOne({ where: { name: className } });
+  async findStudentsByClass(classRoomId: string | number) {
+    const classRoom = await this.classRoomRepository.findOne({ where: { id: Number(classRoomId) } });
     if (!classRoom) return [];
 
     const usersByClassId = await this.userRepository.find({
@@ -139,56 +139,34 @@ export class AcademicsService {
     });
   }
 
-  async enrollNewStudent(className: string, name: string, email: string) {
-    let classRoom = await this.classRoomRepository.findOne({ where: { name: className } });
-    if (!classRoom) {
-      classRoom = this.classRoomRepository.create({ name: className });
-      await this.classRoomRepository.save(classRoom);
-    }
+  async assignStudentToClassRoom(studentId: number, classRoomId: number) {
+    const user = await this.userRepository.findOne({ where: { id: studentId } });
+    if (!user) throw new Error('Student not found');
+    
+    const classRoom = await this.classRoomRepository.findOne({ where: { id: classRoomId } });
+    if (!classRoom) throw new Error('ClassRoom not found');
 
-    let user = await this.userRepository.findOne({ where: { email } });
-    if (!user) {
-      user = this.userRepository.create({
-        name,
-        email,
-        role: 'Student',
-        password_hash: 'mockhash',
-        class_room_id: classRoom.id
+    user.class_room_id = classRoom.id;
+    await this.userRepository.save(user);
+
+    // Find all courses associated with this classroom
+    const courses = await this.courseRepository.find({ where: { class_room: { id: classRoom.id } }, relations: { class_room: true } });
+    
+    // Create enrollments for all courses
+    for (const course of courses) {
+      const existingEnrollment = await this.enrollmentRepository.findOne({
+        where: { student: { id: user.id }, course: { id: course.id } }
       });
-      await this.userRepository.save(user);
-    } else {
-      user.class_room_id = classRoom.id;
-      await this.userRepository.save(user);
-    }
-
-    try {
-      let course = await this.courseRepository.findOne({ where: { class_room: { id: classRoom.id } }, relations: { class_room: true } });
-      if (course) {
-        const existingEnrollment = await this.enrollmentRepository.findOne({
-          where: { student: { id: user.id }, course: { id: course.id } }
+      if (!existingEnrollment) {
+        const enrollment = this.enrollmentRepository.create({
+          student: user,
+          course: course
         });
-        if (!existingEnrollment) {
-          const enrollment = this.enrollmentRepository.create({
-            student: user,
-            course: course
-          });
-          await this.enrollmentRepository.save(enrollment);
-        }
+        await this.enrollmentRepository.save(enrollment);
       }
-    } catch (e) {
-      console.warn('Enrollment linking skipped due to error:', e.message);
     }
 
-    return {
-      id: `CT24-${String(user.id).padStart(4, '0')}`,
-      dbId: user.id,
-      name: user.name,
-      inClass: 0,
-      monthly: 0,
-      endTerm: 0,
-      attendanceStatus: 'Present',
-      attendanceRemark: '',
-    };
+    return { message: 'Student successfully assigned and enrolled in associated courses', user };
   }
 
   async getPathfinderData() {

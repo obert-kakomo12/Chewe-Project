@@ -109,6 +109,16 @@ export class UsersController {
     return this.usersService.findStaff();
   }
 
+  @Get('students')
+  async getStudents(@Headers('authorization') authHeader?: string) {
+    const userId = this.extractUserId(authHeader);
+    const user = await this.usersService.findById(userId);
+    if (!user || user.role !== 'Executive') {
+      throw new UnauthorizedException('Only Executives can view the student roster');
+    }
+    return this.usersService.findStudents();
+  }
+
   @Delete(':id')
   async deleteStaff(@Headers('authorization') authHeader: string, @Param('id') id: string) {
     const userId = this.extractUserId(authHeader);

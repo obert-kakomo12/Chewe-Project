@@ -67,13 +67,13 @@ export class AcademicsController {
     return this.academicsService.deleteCourse(Number(id));
   }
 
-  @Get('classes/:className/students')
-  getClassStudents(@Param('className') className: string) {
-    return this.academicsService.findStudentsByClass(className);
+  @Get('classes/:classRoomId/students')
+  getClassStudents(@Param('classRoomId') classRoomId: string) {
+    return this.academicsService.findStudentsByClass(classRoomId); // We need to update this service method too if it uses string
   }
 
-  @Post('classes/:className/students')
-  enrollStudent(@Param('className') className: string, @Body() data: { name: string, email: string }) {
-    return this.academicsService.enrollNewStudent(className, data.name, data.email);
+  @Post('classrooms/:classRoomId/students')
+  assignStudentToClassRoom(@Param('classRoomId') classRoomId: string, @Body() data: { studentId: number }) {
+    return this.academicsService.assignStudentToClassRoom(data.studentId, Number(classRoomId));
   }
 }
