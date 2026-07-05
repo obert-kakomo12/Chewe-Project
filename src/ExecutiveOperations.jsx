@@ -577,8 +577,8 @@ const ExecutiveOperations = () => {
                 {pipeline.length === 0 ? (
                   <tr><td colSpan="5" style={{ textAlign: 'center' }}>No candidates meet the criteria currently.</td></tr>
                 ) : (
-                  pipeline.map(p => (
-                    <tr key={p.student?.id || Math.random()}>
+                  pipeline.map((p, index) => (
+                    <tr key={p.student?.id || `pipeline-${index}`}>
                       <td data-label="Student Name" style={{ fontWeight: 600 }}>{p.student?.name || 'Unknown Student'}</td>
                       <td data-label="Confidence Index">
                         <span style={{ color: 'var(--status-success)', fontWeight: 700 }}>{p.confidence_index} / 100</span>
