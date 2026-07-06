@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Course } from './entities/course.entity';
@@ -98,7 +99,12 @@ export class AcademicsService {
   }
 
   async findStudentsByClass(classRoomId: string | number) {
-    const classRoom = await this.classRoomRepository.findOne({ where: { id: Number(classRoomId) } });
+    let classRoom;
+    if (!isNaN(Number(classRoomId))) {
+      classRoom = await this.classRoomRepository.findOne({ where: { id: Number(classRoomId) } });
+    } else {
+      classRoom = await this.classRoomRepository.findOne({ where: { name: String(classRoomId) } });
+    }
     if (!classRoom) return [];
 
     const usersByClassId = await this.userRepository.find({
@@ -167,6 +173,53 @@ export class AcademicsService {
     }
 
     return { message: 'Student successfully assigned and enrolled in associated courses', user };
+  }
+
+  async createAndEnrollStudent(classNameOrId: string, name: string, email: string) {
+    let classRoom;
+    if (!isNaN(Number(classNameOrId))) {
+      classRoom = await this.classRoomRepository.findOne({ where: { id: Number(classNameOrId) } });
+    } else {
+      classRoom = await this.classRoomRepository.findOne({ where: { name: classNameOrId } });
+    }
+    if (!classRoom) throw new Error('ClassRoom not found');
+
+    const salt = await bcrypt.genSalt();
+    const hash = await bcrypt.hash('password123', salt);
+
+    const student = this.userRepository.create({
+      name,
+      email,
+      role: 'Student',
+      password_hash: hash,
+      class_room_id: classRoom.id
+    });
+    await this.userRepository.save(student);
+
+    // Find all courses associated with this classroom
+    const courses = await this.courseRepository.find({ where: { class_room: { id: classRoom.id } } });
+    
+    // Create enrollments for all courses
+    for (const course of courses) {
+      const enrollment = this.enrollmentRepository.create({
+        student,
+        course
+      });
+      await this.enrollmentRepository.save(enrollment);
+    }
+
+    return {
+      id: `CT24-${String(student.id).padStart(4, '0')}`,
+      dbId: student.id,
+      name: student.name,
+      average: 0,
+      feeStatus: 'FULL',
+      inClass: 0,
+      monthly: 0,
+      endTerm: 0,
+      attendanceStatus: 'Present',
+      attendanceRemark: '',
+    };
   }
 
   async getPathfinderData() {
