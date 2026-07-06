@@ -482,17 +482,17 @@ const ExecutiveOperations = () => {
               <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0d1f45', margin: 0 }}>Class & Subject Builder</h3>
             </div>
             
-            <div className="dashboard-row" style={{ gap: '24px' }}>
+            <div className="builder-grid">
               {/* Subjects */}
               <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <h4 style={{ margin: '0 0 16px 0', color: '#0d1f45', fontWeight: 600 }}>Master Subjects</h4>
-                <form onSubmit={handleAddSubject} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                  <input type="text" className="mark-input" placeholder="Name (e.g. Maths)" value={newSubject.name} onChange={e => setNewSubject({...newSubject, name: e.target.value})} required style={{ flex: 1, minWidth: '120px', textAlign: 'left' }} />
-                  <input type="text" className="mark-input" placeholder="Code" value={newSubject.code} onChange={e => setNewSubject({...newSubject, code: e.target.value})} required style={{ width: '80px', textAlign: 'left' }} />
-                  <select className="premium-select" style={{ minWidth: '100px' }} value={newSubject.level} onChange={e => setNewSubject({...newSubject, level: e.target.value})}>
+                <form onSubmit={handleAddSubject} className="builder-form-row" style={{ marginBottom: '16px' }}>
+                  <input type="text" className="mark-input" placeholder="Name (e.g. Maths)" value={newSubject.name} onChange={e => setNewSubject({...newSubject, name: e.target.value})} required style={{ flex: '2 1 150px' }} />
+                  <input type="text" className="mark-input" placeholder="Code" value={newSubject.code} onChange={e => setNewSubject({...newSubject, code: e.target.value})} required style={{ flex: '1 1 70px' }} />
+                  <select className="premium-select" value={newSubject.level} onChange={e => setNewSubject({...newSubject, level: e.target.value})}>
                     <option>O-Level</option><option>A-Level</option>
                   </select>
-                  <select className="premium-select" style={{ minWidth: '110px' }} value={newSubject.stream} onChange={e => setNewSubject({...newSubject, stream: e.target.value})}>
+                  <select className="premium-select" value={newSubject.stream} onChange={e => setNewSubject({...newSubject, stream: e.target.value})}>
                     <option>Sciences</option><option>Commercials</option><option>Arts</option><option>General</option>
                   </select>
                   <button type="submit" className="primary-button" disabled={isSubmittingSubject}>
@@ -523,9 +523,9 @@ const ExecutiveOperations = () => {
               {/* Classes */}
               <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <h4 style={{ margin: '0 0 16px 0', color: '#0d1f45', fontWeight: 600 }}>School ClassRooms</h4>
-                <form onSubmit={handleAddClass} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                  <input type="text" className="mark-input" placeholder="Class Name (e.g. Form 1 East)" value={newClass.name} onChange={e => setNewClass({...newClass, name: e.target.value})} required style={{ flex: 1, textAlign: 'left' }} />
-                  <select className="premium-select" style={{ minWidth: '100px' }} value={newClass.grade_level} onChange={e => setNewClass({...newClass, grade_level: e.target.value})}>
+                <form onSubmit={handleAddClass} className="builder-form-row" style={{ marginBottom: '16px' }}>
+                  <input type="text" className="mark-input" placeholder="Class Name (e.g. Form 1 East)" value={newClass.name} onChange={e => setNewClass({...newClass, name: e.target.value})} required style={{ flex: '2 1 180px' }} />
+                  <select className="premium-select" value={newClass.grade_level} onChange={e => setNewClass({...newClass, grade_level: e.target.value})}>
                     <option>Form 1</option><option>Form 2</option><option>Form 3</option><option>Form 4</option><option>Form 5</option><option>Form 6</option>
                   </select>
                   <button type="submit" className="primary-button" disabled={isSubmittingClass}>
@@ -534,12 +534,12 @@ const ExecutiveOperations = () => {
                 </form>
 
                 {/* Assign Class Teacher Form */}
-                <form onSubmit={handleAssignClassTeacher} style={{ display: 'flex', gap: '8px', marginBottom: '16px', padding: '12px', background: 'rgba(59,130,246,0.05)', borderRadius: '6px' }}>
-                  <select className="premium-select" value={classTeacherAssignment.classRoomId} onChange={e => setClassTeacherAssignment({...classTeacherAssignment, classRoomId: e.target.value})} required style={{ flex: 1 }}>
+                <form onSubmit={handleAssignClassTeacher} className="builder-form-row" style={{ marginBottom: '16px', padding: '12px', background: 'rgba(59,130,246,0.05)', borderRadius: '6px' }}>
+                  <select className="premium-select" value={classTeacherAssignment.classRoomId} onChange={e => setClassTeacherAssignment({...classTeacherAssignment, classRoomId: e.target.value})} required>
                     <option value="">Select Class...</option>
                     {classRooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
-                  <select className="premium-select" value={classTeacherAssignment.teacherId} onChange={e => setClassTeacherAssignment({...classTeacherAssignment, teacherId: e.target.value})} required style={{ flex: 1 }}>
+                  <select className="premium-select" value={classTeacherAssignment.teacherId} onChange={e => setClassTeacherAssignment({...classTeacherAssignment, teacherId: e.target.value})} required>
                     <option value="">Select Teacher...</option>
                     {staff.filter(s => s.role === 'Teacher').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
@@ -571,16 +571,16 @@ const ExecutiveOperations = () => {
               {/* Course Assignments */}
               <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', gridColumn: '1 / -1' }}>
                 <h4 style={{ margin: '0 0 16px 0', color: '#0d1f45' }}>Course Assignments (Teacher to Subject mapping)</h4>
-                <form onSubmit={handleCreateCourse} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                  <select className="premium-select" value={newCourse.teacherId} onChange={e => setNewCourse({...newCourse, teacherId: e.target.value})} required style={{ flex: 1, minWidth: '150px' }}>
+                <form onSubmit={handleCreateCourse} className="builder-form-row" style={{ marginBottom: '16px' }}>
+                  <select className="premium-select" value={newCourse.teacherId} onChange={e => setNewCourse({...newCourse, teacherId: e.target.value})} required>
                     <option value="">Select Teacher...</option>
                     {staff.filter(s => s.role === 'Teacher').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
-                  <select className="premium-select" value={newCourse.subjectId} onChange={e => setNewCourse({...newCourse, subjectId: e.target.value})} required style={{ flex: 1, minWidth: '150px' }}>
+                  <select className="premium-select" value={newCourse.subjectId} onChange={e => setNewCourse({...newCourse, subjectId: e.target.value})} required>
                     <option value="">Select Subject...</option>
                     {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
-                  <select className="premium-select" value={newCourse.classRoomId} onChange={e => setNewCourse({...newCourse, classRoomId: e.target.value})} required style={{ flex: 1, minWidth: '150px' }}>
+                  <select className="premium-select" value={newCourse.classRoomId} onChange={e => setNewCourse({...newCourse, classRoomId: e.target.value})} required>
                     <option value="">Select Class...</option>
                     {classRooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
