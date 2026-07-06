@@ -28,11 +28,6 @@ const TeacherWorkstation = () => {
   const [teacherProfile,  setTeacherProfile]  = useState(null);
   const [viewMode,        setViewMode]        = useState('academics'); // 'academics' or 'attendance'
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
-  const [setupName,       setSetupName]       = useState('');
-  const [setupLevel,      setSetupLevel]      = useState('O-Level');
-  const [setupFormNumber, setSetupFormNumber] = useState('Form 1');
-  const [setupStream,     setSetupStream]     = useState('General');
-  const [setupSubjects,   setSetupSubjects]   = useState([]);
   const [selectedClass,   setSelectedClass]   = useState('');
   const [classDataCache,  setClassDataCache]  = useState({});
   const [students,        setStudents]        = useState([]);
@@ -331,26 +326,6 @@ const TeacherWorkstation = () => {
     }
   };
 
-  const availableSubjects = masterSubjects
-    .filter(s => s.level === setupLevel && s.stream === setupStream)
-    .map(s => s.name);
-
-  const handleSubjectToggle = (s) =>
-    setSetupSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
-
-  const handleLevelChange = (level) => {
-    setSetupLevel(level);
-    setSetupFormNumber(level.includes('O-Level') ? 'Form 1' : 'Form 5');
-    setSetupSubjects([]);
-  };
-
-  const handleSetupComplete = (e) => {
-    e.preventDefault();
-    if (!setupName || setupSubjects.length === 0) return;
-    const classes = setupSubjects.map(s => `${setupFormNumber} ${setupStream}: ${s}`);
-    setTeacherProfile({ name: setupName, department: setupStream, subjects: classes });
-    handleClassSwitch(classes[0], {});
-  };
 
   const handleClassSwitch = async (newClass, currentCache = classDataCache) => {
     setSelectedClass(newClass);
