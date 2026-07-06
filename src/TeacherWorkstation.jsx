@@ -34,6 +34,34 @@ const TeacherWorkstation = () => {
   const [students,        setStudents]        = useState([]);
   const [reportModalData, setReportModalData] = useState(null);
   const [editedComment,   setEditedComment]   = useState('');
+  const [isGeneratingComment, setIsGeneratingComment] = useState(false);
+
+  const fetchAiComment = async (studentData) => {
+    setIsGeneratingComment(true);
+    try {
+      const payload = {
+        studentName: studentData.name,
+        total: studentData.total,
+        subject: selectedClass.split(' - ')[0],
+        atRisk: studentData.total < 50
+      };
+      const res = await fetch(`${API_BASE_URL}/ai/report-comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      setEditedComment(data.response);
+      setReportModalData(prev => ({ ...prev, aiComment: data.response }));
+    } catch (err) {
+      console.error('Failed to generate AI comment', err);
+      setEditedComment('Error generating comment.');
+    }
+    setIsGeneratingComment(false);
+  };
   const [aiInstruction,   setAiInstruction]   = useState('');
   const [adjusting,       setAdjusting]       = useState(false);
   const [isSubmitting,    setIsSubmitting]    = useState(false);
@@ -376,36 +404,9 @@ const TeacherWorkstation = () => {
   const generateReport = (student) => {
     const shortfall = 80 - student.total;
     const requiredVelocity = shortfall > 0 ? `+${shortfall}% improvement needed to reach A grade` : "On track for 'A' Grade ✓";
-    
-    setEditedComment('Generating AI suggestion...');
-    setReportModalData({ ...student, mean: classMean, requiredVelocity, atRisk: student.total < 50, aiComment: 'Generating...' });
-
-    const token = localStorage.getItem('access_token');
-    fetch(`${API_BASE_URL}/assessments/ai-comment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        studentName: student.name,
-        score: student.total,
-        userPrompt: 'None'
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data && data.comment) {
-        setEditedComment(data.comment);
-        setReportModalData(prev => prev && prev.id === student.id ? { ...prev, aiComment: data.comment } : prev);
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      const fallback = `Report generated for ${student.name}. Score: ${student.total}%.`;
-      setEditedComment(fallback);
-      setReportModalData(prev => prev && prev.id === student.id ? { ...prev, aiComment: fallback } : prev);
-    });
+    setEditedComment('Generating AI Insight...');
+    setReportModalData({ ...student, mean: classMean, requiredVelocity, atRisk: student.total < 50, aiComment: '' });
+    fetchAiComment(student);
   };
 
   // ── Setup screen ────────────────────────────────────────────────────────────
@@ -841,25 +842,9 @@ const TeacherWorkstation = () => {
                   <button className="icon-button"
                     style={{ fontSize: '0.7rem', gap: '5px', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}
                     title="Regenerate suggestion"
-                    onClick={() => {
-                      setEditedComment('Regenerating...');
-                      fetch(`${API_BASE_URL}/assessments/ai-comment`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-                        },
-                        body: JSON.stringify({
-                          studentName: reportModalData.name,
-                          score: reportModalData.total,
-                          userPrompt: 'Generate a progress comment'
-                        })
-                      })
-                      .then(res => res.json())
-                      .then(data => data && data.comment && setEditedComment(data.comment))
-                      .catch(() => setEditedComment(`Report generated for ${reportModalData.name}. Score: ${reportModalData.total}%.`));
-                    }}>
-                    <RefreshCw size={13} /> Regenerate
+                    disabled={isGeneratingComment}
+                    onClick={() => { setEditedComment('Generating AI Insight...'); fetchAiComment(reportModalData); }}>
+                    <RefreshCw size={13} className={isGeneratingComment ? "spin" : ""} /> {isGeneratingComment ? "Generating..." : "Regenerate"}
                   </button>
                 </div>
                 <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
@@ -897,8 +882,8 @@ const TeacherWorkstation = () => {
                   onChange={e => setEditedComment(e.target.value)}
                 />
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'flex-end' }}>
-                  <button className="secondary-button" onClick={() => setEditedComment(reportModalData.aiComment)}>
-                    Reset
+                  <button className="secondary-button" onClick={() => fetchAiComment(reportModalData)} disabled={isGeneratingComment}>
+                    Discard
                   </button>
                   <button className="action-button" style={{ padding: '7px 14px' }}>
                     Approve Comment

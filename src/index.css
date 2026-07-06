@@ -698,9 +698,15 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  transition: color var(--transition-fast);
+  padding: 8px;
+  margin-left: -8px; /* Offset the padding */
+  border-radius: 6px;
+  transition: all var(--transition-fast);
 }
-.menu-toggle:hover { color: #ffffff; }
+.menu-toggle:hover, .menu-toggle:active { 
+  color: #ffffff; 
+  background: rgba(255,255,255,0.1); 
+}
 .mobile-overlay { display: none; }
 
 @media (max-width: 1024px) {
@@ -736,69 +742,21 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
   .student-report-info { flex-direction: column; }
   .metrics-grid { grid-template-columns: 1fr; }
 
-  /* Responsive tables as stacked cards */
-  .data-table, .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr,
-  .report-table, .report-table thead, .report-table tbody, .report-table th, .report-table td, .report-table tr {
+  /* Responsive tables with horizontal scroll */
+  .data-table, .report-table, .heatmap-table {
     display: block;
     width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
   }
-  .data-table thead tr, .report-table thead tr {
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-  }
+  
   .spreadsheet-container {
-    overflow-x: hidden;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-    padding: 0;
+    overflow-x: auto !important;
   }
-  .data-table td[style] {
-    position: relative !important;
-    left: auto !important;
-  }
-  .data-table tr, .report-table tr {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 12px;
-    padding: 12px;
-    background: var(--bg-secondary);
-  }
-  .data-table td, .report-table td {
-    border: none;
-    border-bottom: 1px solid var(--border-subtle);
-    position: relative;
-    padding: 10px 0;
-    text-align: right;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 12px;
-    word-break: break-word;
-    min-width: 0;
-  }
+  
   .glass-panel {
     padding: 16px !important;
-  }
-  .data-table td:last-child, .report-table td:last-child {
-    border-bottom: none;
-  }
-  .data-table td::before, .report-table td::before {
-    content: attr(data-label);
-    position: absolute;
-    left: 12px;
-    font-weight: 600;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-  }
-  .data-table td, .report-table td {
-    padding-left: 120px;
-  }
-  /* Remove flex for specific items that need to stretch */
-  .data-table td .mark-input, .data-table td .comment-box {
-    width: 60%;
-    margin-left: auto;
+    overflow-x: hidden;
   }
 }

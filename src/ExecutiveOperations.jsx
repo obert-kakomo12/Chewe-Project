@@ -9,11 +9,14 @@ const ExecutiveOperations = () => {
   const [subjects, setSubjects] = useState([]);
   const [classRooms, setClassRooms] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Modals & Forms
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [newStaffData, setNewStaffData] = useState({ name: '', email: '', role: 'Teacher', password: '' });
+  const [newStudentData, setNewStudentData] = useState({ name: '', email: '', password: '', classRoomId: '' });
   const [newSubject, setNewSubject] = useState({ name: '', code: '', level: 'O-Level', stream: 'Sciences' });
   const [newClass, setNewClass] = useState({ name: '', grade_level: 'Form 1' });
   const [newCourse, setNewCourse] = useState({ teacherId: '', subjectId: '', classRoomId: '' });
@@ -27,6 +30,7 @@ const ExecutiveOperations = () => {
   const [updatingProfile, setUpdatingProfile] = useState(false);
 
   const [isSubmittingStaff, setIsSubmittingStaff] = useState(false);
+  const [isSubmittingStudent, setIsSubmittingStudent] = useState(false);
   const [isSubmittingSubject, setIsSubmittingSubject] = useState(false);
   const [isSubmittingClass, setIsSubmittingClass] = useState(false);
   const [isSubmittingCourse, setIsSubmittingCourse] = useState(false);
@@ -40,18 +44,29 @@ const ExecutiveOperations = () => {
     }
   };
 
+  const fetchStudentData = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const studentRes = await fetch(`${API_BASE_URL}/users/students`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (studentRes.ok) setStudents(await studentRes.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('access_token');
         const headers = { 'Authorization': `Bearer ${token}` };
 
-        const [staffRes, pipeRes, subjRes, classRes, courseRes] = await Promise.all([
+        const [staffRes, pipeRes, subjRes, classRes, courseRes, studentRes] = await Promise.all([
           fetch(`${API_BASE_URL}/users/staff`, { headers }),
           fetch(`${API_BASE_URL}/welfare/sponsorship-pipeline`, { headers }),
           fetch(`${API_BASE_URL}/academics/subjects`, { headers }),
           fetch(`${API_BASE_URL}/academics/classrooms`, { headers }),
-          fetch(`${API_BASE_URL}/academics/courses`, { headers })
+          fetch(`${API_BASE_URL}/academics/courses`, { headers }),
+          fetch(`${API_BASE_URL}/users/students`, { headers })
         ]);
 
         if (staffRes.ok) setStaff(await staffRes.json());
@@ -59,6 +74,7 @@ const ExecutiveOperations = () => {
         if (subjRes.ok) setSubjects(await subjRes.json());
         if (classRes.ok) setClassRooms(await classRes.json());
         if (courseRes.ok) setCourses(await courseRes.json());
+        if (studentRes.ok) setStudents(await studentRes.json());
       } catch (err) {
         console.error('Failed to fetch executive ops data:', err);
       } finally {
@@ -96,6 +112,55 @@ const ExecutiveOperations = () => {
       setIsSubmittingStaff(false);
     }
   };
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    if (isSubmittingStudent) return;
+    setIsSubmittingStudent(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      // 1. Create User
+      const res = await fetch(`${API_BASE_URL}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          name: newStudentData.name,
+          email: newStudentData.email,
+          role: 'Student',
+          password: newStudentData.password
+        })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to create student user');
+      }
+
+      const data = await res.json();
+      const studentId = data.user.id;
+
+      // 2. Assign to ClassRoom (Enrolls in courses automatically)
+      const enrollRes = await fetch(`${API_BASE_URL}/academics/classrooms/${newStudentData.classRoomId}/students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ studentId })
+      });
+
+      if (!enrollRes.ok) {
+        throw new Error('Failed to assign student to class');
+      }
+
+      setIsAddStudentModalOpen(false);
+      setNewStudentData({ name: '', email: '', password: '', classRoomId: '' });
+      fetchStudentData();
+
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsSubmittingStudent(false);
+    }
+  };
+
 
   const handleAddSubject = async (e) => {
     e.preventDefault();
@@ -321,6 +386,7 @@ const ExecutiveOperations = () => {
     <div className="content-area animate-fade-in" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <TabBtn label="Staff Roster" active={activeTab === 'staff-roster'} onClick={() => setActiveTab('staff-roster')} />
+        <TabBtn label="Student Roster" active={activeTab === 'student-roster'} onClick={() => setActiveTab('student-roster')} />
         <TabBtn label="Class & Subject Builder" active={activeTab === 'class-builder'} onClick={() => setActiveTab('class-builder')} />
         <TabBtn label="Sponsorship Pipeline" active={activeTab === 'sponsorship'} onClick={() => setActiveTab('sponsorship')} />
       </div>
@@ -362,6 +428,44 @@ const ExecutiveOperations = () => {
                           <Trash2 size={16} />
                         </button>
                       </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeTab === 'student-roster' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: 'rgba(16,185,129,0.1)', padding: '10px', borderRadius: '8px', color: '#10b981' }}><GraduationCap size={20} /></div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0d1f45', margin: 0 }}>Student Roster & Enrollments</h3>
+              </div>
+              <button className="primary-button" onClick={() => setIsAddStudentModalOpen(true)}>
+                <Plus size={16} /> Add Student
+              </button>
+            </div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.length === 0 ? (
+                  <tr><td colSpan="4" style={{ textAlign: 'center' }}>No students enrolled.</td></tr>
+                ) : (
+                  students.map(s => (
+                    <tr key={s.id}>
+                      <td data-label="Student ID">CT24-{String(s.id).padStart(4, '0')}</td>
+                      <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
+                      <td data-label="Email">{s.email}</td>
+                      <td data-label="Role"><span className="status-badge status-active">{s.role}</span></td>
                     </tr>
                   ))
                 )}
@@ -530,8 +634,8 @@ const ExecutiveOperations = () => {
                 {pipeline.length === 0 ? (
                   <tr><td colSpan="5" style={{ textAlign: 'center' }}>No candidates meet the criteria currently.</td></tr>
                 ) : (
-                  pipeline.map(p => (
-                    <tr key={p.id || Math.random()}>
+                  pipeline.map((p, index) => (
+                    <tr key={p.student?.id || `pipeline-${index}`}>
                       <td data-label="Student Name" style={{ fontWeight: 600 }}>{p.student?.name || 'Unknown Student'}</td>
                       <td data-label="Confidence Index">
                         <span style={{ color: 'var(--status-success)', fontWeight: 700 }}>{p.confidence_index} / 100</span>
@@ -644,6 +748,46 @@ const ExecutiveOperations = () => {
                   {updatingProfile ? 'Saving...' : 'Save Decision'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddStudentModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsAddStudentModalOpen(false)}>
+          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', background: '#fff' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Add New Student</h3>
+              <button className="icon-button" onClick={() => setIsAddStudentModalOpen(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleAddStudent} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Full Name</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={newStudentData.name} onChange={e => setNewStudentData({...newStudentData, name: e.target.value})} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Email Address</label>
+                <input type="email" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={newStudentData.email} onChange={e => setNewStudentData({...newStudentData, email: e.target.value})} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>ClassRoom (Homeroom)</label>
+                <select className="premium-select" style={{ width: '100%' }} value={newStudentData.classRoomId} onChange={e => setNewStudentData({...newStudentData, classRoomId: e.target.value})} required>
+                  <option value="" disabled>Select a ClassRoom</option>
+                  {classRooms.map(cr => (
+                    <option key={cr.id} value={cr.id}>{cr.name} ({cr.grade_level})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Temporary Password</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={newStudentData.password} onChange={e => setNewStudentData({...newStudentData, password: e.target.value})} placeholder="Default: password123" />
+              </div>
+              <button type="submit" className="primary-button" style={{ marginTop: '10px', justifyContent: 'center' }} disabled={isSubmittingStudent}>
+                {isSubmittingStudent ? 'Enrolling...' : 'Enroll Student'}
+              </button>
             </form>
           </div>
         </div>

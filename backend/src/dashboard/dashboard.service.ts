@@ -134,11 +134,7 @@ export class DashboardService {
     const topics = {};
     grades.forEach(g => {
       if (g.assessment) {
-        let name = g.assessment.title || 'General';
-        if (name.includes('Algebra')) name = 'Algebra';
-        else if (name.includes('Shakespeare') || name.includes('Essay')) name = 'Literature';
-        else if (name.includes('Cell') || name.includes('Structure')) name = 'Biology';
-        else name = g.assessment.subject || 'General';
+        const name = g.assessment.subject || 'General';
 
         if (!topics[name]) {
           topics[name] = { sum: 0, count: 0 };

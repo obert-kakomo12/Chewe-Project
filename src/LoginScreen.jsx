@@ -4,15 +4,12 @@ import CTLogo from './CTLogo';
 import { API_BASE_URL } from './config';
 
 const LoginScreen = ({ onLogin }) => {
-  const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [accessCode, setAccessCode] = useState('');
   
   // UI State
   const [loading, setLoading] = useState(false);
@@ -45,10 +42,8 @@ const LoginScreen = ({ onLogin }) => {
       return;
     }
 
-    const endpoint = isLogin ? '/auth/login' : '/auth/register';
-    const payload = isLogin 
-      ? { email, password }
-      : { email, password, name, accessCode };
+    const endpoint = '/auth/login';
+    const payload = { email, password };
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -63,21 +58,37 @@ const LoginScreen = ({ onLogin }) => {
         throw new Error(data.message || 'Authentication failed');
       }
 
-      if (isLogin) {
-        setSuccess('Login successful!');
-        if (data.access_token) {
-          localStorage.setItem('access_token', data.access_token);
+      setSuccess('Login successful!');
+      const token = data.access_token || data.token;
+      if (token) {
+        localStorage.setItem('access_token', token);
+        
+        // Save initial user profile if returned directly
+        let userProfile = data.user || null;
+        if (userProfile) {
+          localStorage.setItem('currentUser', JSON.stringify(userProfile));
         }
-        if (data.user) {
-          localStorage.setItem('currentUser', JSON.stringify(data.user));
+
+        try {
+          const profileRes = await fetch(`${API_BASE_URL}/users/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            userProfile = profileData;
+            localStorage.setItem('currentUser', JSON.stringify(userProfile));
+          }
+        } catch (e) {
+          console.error("Failed to fetch profile from /users/me", e);
         }
-        onLogin(data.user);
+
+        if (userProfile) {
+          onLogin(userProfile);
+        } else {
+          setError('Login successful but failed to load user profile details.');
+        }
       } else {
-        setSuccess('Registration successful! Please log in.');
-        setIsLogin(true);
-        setPassword('');
-        setAccessCode('');
-        setSuccess('');
+        setError('Login successful but no token received.');
       }
     } catch (err) {
       setError(err.message);
@@ -134,23 +145,7 @@ const LoginScreen = ({ onLogin }) => {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {!isLogin && !isForgotPassword && (
-            <div className="animate-fade-in" style={{ position: 'relative' }}>
-              <UserIcon size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="text" placeholder="Full Name" className="mark-input"
-                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
-                value={name} onChange={e => setName(e.target.value)} required={!isLogin} />
-            </div>
-          )}
-          
-          {!isLogin && !isForgotPassword && (
-            <div className="animate-fade-in" style={{ position: 'relative' }}>
-              <KeyRound size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="text" placeholder="School Access Code" className="mark-input"
-                style={{ width: '100%', paddingLeft: '38px', textAlign: 'left' }}
-                value={accessCode} onChange={e => setAccessCode(e.target.value)} required={!isLogin} />
-            </div>
-          )}
+
           
           <div style={{ position: 'relative' }}>
             <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
@@ -180,10 +175,10 @@ const LoginScreen = ({ onLogin }) => {
           )}
           
           <button type="submit" className="action-button" style={{ justifyContent: 'center', marginTop: '4px', opacity: loading ? 0.7 : 1 }} disabled={loading}>
-            {loading ? 'Processing...' : (isForgotPassword ? 'Send Reset Link' : (isLogin ? 'Authenticate' : 'Create Account'))}
+            {loading ? 'Processing...' : (isForgotPassword ? 'Send Reset Link' : 'Authenticate')}
           </button>
 
-          {isLogin && !isForgotPassword && (
+          {!isForgotPassword && (
             <button type="button" onClick={() => { setIsForgotPassword(true); setError(''); setSuccess(''); }}
               style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', cursor: 'pointer', fontSize: '0.8rem', marginTop: '8px' }}>
               Forgot Password?

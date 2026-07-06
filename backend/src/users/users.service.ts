@@ -66,6 +66,10 @@ export class UsersService {
       .getMany();
   }
 
+  async findStudents(): Promise<User[]> {
+    return this.usersRepository.find({ where: { role: 'Student' } });
+  }
+
   async deleteUser(userId: number): Promise<void> {
     await this.usersRepository.delete(userId);
   }
