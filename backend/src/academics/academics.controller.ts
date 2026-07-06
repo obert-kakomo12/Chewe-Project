@@ -69,7 +69,15 @@ export class AcademicsController {
 
   @Get('classes/:classRoomId/students')
   getClassStudents(@Param('classRoomId') classRoomId: string) {
-    return this.academicsService.findStudentsByClass(classRoomId); // We need to update this service method too if it uses string
+    return this.academicsService.findStudentsByClass(classRoomId);
+  }
+
+  @Post('classes/:classRoomId/students')
+  createAndEnrollStudent(
+    @Param('classRoomId') classRoomId: string,
+    @Body() body: { name: string, email: string }
+  ) {
+    return this.academicsService.createAndEnrollStudent(classRoomId, body.name, body.email);
   }
 
   @Post('classrooms/:classRoomId/students')

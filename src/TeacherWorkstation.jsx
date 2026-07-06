@@ -83,8 +83,12 @@ const TeacherWorkstation = () => {
         const token = localStorage.getItem('access_token');
         const headers = { 'Authorization': `Bearer ${token}` };
         
+        const isAdminOrExec = currentUser.role === 'Admin' || currentUser.role === 'Executive';
+        
         const [courseRes, classRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/academics/courses/teacher/${currentUser.id}`, { headers }),
+          fetch(isAdminOrExec 
+            ? `${API_BASE_URL}/academics/courses` 
+            : `${API_BASE_URL}/academics/courses/teacher/${currentUser.id}`, { headers }),
           fetch(`${API_BASE_URL}/academics/classrooms`, { headers })
         ]);
         
@@ -96,18 +100,20 @@ const TeacherWorkstation = () => {
         
         setTeacherCourses(fetchedCourses);
         
-        const myHomerooms = fetchedClasses.filter(c => c.class_teacher?.id === currentUser.id);
+        const myHomerooms = isAdminOrExec 
+          ? fetchedClasses 
+          : fetchedClasses.filter(c => c.class_teacher?.id === currentUser.id);
         setHomeroomClasses(myHomerooms);
         
         // Auto-generate teacherProfile from courses so they don't need the setup screen
         if (fetchedCourses.length > 0 || myHomerooms.length > 0) {
-          const subjectsList = fetchedCourses.map(c => `${c.subject.name} - ${c.class_room.name}`);
+          const subjectsList = fetchedCourses.map(c => `${c.subject?.name || 'Subject'} - ${c.class_room?.name || 'Class'}`);
           const homeroomList = myHomerooms.map(h => `Homeroom - ${h.name}`);
           const combinedList = [...subjectsList, ...homeroomList];
           
           setTeacherProfile({
-            name: currentUser.name,
-            department: 'Academic', // default
+            name: isAdminOrExec ? `${currentUser.name} (Admin Mode)` : currentUser.name,
+            department: isAdminOrExec ? 'Administration' : 'Academic',
             subjects: combinedList,
             courses: fetchedCourses
           });
@@ -115,6 +121,13 @@ const TeacherWorkstation = () => {
           if (combinedList.length > 0) {
             setSelectedClass(combinedList[0]);
           }
+        } else if (isAdminOrExec) {
+          setTeacherProfile({
+            name: `${currentUser.name} (Admin Mode)`,
+            department: 'Administration',
+            subjects: [],
+            courses: []
+          });
         }
       } catch (err) {
         console.error('Failed to load teacher config', err);
@@ -127,7 +140,7 @@ const TeacherWorkstation = () => {
 
   React.useEffect(() => {
     if (viewMode === 'materials' && selectedClass && teacherProfile) {
-      const selectedCourse = teacherProfile.courses?.find(c => `${c.subject.name} - ${c.class_room.name}` === selectedClass);
+      const selectedCourse = teacherProfile.courses?.find(c => `${c.subject?.name || 'Subject'} - ${c.class_room?.name || 'Class'}` === selectedClass);
       if (!selectedCourse) return;
       
       const fetchMaterials = async () => {
