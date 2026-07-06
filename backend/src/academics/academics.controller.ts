@@ -1,9 +1,28 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { AcademicsService } from './academics.service';
+import { JwtService } from '@nestjs/jwt';
+import { UsersService } from '../users/users.service';
 
 @Controller('academics')
 export class AcademicsController {
-  constructor(private readonly academicsService: AcademicsService) {}
+  constructor(
+    private readonly academicsService: AcademicsService,
+    private readonly jwtService: JwtService,
+    private readonly usersService: UsersService,
+  ) {}
+
+  private extractUserId(authHeader?: string): number {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Not authenticated');
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+      const payload = this.jwtService.verify(token);
+      return payload.sub;
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
 
   @Get('pathfinder')
   getPathfinderData() {
@@ -73,10 +92,16 @@ export class AcademicsController {
   }
 
   @Post('classes/:classRoomId/students')
-  createAndEnrollStudent(
+  async createAndEnrollStudent(
+    @Headers('authorization') authHeader: string,
     @Param('classRoomId') classRoomId: string,
     @Body() body: { name: string, email: string }
   ) {
+    const userId = this.extractUserId(authHeader);
+    const user = await this.usersService.findById(userId);
+    if (!user || (user.role !== 'Admin' && user.role !== 'Executive')) {
+      throw new UnauthorizedException('Only Admins/Executives can add students to the system');
+    }
     return this.academicsService.createAndEnrollStudent(classRoomId, body.name, body.email);
   }
 
@@ -85,3 +110,4 @@ export class AcademicsController {
     return this.academicsService.assignStudentToClassRoom(data.studentId, Number(classRoomId));
   }
 }
+
