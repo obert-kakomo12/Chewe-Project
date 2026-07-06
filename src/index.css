@@ -699,7 +699,7 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
   align-items: center;
   justify-content: center;
   padding: 8px;
-  margin-left: -8px; /* Offset the padding */
+  margin-left: -8px;
   border-radius: 6px;
   transition: all var(--transition-fast);
 }
@@ -709,10 +709,15 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
 }
 .mobile-overlay { display: none; }
 
+/* ─── Large Tablet / Small Laptop (≤1024px) ─────────────── */
 @media (max-width: 1024px) {
   .dashboard-row { grid-template-columns: 1fr !important; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-area { padding: 20px; }
+  select.premium-select { min-width: 140px; }
 }
 
+/* ─── Tablet + Mobile (≤768px) ──────────────────────────── */
 @media (max-width: 768px) {
   .menu-toggle { display: flex; }
 
@@ -721,6 +726,7 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
     top: 0; left: -256px;
     height: 100vh;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
   }
   .sidebar.mobile-open { left: 0; box-shadow: 4px 0 24px rgba(13,31,69,0.3); }
 
@@ -729,34 +735,176 @@ select.premium-select option { background: #fff; color: var(--text-primary); }
     position: fixed; inset: 0;
     background: rgba(13,31,69,0.45);
     backdrop-filter: blur(3px);
-    z-index: 8;
+    z-index: 99;
   }
 
-  .topbar { padding: 0 16px; }
-  .content-area { padding: 16px; }
-  .teacher-header { flex-direction: column; align-items: flex-start; }
-  .class-selector { width: 100%; flex-direction: column; align-items: stretch; }
-  .class-selector select, .class-selector button { width: 100%; }
-  .topbar-actions { gap: 10px; }
-  .report-modal { width: calc(100% - 32px); }
-  .student-report-info { flex-direction: column; }
-  .metrics-grid { grid-template-columns: 1fr; }
+  /* Topbar */
+  .topbar { padding: 0 14px; height: 56px; }
+  .topbar-title { font-size: 0.9rem; }
+  .topbar-actions { gap: 8px; }
 
-  /* Responsive tables with horizontal scroll */
-  .data-table, .report-table, .heatmap-table {
+  /* Content */
+  .content-area { padding: 14px; }
+
+  /* Metrics */
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .metric-value { font-size: 1.8rem; }
+
+  /* Teacher header */
+  .teacher-header { flex-direction: column; align-items: flex-start; }
+  .class-selector { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
+  .class-selector select { width: 100%; min-width: unset; }
+  .class-selector button { width: 100%; justify-content: center; }
+
+  /* Panels */
+  .glass-panel { padding: 14px !important; }
+  .page-header-bar { padding: 14px 16px; flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  /* Modals */
+  .modal-overlay { padding: 14px; align-items: flex-end; }
+  .report-modal { 
+    width: 100% !important; 
+    max-width: 100% !important; 
+    max-height: 92vh;
+    border-radius: 12px 12px 0 0;
+  }
+  .glass-panel.animate-fade-in { width: 100% !important; max-width: 100% !important; }
+  .report-body { padding: 14px; }
+  .student-report-info { flex-direction: column; }
+
+  /* Tables - horizontal scroll */
+  .spreadsheet-container { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .data-table { 
+    display: block; 
+    width: 100%; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap; 
+  }
+  .report-table, .heatmap-table {
     display: block;
-    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
   }
-  
-  .spreadsheet-container {
-    overflow-x: auto !important;
+  .data-table thead, .data-table tbody,
+  .data-table th, .data-table td, .data-table tr {
+    display: revert;
   }
-  
-  .glass-panel {
-    padding: 16px !important;
-    overflow-x: hidden;
+  .data-table th, .data-table td { padding: 10px 12px; font-size: 0.8rem; }
+
+  /* Search bars */
+  .search-bar { width: 100% !important; }
+
+  /* Forms / Inputs */
+  select.premium-select { min-width: unset; width: 100%; }
+  .mark-input { width: 60px; padding: 6px 8px; }
+
+  /* Dashboard row */
+  .dashboard-row { grid-template-columns: 1fr !important; }
+
+  /* Rollcall */
+  .rollcall-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+
+  /* Heatmap */
+  .heatmap-grid { overflow-x: auto; }
+
+  /* Buttons */
+  .action-button, .primary-button, .secondary-button {
+    font-size: 0.82rem;
+    padding: 8px 14px;
   }
 }
+
+/* ─── Small Mobile (≤480px) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .metrics-grid { grid-template-columns: 1fr; gap: 10px; }
+  .metric-value { font-size: 1.6rem; }
+  .content-area { padding: 10px; }
+  .topbar { padding: 0 10px; height: 52px; }
+  .topbar-title { font-size: 0.82rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Glass panels go full width edge-to-edge */
+  .glass-panel { padding: 12px !important; border-radius: 8px; }
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .report-modal { border-radius: 12px 12px 0 0; }
+
+  /* Teacher workstation */
+  .teacher-header h2 { font-size: 1.1rem; }
+  .teacher-info p { font-size: 0.78rem; }
+
+  /* Executive Ops tab buttons */
+  .exec-tab-btn { font-size: 0.75rem; padding: 6px 10px; }
+
+  /* Hide less important table columns on tiny screens via data-label stacking */
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td {
+    display: block;
+    width: 100%;
+  }
+  .data-table tr {
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+  .data-table td {
+    text-align: right;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    white-space: normal;
+  }
+  .data-table td:last-child { border-bottom: none; }
+  .data-table td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-align: left;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+  /* Keep mark-input tables scrollable on tiny screens instead of stacked */
+  .spreadsheet-container .data-table,
+  .spreadsheet-container .data-table thead,
+  .spreadsheet-container .data-table tbody,
+  .spreadsheet-container .data-table tr,
+  .spreadsheet-container .data-table td,
+  .spreadsheet-container .data-table th {
+    display: revert;
+    white-space: nowrap;
+  }
+  .spreadsheet-container .data-table td::before { display: none; }
+
+  /* Rollcall */
+  .rollcall-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Mark input smaller */
+  .mark-input { width: 50px; font-size: 0.8rem; }
+
+  /* Search bars */
+  .search-bar { min-width: unset !important; }
+
+  /* Buttons go full width in forms */
+  .primary-button, .action-button { width: 100%; justify-content: center; }
+}
+
+/* ─── Extra Small (≤360px) ───────────────────────────────── */
+@media (max-width: 360px) {
+  .topbar-title { max-width: 100px; }
+  .content-area { padding: 8px; }
+  .rollcall-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── Spin animation (used in TeacherWorkstation) ─────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+

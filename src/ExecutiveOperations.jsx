@@ -367,7 +367,7 @@ const ExecutiveOperations = () => {
 
   // Premium Tab Button Component
   const TabBtn = ({ label, active, onClick }) => (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} className="exec-tab-btn" style={{
       background: active ? 'var(--accent-blue)' : '#ffffff',
       color: active ? '#ffffff' : 'var(--text-secondary)',
       border: '1.5px solid var(--border-color)',
@@ -376,14 +376,15 @@ const ExecutiveOperations = () => {
       fontWeight: 600,
       fontSize: '0.82rem',
       cursor: 'pointer',
-      transition: 'all 0.15s ease'
+      transition: 'all 0.15s ease',
+      flexShrink: 0,
     }}>
       {label}
     </button>
   );
 
   return (
-    <div className="content-area animate-fade-in" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="content-area animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <TabBtn label="Staff Roster" active={activeTab === 'staff-roster'} onClick={() => setActiveTab('staff-roster')} />
         <TabBtn label="Student Roster" active={activeTab === 'student-roster'} onClick={() => setActiveTab('student-roster')} />
@@ -394,7 +395,7 @@ const ExecutiveOperations = () => {
       <div className="glass-panel hover-lift" style={{ padding: '24px' }}>
         {activeTab === 'staff-roster' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ background: 'rgba(59,130,246,0.1)', padding: '10px', borderRadius: '8px', color: '#3b82f6' }}><Users size={20} /></div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0d1f45', margin: 0 }}>Executive Staff Roster</h3>
