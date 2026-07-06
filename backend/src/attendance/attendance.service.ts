@@ -16,8 +16,12 @@ export class AttendanceService {
     private enrollmentRepository: Repository<Enrollment>,
   ) {}
 
-  async getRollCall() {
-    const enrollments = await this.enrollmentRepository.find({ relations: { student: true, course: { class_room: true } } });
+  async getRollCall(teacherId?: number) {
+    const whereClause = teacherId ? { course: { teacher: { id: teacherId } } } : {};
+    const enrollments = await this.enrollmentRepository.find({ 
+      where: whereClause,
+      relations: { student: true, course: { class_room: true } } 
+    });
     
     // Fallback if no enrollments exist to prevent empty dashboards during testing
     let mappedStudents: any[] = [];
@@ -28,7 +32,7 @@ export class AttendanceService {
         name: e.student.name,
         class: e.course?.class_room?.name || 'Unassigned',
       }));
-    } else {
+    } else if (!teacherId) {
       const students = await this.userRepository.find({ where: { role: 'Student' } });
       mappedStudents = students.map(s => ({
         id: `STU-${String(s.id).padStart(3, '0')}`,
@@ -52,6 +56,9 @@ export class AttendanceService {
     const truancyAlerts: any[] = [];
     for (const [name, count] of Object.entries(studentAbsenceCount)) {
       if ((count as number) >= 2) {
+        if (teacherId && !mappedStudents.some(s => s.name === name)) {
+          continue;
+        }
         truancyAlerts.push({
           student: name,
           reason: `${count} consecutive absences detected in Term 1`,
