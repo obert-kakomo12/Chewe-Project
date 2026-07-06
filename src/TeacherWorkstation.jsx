@@ -104,29 +104,52 @@ const TeacherWorkstation = () => {
           : fetchedClasses.filter(c => c.class_teacher?.id === currentUser.id);
         setHomeroomClasses(myHomerooms);
         
-        // Auto-generate teacherProfile from courses so they don't need the setup screen
-        if (fetchedCourses.length > 0 || myHomerooms.length > 0) {
-          const subjectsList = fetchedCourses.map(c => `${c.subject?.name || 'Subject'} - ${c.class_room?.name || 'Class'}`);
-          const homeroomList = myHomerooms.map(h => `Homeroom - ${h.name}`);
-          const combinedList = [...subjectsList, ...homeroomList];
-          
+        if (isAdminOrExec) {
+          // Admin/Exec: build class list from courses + any classrooms not already covered
+          const courseSubjectList = fetchedCourses.map(c => `${c.subject?.name || 'Subject'} - ${c.class_room?.name || 'Class'}`);
+          // Also include all classrooms directly (so admin can browse any class even with no course assignment)
+          const classroomDirectList = fetchedClasses
+            .filter(cls => !fetchedCourses.some(c => c.class_room?.id === cls.id))
+            .map(cls => `Homeroom - ${cls.name}`);
+          const homeroomList = fetchedClasses
+            .filter(cls => fetchedCourses.some(c => c.class_room?.id === cls.id) === false)
+            .map(h => `Homeroom - ${h.name}`);
+
+          // Full list: courses first, then uncovered classrooms as homeroom entries
+          const combinedList = [...courseSubjectList, ...classroomDirectList];
+
+          // If there are courses, use course subjects; if only classrooms exist, list as homeroom
+          const finalList = combinedList.length > 0 ? combinedList
+            : fetchedClasses.map(cls => `Homeroom - ${cls.name}`);
+
           setTeacherProfile({
-            name: isAdminOrExec ? `${currentUser.name} (Admin Mode)` : currentUser.name,
-            department: isAdminOrExec ? 'Administration' : 'Academic',
-            subjects: combinedList,
+            name: `${currentUser.name} (Admin View)`,
+            department: 'Administration',
+            subjects: finalList,
             courses: fetchedCourses
           });
-          
-          if (combinedList.length > 0) {
-            setSelectedClass(combinedList[0]);
+          if (finalList.length > 0) {
+            handleClassSwitch(finalList[0], {});
           }
-        } else if (isAdminOrExec) {
-          setTeacherProfile({
-            name: `${currentUser.name} (Admin Mode)`,
-            department: 'Administration',
-            subjects: [],
-            courses: []
-          });
+        } else {
+          // Regular teacher
+          if (fetchedCourses.length > 0 || myHomerooms.length > 0) {
+            const subjectsList = fetchedCourses.map(c => `${c.subject?.name || 'Subject'} - ${c.class_room?.name || 'Class'}`);
+            const homeroomList = myHomerooms.map(h => `Homeroom - ${h.name}`);
+            const combinedList = [...subjectsList, ...homeroomList];
+            
+            setTeacherProfile({
+              name: currentUser.name,
+              department: 'Academic',
+              subjects: combinedList,
+              courses: fetchedCourses
+            });
+            
+            if (combinedList.length > 0) {
+              handleClassSwitch(combinedList[0], {});
+            }
+          }
+          // else: leave teacherProfile null → shows "No Assignments Yet" for regular teachers
         }
       } catch (err) {
         console.error('Failed to load teacher config', err);
@@ -407,14 +430,29 @@ const TeacherWorkstation = () => {
   }
 
   if (!teacherProfile) {
+    // Only regular teachers (no assignments) see this
+    const isAdminOrExec = (() => {
+      try { const u = JSON.parse(localStorage.getItem('currentUser') || '{}'); return u.role === 'Admin' || u.role === 'Executive'; } catch { return false; }
+    })();
     return (
       <div className="content-area animate-fade-in" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <div className="glass-panel" style={{ maxWidth: '600px', width: '100%', textAlign: 'center', padding: '40px' }}>
           <AlertTriangle size={48} style={{ color: 'var(--status-warning)', margin: '0 auto 16px auto' }} />
-          <h2 style={{ marginBottom: '16px' }}>No Assignments Yet</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            You have not been assigned to any courses or homerooms. Please wait for the Executive Administrator to assign your subjects and classes.
-          </p>
+          {isAdminOrExec ? (
+            <>
+              <h2 style={{ marginBottom: '16px' }}>No Classes Configured Yet</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                No classrooms have been set up in the system yet. Go to <strong>Executive Operations → Class &amp; Subject Builder</strong> to create classes and assign teachers first.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 style={{ marginBottom: '16px' }}>No Assignments Yet</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                You have not been assigned to any courses or homerooms. Please wait for the Executive Administrator to assign your subjects and classes.
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
