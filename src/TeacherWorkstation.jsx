@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Save, Download, X, AlertTriangle, UserCheck, PenLine, RefreshCw, Plus } from 'lucide-react';
+import { FileText, Save, Download, X, AlertTriangle, UserCheck, Brain, RefreshCw, Plus } from 'lucide-react';
 import { API_BASE_URL } from './config';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -11,7 +11,7 @@ const W_IN_CLASS = 0.20;
 const W_MONTHLY  = 0.30;
 const W_END_TERM = 0.50;
 
-
+// AI comment helper is now routed through the backend NestJS service
 
 // ─── Z-score helper ───────────────────────────────────────────────────────────
 const calcZScore = (value, mean, stdDev) => {
@@ -25,9 +25,9 @@ const TeacherWorkstation = () => {
   const [viewMode,        setViewMode]        = useState('academics'); // 'academics' or 'attendance'
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [setupName,       setSetupName]       = useState('');
-  const [setupLevel,      setSetupLevel]      = useState('O-Level (Forms 1-4)');
+  const [setupLevel,      setSetupLevel]      = useState('O-Level');
   const [setupFormNumber, setSetupFormNumber] = useState('Form 1');
-  const [setupStream,     setSetupStream]     = useState('Sciences');
+  const [setupStream,     setSetupStream]     = useState('General');
   const [setupSubjects,   setSetupSubjects]   = useState([]);
   const [selectedClass,   setSelectedClass]   = useState('');
   const [classDataCache,  setClassDataCache]  = useState({});
@@ -837,7 +837,7 @@ const TeacherWorkstation = () => {
               <div style={{ background: '#f0f6ff', border: '1.5px solid #bfdbfe', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-blue)' }}>
-                    <PenLine size={15} /> Comment Assistant
+                    <Brain size={15} /> AI Comment Assistant
                   </div>
                   <button className="icon-button"
                     style={{ fontSize: '0.7rem', gap: '5px', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}

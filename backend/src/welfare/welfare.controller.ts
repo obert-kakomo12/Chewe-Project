@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Patch } from '@nestjs/common';
 import { WelfareService } from './welfare.service';
 
 @Controller('welfare')
@@ -18,5 +18,10 @@ export class WelfareController {
   @Get('sponsorship-pipeline')
   getSponsorshipPipeline() {
     return this.welfareService.getSponsorshipPipeline();
+  }
+
+  @Patch('profile/:id')
+  updateProfile(@Param('id') id: string, @Body() data: any) {
+    return this.welfareService.updateProfile(+id, data);
   }
 }

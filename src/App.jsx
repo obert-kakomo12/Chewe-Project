@@ -140,7 +140,7 @@ const NAV_SECTIONS = [
 ];
 
 const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, currentUser }) => {
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Executive';
   const isStudent = currentUser?.role === 'Student';
   const isTeacher = currentUser?.role === 'Teacher';
 
@@ -321,7 +321,7 @@ const TopBar = ({ activeItem, setIsMobileOpen, setActiveItem, setIsAuthenticated
             <div style={{ position: 'absolute', top: '48px', right: '0', width: '150px', background: '#ffffff', border: '1px solid #d1ddef', borderRadius: '10px', boxShadow: '0 8px 24px rgba(13,31,69,0.15)', zIndex: 50, overflow: 'hidden' }}>
               <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: '#0d1f45' }}
                 onClick={() => { setActiveItem('profile'); setIsProfileOpen(false); }}>My Profile</div>
-              {currentUser?.role === 'Admin' && (
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'Executive') && (
                 <div style={{ padding: '9px 16px', fontSize: '0.8rem', cursor: 'pointer', color: '#0d1f45' }}
                   onClick={() => { setActiveItem('settings'); setIsProfileOpen(false); }}>Settings</div>
               )}
@@ -658,7 +658,7 @@ function App() {
     setCurrentUser(user);
     setGlobalProfilePic(user?.profile_picture || null);
     setUserEmail(user?.email || ''); 
-    if (user?.role === 'Admin') {
+    if (user?.role === 'Admin' || user?.role === 'Executive') {
       setActiveItem('war-room');
     } else if (user?.role === 'Teacher') {
       setActiveItem('teacher');
@@ -670,7 +670,7 @@ function App() {
   const renderContent = () => {
     const executiveViews = ['war-room', 'executive-ops', 'analytics', 'settings'];
     if (executiveViews.includes(activeItem)) {
-      if (currentUser?.role !== 'Admin') {
+      if (currentUser?.role !== 'Admin' && currentUser?.role !== 'Executive') {
         return (
           <div className="content-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
             <h2 style={{ color: 'var(--status-danger)' }}>Access Denied: Executive Privileges Required</h2>
