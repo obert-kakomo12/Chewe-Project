@@ -21,6 +21,10 @@ const calcZScore = (value, mean, stdDev) => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const TeacherWorkstation = () => {
+  const currentUserStr = localStorage.getItem('currentUser');
+  const currentUserRole = currentUserStr ? JSON.parse(currentUserStr).role : null;
+  const isAdminOrExec = currentUserRole === 'Admin' || currentUserRole === 'Executive';
+
   const [teacherProfile,  setTeacherProfile]  = useState(null);
   const [viewMode,        setViewMode]        = useState('academics'); // 'academics' or 'attendance'
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
@@ -658,9 +662,11 @@ const TeacherWorkstation = () => {
                   You are the Class Teacher for {selectedClass}. Here you can view your official class roster and monitor broadsheet progress.
                 </p>
               </div>
-              <button className="primary-button" onClick={() => setIsAddStudentModalOpen(true)}>
-                <Plus size={16} /> Add Student
-              </button>
+              {isAdminOrExec && (
+                <button className="primary-button" onClick={() => setIsAddStudentModalOpen(true)}>
+                  <Plus size={16} /> Add Student
+                </button>
+              )}
             </div>
             <table className="data-table">
               <thead>
@@ -703,7 +709,7 @@ const TeacherWorkstation = () => {
               const link = e.target.link.value;
               const token = localStorage.getItem('access_token');
               try {
-                const selectedCourse = teacherProfile.courses?.find(c => `${c.subject.name} - ${c.class_room.name}` === selectedClass);
+                const selectedCourse = teacherProfile.courses?.find(c => `${c.subject?.name || 'Subject'} - ${c.class_room?.name || 'Class'}` === selectedClass);
                 if (!selectedCourse) return;
 
                 await fetch(`${API_BASE_URL}/materials`, {
