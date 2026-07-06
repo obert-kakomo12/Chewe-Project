@@ -113,8 +113,8 @@ export class UsersController {
   async getStudents(@Headers('authorization') authHeader?: string) {
     const userId = this.extractUserId(authHeader);
     const user = await this.usersService.findById(userId);
-    if (!user || user.role !== 'Executive') {
-      throw new UnauthorizedException('Only Executives can view the student roster');
+    if (!user || (user.role !== 'Admin' && user.role !== 'Executive')) {
+      throw new UnauthorizedException('Only Admins/Executives can view the student roster');
     }
     return this.usersService.findStudents();
   }
