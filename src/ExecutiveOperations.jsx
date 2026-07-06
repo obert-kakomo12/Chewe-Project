@@ -161,6 +161,27 @@ const ExecutiveOperations = () => {
     }
   };
 
+  const handleAssignStudentToClass = async (studentId, classRoomId) => {
+    if (!classRoomId) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/academics/classrooms/${classRoomId}/students`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ studentId })
+      });
+      if (res.ok) {
+        fetchStudentData();
+        alert('Student successfully assigned to class.');
+      } else {
+        const errorData = await res.json();
+        alert(`Failed to assign student: ${errorData.message}`);
+      }
+    } catch (err) {
+      alert('Error assigning student to class');
+    }
+  };
+
 
   const handleAddSubject = async (e) => {
     e.preventDefault();
@@ -448,24 +469,38 @@ const ExecutiveOperations = () => {
                 <Plus size={16} /> Add Student
               </button>
             </div>
-            <table className="data-table">
+             <table className="data-table">
               <thead>
                 <tr>
                   <th>Student ID</th>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Classroom Assignment</th>
                   <th>Role</th>
                 </tr>
               </thead>
               <tbody>
                 {students.length === 0 ? (
-                  <tr><td colSpan="4" style={{ textAlign: 'center' }}>No students enrolled.</td></tr>
+                  <tr><td colSpan="5" style={{ textAlign: 'center' }}>No students enrolled.</td></tr>
                 ) : (
                   students.map(s => (
                     <tr key={s.id}>
                       <td data-label="Student ID">CT24-{String(s.id).padStart(4, '0')}</td>
                       <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
                       <td data-label="Email">{s.email}</td>
+                      <td data-label="Classroom Assignment">
+                        <select 
+                          className="premium-select" 
+                          style={{ minWidth: '160px', padding: '4px 8px', fontSize: '0.8rem' }}
+                          value={s.class_room_id || ''} 
+                          onChange={(e) => handleAssignStudentToClass(s.id, e.target.value)}
+                        >
+                          <option value="" disabled>Select Classroom...</option>
+                          {classRooms.map(cr => (
+                            <option key={cr.id} value={cr.id}>{cr.name} ({cr.grade_level})</option>
+                          ))}
+                        </select>
+                      </td>
                       <td data-label="Role"><span className="status-badge status-active">{s.role}</span></td>
                     </tr>
                   ))
