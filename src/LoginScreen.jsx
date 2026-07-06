@@ -59,17 +59,33 @@ const LoginScreen = ({ onLogin }) => {
       }
 
       setSuccess('Login successful!');
-      if (data.token) {
-        localStorage.setItem('access_token', data.token);
+      const token = data.access_token || data.token;
+      if (token) {
+        localStorage.setItem('access_token', token);
         
+        // Save initial user profile if returned directly
+        let userProfile = data.user || null;
+        if (userProfile) {
+          localStorage.setItem('currentUser', JSON.stringify(userProfile));
+        }
+
         try {
           const profileRes = await fetch(`${API_BASE_URL}/users/me`, {
-            headers: { 'Authorization': `Bearer ${data.token}` }
+            headers: { 'Authorization': `Bearer ${token}` }
           });
-          const profileData = await profileRes.json();
-          onLogin(profileData);
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            userProfile = profileData;
+            localStorage.setItem('currentUser', JSON.stringify(userProfile));
+          }
         } catch (e) {
-          console.error("Failed to fetch profile", e);
+          console.error("Failed to fetch profile from /users/me", e);
+        }
+
+        if (userProfile) {
+          onLogin(userProfile);
+        } else {
+          setError('Login successful but failed to load user profile details.');
         }
       } else {
         setError('Login successful but no token received.');
