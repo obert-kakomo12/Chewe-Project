@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -8,6 +8,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private dataSource: DataSource,
   ) {}
 
   async findOneByEmail(email: string): Promise<User | null> {
@@ -71,6 +72,23 @@ export class UsersService {
   }
 
   async deleteUser(userId: number): Promise<void> {
-    await this.usersRepository.delete(userId);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      // Nullify references that might cause foreign key constraint errors
+      await queryRunner.query(`UPDATE class_rooms SET class_teacher_id = NULL WHERE class_teacher_id = ?`, [userId]);
+      await queryRunner.query(`UPDATE courses SET teacher_id = NULL WHERE teacher_id = ?`, [userId]);
+
+      // Delete the user
+      await queryRunner.manager.delete(User, userId);
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

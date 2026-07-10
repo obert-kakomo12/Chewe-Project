@@ -12,7 +12,7 @@ export class ClassRoom {
   @Column()
   grade_level: string;
 
-  @ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'class_teacher_id' })
   class_teacher: User;
 
