@@ -23,24 +23,12 @@ export class AttendanceService {
       relations: { student: true, course: { class_room: true } } 
     });
     
-    // Fallback if no enrollments exist to prevent empty dashboards during testing
-    let mappedStudents: any[] = [];
-    if (enrollments.length > 0) {
-      mappedStudents = enrollments.map(e => ({
-        id: `STU-${String(e.student.id).padStart(3, '0')}`,
-        dbId: e.student.id,
-        name: e.student.name,
-        class: e.course?.class_room?.name || 'Unassigned',
-      }));
-    } else if (!teacherId) {
-      const students = await this.userRepository.find({ where: { role: 'Student' } });
-      mappedStudents = students.map(s => ({
-        id: `STU-${String(s.id).padStart(3, '0')}`,
-        dbId: s.id,
-        name: s.name,
-        class: 'Form 3A',
-      }));
-    }
+    const mappedStudents: any[] = enrollments.map(e => ({
+      id: `STU-${String(e.student.id).padStart(3, '0')}`,
+      dbId: e.student.id,
+      name: e.student.name,
+      class: e.course?.class_room?.name || 'Unassigned',
+    }));
 
     const absences = await this.attendanceRepository.find({
       where: { status: 'Absent' },
@@ -61,7 +49,7 @@ export class AttendanceService {
         }
         truancyAlerts.push({
           student: name,
-          reason: `${count} consecutive absences detected in Term 1`,
+          reason: `${count} recent absences detected`,
           priority: (count as number) > 2 ? 'High' : 'Medium'
         });
       }

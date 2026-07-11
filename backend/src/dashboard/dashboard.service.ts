@@ -203,15 +203,17 @@ export class DashboardService {
       stdDev = Math.sqrt(variance) || 15;
     }
 
-    const correlationData = Object.values(studentMap).map((s: any) => {
-      const attRate = s.total > 0 ? Math.round((s.present / s.total) * 100) : 90;
-      const avgGrade = s.gradeCount > 0 ? (s.gradeSum / s.gradeCount) : 75;
-      const avgZ = parseFloat(((avgGrade - mean) / stdDev).toFixed(2));
-      return {
-        attendance: attRate,
-        avgZ
-      };
-    });
+    const correlationData = Object.values(studentMap)
+      .filter((s: any) => s.total > 0 && s.gradeCount > 0)
+      .map((s: any) => {
+        const attRate = Math.round((s.present / s.total) * 100);
+        const avgGrade = s.gradeSum / s.gradeCount;
+        const avgZ = parseFloat(((avgGrade - mean) / stdDev).toFixed(2));
+        return {
+          attendance: attRate,
+          avgZ
+        };
+      });
 
     if (correlationData.length === 0) {
       // No dummy data
