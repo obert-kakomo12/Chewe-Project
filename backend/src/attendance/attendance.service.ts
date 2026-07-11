@@ -74,6 +74,8 @@ export class AttendanceService {
   }
 
   async saveBulkAttendance(className: string, date: string, records: any[]) {
+    // Strip time to ensure clean YYYY-MM-DD
+    const cleanDate = date.split('T')[0];
     let savedCount = 0;
     
     for (const record of records) {
@@ -81,13 +83,13 @@ export class AttendanceService {
       if (studentId === 0) continue;
 
       let att = await this.attendanceRepository.findOne({
-        where: { student: { id: studentId }, date: new Date(date) }
+        where: { student: { id: studentId }, date: new Date(cleanDate) }
       });
 
       if (!att) {
         att = this.attendanceRepository.create({
           student: { id: studentId } as any,
-          date: new Date(date),
+          date: new Date(cleanDate),
           status: record.status,
           notes: record.remark || '',
         });
@@ -100,5 +102,13 @@ export class AttendanceService {
     }
 
     return { success: true, message: `Register successfully submitted and synced for ${savedCount} records.` };
+  }
+
+  async getRecordsByDateAndClass(date: string, className: string) {
+    const cleanDate = date.split('T')[0];
+    return this.attendanceRepository.find({
+      where: { date: new Date(cleanDate) },
+      relations: { student: true }
+    });
   }
 }

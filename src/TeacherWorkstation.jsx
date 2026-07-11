@@ -27,6 +27,7 @@ const TeacherWorkstation = () => {
 
   const [teacherProfile,  setTeacherProfile]  = useState(null);
   const [viewMode,        setViewMode]        = useState('academics'); // 'academics' or 'attendance'
+  const [registerDate,    setRegisterDate]    = useState(new Date().toISOString().split('T')[0]);
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [selectedClass,   setSelectedClass]   = useState('');
   const [classDataCache,  setClassDataCache]  = useState({});
@@ -182,6 +183,34 @@ const TeacherWorkstation = () => {
     }
   }, [viewMode, selectedClass, teacherProfile]);
 
+  React.useEffect(() => {
+    if (viewMode === 'attendance' && selectedClass) {
+      const fetchAttendance = async () => {
+        try {
+          const token = localStorage.getItem('access_token');
+          const actualClassName = selectedClass.includes(' - ') ? selectedClass.split(' - ')[1] : selectedClass;
+          const attRes = await fetch(`${API_BASE_URL}/attendance/records?date=${registerDate}&className=${encodeURIComponent(actualClassName)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (attRes.ok) {
+            const records = await attRes.json();
+            setStudents(prev => prev.map(student => {
+              const record = records.find(r => r.student && r.student.id === student.id);
+              return {
+                ...student,
+                attendanceStatus: record ? record.status : undefined,
+                attendanceRemark: record ? record.notes : ''
+              };
+            }));
+          }
+        } catch (err) {
+          console.error('Failed to load historical attendance', err);
+        }
+      };
+      fetchAttendance();
+    }
+  }, [viewMode, selectedClass, registerDate]);
+
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (!newStudentData.name || isSubmitting) return;
@@ -303,7 +332,7 @@ const TeacherWorkstation = () => {
         },
         body: JSON.stringify({
           className: selectedClass,
-          date: new Date().toISOString(),
+          date: registerDate,
           records: processedStudents.map(s => ({
             studentId: s.dbId || s.id,
             status: s.attendanceStatus,
@@ -475,9 +504,18 @@ const TeacherWorkstation = () => {
               <Save size={16} /> {isSubmitting ? 'Saving...' : 'Save Marks'}
             </button>
           ) : viewMode === 'attendance' ? (
-            <button className="action-button" onClick={handleSubmitRegister} disabled={isSubmitting}>
-              <Save size={16} /> {isSubmitting ? 'Submitting...' : 'Submit Register'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input 
+                type="date" 
+                className="premium-select" 
+                style={{ padding: '6px 12px', height: '100%' }}
+                value={registerDate} 
+                onChange={(e) => setRegisterDate(e.target.value)} 
+              />
+              <button className="action-button" onClick={handleSubmitRegister} disabled={isSubmitting}>
+                <Save size={16} /> {isSubmitting ? 'Submitting...' : 'Submit Register'}
+              </button>
+            </div>
           ) : null}
         </div>
       </div>

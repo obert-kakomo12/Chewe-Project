@@ -127,8 +127,13 @@ export class DashboardService {
     };
   }
 
-  async getAnalytics() {
-    const grades = await this.gradeRepository.find({ relations: { student: true, assessment: true } });
+  async getAnalytics(className?: string) {
+    const filterClass = className && className !== 'All Classes' ? className : null;
+    const gradesWhere = filterClass ? { assessment: { class: filterClass } } : {};
+    const grades = await this.gradeRepository.find({ 
+      where: gradesWhere,
+      relations: { student: true, assessment: true } 
+    });
     
     // Topic bottlenecks
     const topics = {};
@@ -162,8 +167,13 @@ export class DashboardService {
     const studentMap = {};
     const allAttendance = await this.attendanceRepository.find({ relations: { student: true } });
 
+    let validStudentIds: Set<number> | null = null;
+    if (filterClass) {
+      validStudentIds = new Set(grades.map(g => g.student?.id).filter(id => id != null));
+    }
+
     allAttendance.forEach(a => {
-      if (a.student) {
+      if (a.student && (!validStudentIds || validStudentIds.has(a.student.id))) {
         if (!studentMap[a.student.id]) {
           studentMap[a.student.id] = { name: a.student.name, present: 0, total: 0, gradeSum: 0, gradeCount: 0 };
         }

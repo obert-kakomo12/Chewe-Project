@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, UnauthorizedException, Query } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -40,5 +40,10 @@ export class AttendanceController {
   @Post('bulk')
   saveBulkAttendance(@Body() body: { className: string, date: string, records: any[] }) {
     return this.attendanceService.saveBulkAttendance(body.className, body.date, body.records);
+  }
+
+  @Get('records')
+  getRecordsByDateAndClass(@Query('date') date: string, @Query('className') className: string) {
+    return this.attendanceService.getRecordsByDateAndClass(date, className);
   }
 }

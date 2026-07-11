@@ -16,11 +16,24 @@ const AnalyticsEngine = () => {
   const [loading, setLoading] = useState(true);
   const [aiInsight, setAiInsight] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [selectedClass, setSelectedClass] = useState('All Classes');
+  const [availableClasses, setAvailableClasses] = useState([]);
 
   // Clear AI insight when tab changes
   useEffect(() => {
     setAiInsight(null);
   }, [activeTab]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/academics/classrooms`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(json => {
+      setAvailableClasses(json.map(c => c.name));
+    })
+    .catch(err => console.error('Failed to fetch classrooms', err));
+  }, []);
 
   const generateExecutiveAnalysis = async () => {
     setAiLoading(true);
@@ -47,7 +60,8 @@ const AnalyticsEngine = () => {
   };
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/dashboard/analytics`, {
+    setLoading(true);
+    fetch(`${API_BASE_URL}/dashboard/analytics?className=${encodeURIComponent(selectedClass)}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     })
     .then(res => res.json())
@@ -59,7 +73,7 @@ const AnalyticsEngine = () => {
       console.error('Failed to fetch analytics:', err);
       setLoading(false);
     });
-  }, []);
+  }, [selectedClass]);
 
   const TabBtn = ({ id, label, icon: Icon }) => (
     <button onClick={() => setActiveTab(id)} style={{
@@ -82,10 +96,21 @@ const AnalyticsEngine = () => {
           <p>Curriculum bottlenecks · Outlier detection · Attendance-Z-Score correlation</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <TabBtn id="bottleneck"  label="Bottlenecks" icon={AlertCircle} />
-            <TabBtn id="outliers"    label="Outliers"    icon={Users} />
-            <TabBtn id="correlation" label="Correlation" icon={Activity} />
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <select 
+              className="premium-select" 
+              value={selectedClass} 
+              onChange={(e) => setSelectedClass(e.target.value)}
+              style={{ padding: '8px 12px', height: '100%', minWidth: '150px' }}
+            >
+              <option value="All Classes">All Classes</option>
+              {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <TabBtn id="bottleneck"  label="Bottlenecks" icon={AlertCircle} />
+              <TabBtn id="outliers"    label="Outliers"    icon={Users} />
+              <TabBtn id="correlation" label="Correlation" icon={Activity} />
+            </div>
           </div>
           <button onClick={generateExecutiveAnalysis} disabled={aiLoading || loading} className="primary-button" 
             style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', padding: '8px 16px', display: 'flex', gap: '8px', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)' }}>
