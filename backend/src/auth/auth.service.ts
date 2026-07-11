@@ -57,6 +57,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.account_status === 'Transferred') {
+      throw new UnauthorizedException('Account has been deactivated or transferred.');
+    }
+
     const payload = { sub: user.id, email: user.email };
     return {
       access_token: await this.jwtService.signAsync(payload),

@@ -37,4 +37,7 @@ export class User {
 
   @Column({ type: 'int', nullable: true })
   class_room_id: number | null;
+
+  @Column({ default: 'Active' })
+  account_status: string;
 }

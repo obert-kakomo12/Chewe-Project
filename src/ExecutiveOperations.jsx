@@ -125,7 +125,7 @@ const ExecutiveOperations = () => {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           name: newStudentData.name,
-          email: newStudentData.email,
+          email: newStudentData.email || `${newStudentData.name.toLowerCase().replace(/\\s+/g, '.')}@chewe.com`,
           role: 'Student',
           password: newStudentData.password
         })
@@ -239,6 +239,21 @@ const ExecutiveOperations = () => {
       });
       if (res.ok) fetchStaffData();
       else alert('Failed to delete staff');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteStudent = async (id) => {
+    if (!window.confirm("Are you sure you want to transfer this student? Their records will be retained, but they will be removed from active classes and blocked from logging in.")) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) fetchStudentData();
+      else alert('Failed to transfer student');
     } catch (err) {
       console.error(err);
     }
@@ -474,9 +489,11 @@ const ExecutiveOperations = () => {
                 <tr>
                   <th>Student ID</th>
                   <th>Name</th>
-                  <th>Email</th>
+                  <th>Username</th>
                   <th>Classroom Assignment</th>
                   <th>Role</th>
+                  <th>Account Status</th>
+                  <th style={{ width: '40px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -487,13 +504,14 @@ const ExecutiveOperations = () => {
                     <tr key={s.id}>
                       <td data-label="Student ID">CT24-{String(s.id).padStart(4, '0')}</td>
                       <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
-                      <td data-label="Email">{s.email}</td>
+                      <td data-label="Username">{s.email}</td>
                       <td data-label="Classroom Assignment">
                         <select 
                           className="premium-select" 
                           style={{ minWidth: '160px', padding: '4px 8px', fontSize: '0.8rem' }}
                           value={s.class_room_id || ''} 
                           onChange={(e) => handleAssignStudentToClass(s.id, e.target.value)}
+                          disabled={s.account_status === 'Transferred'}
                         >
                           <option value="" disabled>Select Classroom...</option>
                           {classRooms.map(cr => (
@@ -502,6 +520,18 @@ const ExecutiveOperations = () => {
                         </select>
                       </td>
                       <td data-label="Role"><span className="status-badge status-active">{s.role}</span></td>
+                      <td data-label="Account Status">
+                        {s.account_status === 'Transferred' ? (
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#fef2f2', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>Transferred</span>
+                        ) : (
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>Active</span>
+                        )}
+                      </td>
+                      <td data-label="Action">
+                        <button className="icon-button" style={{ color: 'var(--status-danger)', background: 'none', border: 'none', cursor: 'pointer', opacity: s.account_status === 'Transferred' ? 0.3 : 1 }} onClick={() => s.account_status !== 'Transferred' && handleDeleteStudent(s.id)} title="Transfer/Delete Student">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -803,9 +833,9 @@ const ExecutiveOperations = () => {
                   value={newStudentData.name} onChange={e => setNewStudentData({...newStudentData, name: e.target.value})} required />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Email Address</label>
-                <input type="email" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
-                  value={newStudentData.email} onChange={e => setNewStudentData({...newStudentData, email: e.target.value})} required />
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Username (Optional)</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={newStudentData.email} onChange={e => setNewStudentData({...newStudentData, email: e.target.value})} placeholder="Leave blank to auto-generate" />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>ClassRoom (Homeroom)</label>

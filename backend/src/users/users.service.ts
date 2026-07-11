@@ -80,8 +80,11 @@ export class UsersService {
       await queryRunner.query(`UPDATE class_rooms SET class_teacher_id = NULL WHERE class_teacher_id = ?`, [userId]);
       await queryRunner.query(`UPDATE courses SET teacher_id = NULL WHERE teacher_id = ?`, [userId]);
 
-      // Delete the user
-      await queryRunner.manager.delete(User, userId);
+      // Soft delete: change status to Transferred and remove from class
+      await queryRunner.manager.update(User, userId, {
+        account_status: 'Transferred',
+        class_room_id: null
+      });
 
       await queryRunner.commitTransaction();
     } catch (err) {
