@@ -267,12 +267,19 @@ export class AppService implements OnModuleInit {
     const subjectRepo = this.dataSource.getRepository(Subject);
     const assessRepo = this.dataSource.getRepository(Assessment);
     
+    const whereConditions: any[] = [
+      { name: Like(`%${query}%`) },
+      { email: Like(`%${query}%`) },
+      { role: Like(`%${query}%`) }
+    ];
+
+    const possibleId = parseInt(query.replace(/\D/g, ''), 10);
+    if (!isNaN(possibleId)) {
+      whereConditions.push({ id: possibleId });
+    }
+
     const users = await userRepo.find({
-      where: [
-        { name: Like(`%${query}%`) },
-        { email: Like(`%${query}%`) },
-        { role: Like(`%${query}%`) }
-      ],
+      where: whereConditions,
       take: 5
     });
 
@@ -293,7 +300,10 @@ export class AppService implements OnModuleInit {
     });
 
     const results: any[] = [];
-    users.forEach(u => results.push({ type: 'User', id: u.id, title: u.name, subtitle: `${u.role} - ${u.email}`, link: '/users' }));
+    users.forEach(u => {
+      const displayRole = u.role === 'Student' ? `STU-${String(u.id).padStart(3, '0')}` : u.role;
+      results.push({ type: 'User', id: u.id, title: u.name, subtitle: `${displayRole} - ${u.email}`, link: '/users' });
+    });
     subjects.forEach(s => results.push({ type: 'Subject', id: s.id, title: s.name, subtitle: s.code, link: '/academics' }));
     assessments.forEach(a => results.push({ type: 'Assessment', id: a.id, title: a.title, subtitle: a.subject, link: '/assessments' }));
     
