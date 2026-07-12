@@ -132,6 +132,10 @@ export class UsersController {
     if (body.email) updateData.email = body.email;
     if (body.role) updateData.role = body.role;
     if (body.account_status) updateData.account_status = body.account_status;
+    if (body.password) {
+      const salt = await bcrypt.genSalt();
+      updateData.password_hash = await bcrypt.hash(body.password, salt);
+    }
 
     await this.usersService.updateUser(Number(id), updateData);
     return { success: true, message: 'User updated successfully' };

@@ -15,11 +15,11 @@ const ExecutiveOperations = () => {
   // Modals & Forms
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [isEditStaffModalOpen, setIsEditStaffModalOpen] = useState(false);
-  const [editStaffData, setEditStaffData] = useState({ id: null, name: '', email: '', role: '', account_status: '' });
+  const [editStaffData, setEditStaffData] = useState({ id: null, name: '', email: '', role: '', account_status: '', password: '' });
   const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
-  const [editStudentData, setEditStudentData] = useState({ id: null, name: '', email: '', class_room_id: '', account_status: '' });
+  const [editStudentData, setEditStudentData] = useState({ id: null, name: '', email: '', class_room_id: '', account_status: '', password: '' });
   const [isUpdatingStudent, setIsUpdatingStudent] = useState(false);
   const [newStaffData, setNewStaffData] = useState({ name: '', email: '', role: 'Teacher', password: '' });
   const [newStudentData, setNewStudentData] = useState({ name: '', email: '', password: '', classRoomId: '' });
@@ -106,7 +106,8 @@ const ExecutiveOperations = () => {
           name: editStaffData.name,
           email: editStaffData.email,
           role: editStaffData.role,
-          account_status: editStaffData.account_status
+          account_status: editStaffData.account_status,
+          ...(editStaffData.password ? { password: editStaffData.password } : {})
         })
       });
       if (res.ok) {
@@ -167,7 +168,8 @@ const ExecutiveOperations = () => {
           name: editStudentData.name,
           email: editStudentData.email,
           class_room_id: editStudentData.class_room_id,
-          account_status: editStudentData.account_status
+          account_status: editStudentData.account_status,
+          ...(editStudentData.password ? { password: editStudentData.password } : {})
         })
       });
       if (res.ok) {
@@ -875,6 +877,11 @@ const ExecutiveOperations = () => {
                   <option value="Executive">Executive</option>
                 </select>
               </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>New Password (Optional)</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }} placeholder="Leave blank to keep current password"
+                  value={editStaffData.password || ''} onChange={e => setEditStaffData({...editStaffData, password: e.target.value})} />
+              </div>
               <button type="submit" className="primary-button" style={{ marginTop: '10px', justifyContent: 'center' }} disabled={isUpdatingStaff}>
                 {isUpdatingStaff ? 'Updating...' : 'Update Staff Account'}
               </button>
@@ -964,6 +971,11 @@ const ExecutiveOperations = () => {
                   <option value="Transferred">Transferred</option>
                   <option value="Suspended">Suspended</option>
                 </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>New Password (Optional)</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }} placeholder="Leave blank to keep current password"
+                  value={editStudentData.password || ''} onChange={e => setEditStudentData({...editStudentData, password: e.target.value})} />
               </div>
               <button type="submit" className="primary-button" style={{ marginTop: '10px', justifyContent: 'center' }} disabled={isUpdatingStudent}>
                 {isUpdatingStudent ? 'Updating...' : 'Update Student'}
