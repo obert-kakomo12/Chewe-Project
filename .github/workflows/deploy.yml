@@ -71,12 +71,17 @@ jobs:
             npm install
             npm run build
             pm2 restart chewe-backend
-            # Build and restart frontend
+            # Build and deploy frontend statically
             cd ..
             npm install
             npm run build
-            pm2 restart chewe-frontend
+            mkdir -p /var/www/chewe-frontend
+            cp -r dist/* /var/www/chewe-frontend/
+            chown -R www-data:www-data /var/www/chewe-frontend
+            pm2 stop chewe-frontend || true
+            pm2 delete chewe-frontend || true
             pm2 save
+            systemctl reload nginx || true
 
   deploy-production:
     name: Deploy to Production VPS
@@ -117,9 +122,14 @@ jobs:
             npm install
             npm run build
             pm2 restart chewe-backend
-            # Build and restart frontend
+            # Build and deploy frontend statically
             cd ..
             npm install
             npm run build
-            pm2 restart chewe-frontend
+            mkdir -p /var/www/chewe-frontend
+            cp -r dist/* /var/www/chewe-frontend/
+            chown -R www-data:www-data /var/www/chewe-frontend
+            pm2 stop chewe-frontend || true
+            pm2 delete chewe-frontend || true
             pm2 save
+            systemctl reload nginx || true
