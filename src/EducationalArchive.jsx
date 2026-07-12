@@ -13,9 +13,12 @@ const EducationalArchive = () => {
   const [exportYear, setExportYear] = useState('2025');
   const [exportTriggered, setExportTriggered] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('cohorts');
   
   const [archives, setArchives] = useState([]);
+  const [archivedPersonnel, setArchivedPersonnel] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPersonnel, setLoadingPersonnel] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/documents/archives`, {
@@ -29,6 +32,19 @@ const EducationalArchive = () => {
     .catch(err => {
       console.error('Failed to fetch archives:', err);
       setLoading(false);
+    });
+
+    fetch(`${API_BASE_URL}/users/archived`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      setArchivedPersonnel(data);
+      setLoadingPersonnel(false);
+    })
+    .catch(err => {
+      console.error('Failed to fetch archived personnel:', err);
+      setLoadingPersonnel(false);
     });
   }, []);
 
@@ -53,6 +69,16 @@ const EducationalArchive = () => {
       a.status.toLowerCase().includes(q)
     );
   }, [searchQuery, archives]);
+
+  const filteredPersonnel = useMemo(() => {
+    if (!searchQuery.trim()) return archivedPersonnel;
+    const q = searchQuery.toLowerCase();
+    return archivedPersonnel.filter(p => 
+      p.name.toLowerCase().includes(q) || 
+      p.email.toLowerCase().includes(q) ||
+      p.role.toLowerCase().includes(q)
+    );
+  }, [searchQuery, archivedPersonnel]);
 
   return (
     <div className="content-area animate-fade-in">
@@ -137,17 +163,34 @@ const EducationalArchive = () => {
         {/* Right: cohort table */}
         <div className="glass-panel hover-lift" style={{ overflowX: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-            <h3 className="section-title" style={{ margin: 0 }}>Archived Cohorts</h3>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className={`action-button ${activeTab === 'cohorts' ? '' : 'secondary-button'}`}
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onClick={() => setActiveTab('cohorts')}
+              >
+                Cohorts
+              </button>
+              <button 
+                className={`action-button ${activeTab === 'personnel' ? '' : 'secondary-button'}`}
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onClick={() => setActiveTab('personnel')}
+              >
+                Personnel
+              </button>
+            </div>
             <div className="search-bar" style={{ width: '200px' }}>
               <Search size={16} className="text-secondary" />
               <input 
                 type="text" 
-                placeholder="Search cohort…" 
+                placeholder={activeTab === 'cohorts' ? "Search cohort…" : "Search personnel…"} 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
+
+          {activeTab === 'cohorts' ? (
           <table className="data-table">
             <thead>
               <tr>
@@ -208,6 +251,58 @@ const EducationalArchive = () => {
               )}
             </tbody>
           </table>
+          ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th><th>Email</th><th>Role</th><th>Status Updated</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingPersonnel ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '30px' }}>
+                    Loading archived personnel...
+                  </td>
+                </tr>
+              ) : filteredPersonnel.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '30px' }}>
+                    No archived personnel found.
+                  </td>
+                </tr>
+              ) : (
+                filteredPersonnel.map((p, i) => (
+                  <tr key={i}>
+                    <td data-label="Name" style={{ fontWeight: 600 }}>{p.name}</td>
+                    <td data-label="Email" style={{ color: 'var(--text-secondary)' }}>{p.email}</td>
+                    <td data-label="Role">
+                      <span className="role-badge">{p.role}</span>
+                    </td>
+                    <td data-label="Status Updated" style={{ color: 'var(--text-secondary)' }}>
+                      {p.status_updated_at ? new Date(p.status_updated_at).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td data-label="Actions">
+                      <button className="icon-button" title="Export as PDF" style={{ color: 'var(--accent-blue)' }}
+                        onClick={() => {
+                          const pdf = new jsPDF();
+                          pdf.text(`Archived Personnel: ${p.name}`, 20, 20);
+                          pdf.text(`Email: ${p.email}`, 20, 30);
+                          pdf.text(`Role: ${p.role}`, 20, 40);
+                          pdf.text(`Transferred Date: ${p.status_updated_at ? new Date(p.status_updated_at).toLocaleDateString() : 'N/A'}`, 20, 50);
+                          pdf.text(`Status: Pending Permanent Deletion in 3 years`, 20, 60);
+                          pdf.save(`${p.name.replace(/\s+/g, '_')}_Archive.pdf`);
+                        }}
+                      >
+                        <Download size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          )}
           <div style={{ marginTop: '16px', padding: '12px 14px', background: '#f0f4f8', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
             <strong style={{ color: 'var(--accent-blue)' }}>MoPSE Compliance:</strong> All records meet Zimbabwe Ministry of Education requirements for long-term retention. The school retains full data ownership regardless of software subscription status.
           </div>

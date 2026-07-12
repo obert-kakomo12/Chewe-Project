@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, LessThan } from 'typeorm';
 import { User } from './entities/user.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -62,17 +64,36 @@ export class UsersService {
   }
 
   async findStaff(): Promise<User[]> {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
     return this.usersRepository.createQueryBuilder('user')
       .where("user.role != 'Student'")
+      .andWhere(
+        "(user.account_status != 'Transferred' OR user.status_updated_at > :sevenDaysAgo OR user.status_updated_at IS NULL)",
+        { sevenDaysAgo }
+      )
       .getMany();
   }
 
   async findStudents(): Promise<User[]> {
-    return this.usersRepository.find({ where: { role: 'Student' } });
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    return this.usersRepository.createQueryBuilder('user')
+      .where("user.role = 'Student'")
+      .andWhere(
+        "(user.account_status != 'Transferred' OR user.status_updated_at > :sevenDaysAgo OR user.status_updated_at IS NULL)",
+        { sevenDaysAgo }
+      )
+      .getMany();
   }
 
   async updateUser(userId: number, updateData: Partial<User>): Promise<void> {
     if (Object.keys(updateData).length > 0) {
+      if (updateData.account_status === 'Transferred') {
+        updateData.status_updated_at = new Date();
+      }
       await this.usersRepository.update(userId, updateData);
     }
   }
@@ -89,6 +110,7 @@ export class UsersService {
       // Soft delete: change status to Transferred and remove from class
       await queryRunner.manager.update(User, userId, {
         account_status: 'Transferred',
+        status_updated_at: new Date(),
         class_room_id: null
       });
 
@@ -98,6 +120,37 @@ export class UsersService {
       throw err;
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  async getArchivedPersonnel(): Promise<User[]> {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    return this.usersRepository.createQueryBuilder('user')
+      .where("user.account_status = 'Transferred'")
+      .andWhere("user.status_updated_at <= :sevenDaysAgo", { sevenDaysAgo })
+      .getMany();
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleAutoDeleteTransferredUsers() {
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+
+    this.logger.log(`Running cron job to permanently delete users transferred before ${threeYearsAgo.toISOString()}`);
+
+    const usersToDelete = await this.usersRepository.createQueryBuilder('user')
+      .where("user.account_status = 'Transferred'")
+      .andWhere("user.status_updated_at <= :threeYearsAgo", { threeYearsAgo })
+      .getMany();
+
+    if (usersToDelete.length > 0) {
+      const userIds = usersToDelete.map(u => u.id);
+      await this.usersRepository.delete(userIds);
+      this.logger.log(`Successfully deleted ${userIds.length} transferred users from the database.`);
+    } else {
+      this.logger.log(`No users found that require permanent deletion.`);
     }
   }
 }

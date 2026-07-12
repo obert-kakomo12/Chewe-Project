@@ -40,4 +40,7 @@ export class User {
 
   @Column({ default: 'Active' })
   account_status: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  status_updated_at: Date | null;
 }

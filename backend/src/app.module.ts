@@ -21,9 +21,12 @@ import { CommunicationsModule } from './communications/communications.module';
 
 // Entities are auto-loaded by DatabaseModule
 
+import { ScheduleModule } from '@nestjs/schedule';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     UsersModule,
     AuthModule,

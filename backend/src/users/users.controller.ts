@@ -119,6 +119,16 @@ export class UsersController {
     return this.usersService.findStudents();
   }
 
+  @Get('archived')
+  async getArchivedPersonnel(@Headers('authorization') authHeader?: string) {
+    const userId = this.extractUserId(authHeader);
+    const user = await this.usersService.findById(userId);
+    if (!user || (user.role !== 'Admin' && user.role !== 'Executive')) {
+      throw new UnauthorizedException('Only Admins/Executives can view archived personnel');
+    }
+    return this.usersService.getArchivedPersonnel();
+  }
+
   @Patch(':id')
   async updateUser(@Headers('authorization') authHeader: string, @Param('id') id: string, @Body() body: any) {
     const userId = this.extractUserId(authHeader);
