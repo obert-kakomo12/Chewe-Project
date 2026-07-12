@@ -14,6 +14,9 @@ const ExecutiveOperations = () => {
   
   // Modals & Forms
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [isEditStaffModalOpen, setIsEditStaffModalOpen] = useState(false);
+  const [editStaffData, setEditStaffData] = useState({ id: null, name: '', email: '', role: '', account_status: '' });
+  const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [newStaffData, setNewStaffData] = useState({ name: '', email: '', role: 'Teacher', password: '' });
   const [newStudentData, setNewStudentData] = useState({ name: '', email: '', password: '', classRoomId: '' });
@@ -83,6 +86,39 @@ const ExecutiveOperations = () => {
     };
     fetchData();
   }, []);
+
+  const handleEditStaff = async (e) => {
+    e.preventDefault();
+    if (isUpdatingStaff) return;
+    setIsUpdatingStaff(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/users/${editStaffData.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: editStaffData.name,
+          email: editStaffData.email,
+          role: editStaffData.role,
+          account_status: editStaffData.account_status
+        })
+      });
+      if (res.ok) {
+        setIsEditStaffModalOpen(false);
+        fetchStaffData();
+      } else {
+        const errorData = await res.json();
+        alert(`Failed: ${errorData.message}`);
+      }
+    } catch (err) {
+      alert('Failed to update staff');
+    } finally {
+      setIsUpdatingStaff(false);
+    }
+  };
 
   const handleAddStaff = async (e) => {
     e.preventDefault();
@@ -460,8 +496,11 @@ const ExecutiveOperations = () => {
                       <td data-label="Email">{s.email}</td>
                       <td data-label="Role"><span style={{ padding: '2px 8px', borderRadius: '10px', background: '#e0e7ff', color: '#4338ca', fontSize: '0.75rem', fontWeight: 600 }}>{s.role}</span></td>
                       <td data-label="Account Status" style={{ color: 'var(--status-success)', fontWeight: 600 }}>Active</td>
-                      <td data-label="Action">
-                        <button className="icon-button" style={{ color: 'var(--status-danger)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => handleDeleteStaff(s.id)}>
+                      <td data-label="Action" style={{ display: 'flex', gap: '8px' }}>
+                        <button className="icon-button" style={{ color: 'var(--accent-blue)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => { setEditStaffData(s); setIsEditStaffModalOpen(true); }} title="Edit Staff">
+                          <Edit size={16} />
+                        </button>
+                        <button className="icon-button" style={{ color: 'var(--status-danger)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => handleDeleteStaff(s.id)} title="Delete Staff">
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -758,6 +797,41 @@ const ExecutiveOperations = () => {
               </div>
               <button type="submit" className="primary-button" style={{ marginTop: '10px', justifyContent: 'center' }} disabled={isSubmittingStaff}>
                 {isSubmittingStaff ? 'Creating...' : 'Create Staff Account'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Modal */}
+      {isEditStaffModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsEditStaffModalOpen(false)}>
+          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', background: '#fff' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Edit Staff Member</h3>
+              <button className="icon-button" style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setIsEditStaffModalOpen(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleEditStaff} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Full Name</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={editStaffData.name} onChange={e => setEditStaffData({...editStaffData, name: e.target.value})} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Email Address</label>
+                <input type="email" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={editStaffData.email} onChange={e => setEditStaffData({...editStaffData, email: e.target.value})} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Role</label>
+                <select className="premium-select" style={{ width: '100%' }} value={editStaffData.role} onChange={e => setEditStaffData({...editStaffData, role: e.target.value})}>
+                  <option value="Teacher">Teacher</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Executive">Executive</option>
+                </select>
+              </div>
+              <button type="submit" className="primary-button" style={{ marginTop: '10px', justifyContent: 'center' }} disabled={isUpdatingStaff}>
+                {isUpdatingStaff ? 'Updating...' : 'Update Staff Account'}
               </button>
             </form>
           </div>

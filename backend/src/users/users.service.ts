@@ -71,6 +71,12 @@ export class UsersService {
     return this.usersRepository.find({ where: { role: 'Student' } });
   }
 
+  async updateUser(userId: number, updateData: Partial<User>): Promise<void> {
+    if (Object.keys(updateData).length > 0) {
+      await this.usersRepository.update(userId, updateData);
+    }
+  }
+
   async deleteUser(userId: number): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();

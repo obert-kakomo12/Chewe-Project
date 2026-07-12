@@ -119,6 +119,24 @@ export class UsersController {
     return this.usersService.findStudents();
   }
 
+  @Patch(':id')
+  async updateUser(@Headers('authorization') authHeader: string, @Param('id') id: string, @Body() body: any) {
+    const userId = this.extractUserId(authHeader);
+    const currentUser = await this.usersService.findById(userId);
+    if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Executive')) {
+      throw new UnauthorizedException('Only Admins/Executives can update staff');
+    }
+
+    const updateData: any = {};
+    if (body.name) updateData.name = body.name;
+    if (body.email) updateData.email = body.email;
+    if (body.role) updateData.role = body.role;
+    if (body.account_status) updateData.account_status = body.account_status;
+
+    await this.usersService.updateUser(Number(id), updateData);
+    return { success: true, message: 'User updated successfully' };
+  }
+
   @Delete(':id')
   async deleteStaff(@Headers('authorization') authHeader: string, @Param('id') id: string) {
     const userId = this.extractUserId(authHeader);
