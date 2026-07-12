@@ -18,6 +18,9 @@ const ExecutiveOperations = () => {
   const [editStaffData, setEditStaffData] = useState({ id: null, name: '', email: '', role: '', account_status: '' });
   const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
+  const [editStudentData, setEditStudentData] = useState({ id: null, name: '', email: '', class_room_id: '', account_status: '' });
+  const [isUpdatingStudent, setIsUpdatingStudent] = useState(false);
   const [newStaffData, setNewStaffData] = useState({ name: '', email: '', role: 'Teacher', password: '' });
   const [newStudentData, setNewStudentData] = useState({ name: '', email: '', password: '', classRoomId: '' });
   const [newSubject, setNewSubject] = useState({ name: '', code: '', level: 'O-Level', stream: 'Sciences' });
@@ -148,6 +151,39 @@ const ExecutiveOperations = () => {
       setIsSubmittingStaff(false);
     }
   };
+  const handleEditStudent = async (e) => {
+    e.preventDefault();
+    if (isUpdatingStudent) return;
+    setIsUpdatingStudent(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/users/${editStudentData.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: editStudentData.name,
+          email: editStudentData.email,
+          class_room_id: editStudentData.class_room_id,
+          account_status: editStudentData.account_status
+        })
+      });
+      if (res.ok) {
+        setIsEditStudentModalOpen(false);
+        fetchStudents();
+      } else {
+        const errorData = await res.json();
+        alert(`Failed: ${errorData.message}`);
+      }
+    } catch (err) {
+      alert('Failed to update student');
+    } finally {
+      setIsUpdatingStudent(false);
+    }
+  };
+
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (isSubmittingStudent) return;
@@ -495,7 +531,13 @@ const ExecutiveOperations = () => {
                       <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
                       <td data-label="Email">{s.email}</td>
                       <td data-label="Role"><span style={{ padding: '2px 8px', borderRadius: '10px', background: '#e0e7ff', color: '#4338ca', fontSize: '0.75rem', fontWeight: 600 }}>{s.role}</span></td>
-                      <td data-label="Account Status" style={{ color: 'var(--status-success)', fontWeight: 600 }}>Active</td>
+                      <td data-label="Account Status">
+                        {s.account_status === 'Transferred' || s.account_status === 'Suspended' ? (
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#fef2f2', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>{s.account_status}</span>
+                        ) : (
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>{s.account_status || 'Active'}</span>
+                        )}
+                      </td>
                       <td data-label="Action" style={{ display: 'flex', gap: '8px' }}>
                         <button className="icon-button" style={{ color: 'var(--accent-blue)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => { setEditStaffData(s); setIsEditStaffModalOpen(true); }} title="Edit Staff">
                           <Edit size={16} />
@@ -566,7 +608,10 @@ const ExecutiveOperations = () => {
                           <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>Active</span>
                         )}
                       </td>
-                      <td data-label="Action">
+                      <td data-label="Action" style={{ display: 'flex', gap: '8px' }}>
+                        <button className="icon-button" style={{ color: 'var(--accent-blue)', background: 'none', border: 'none', cursor: 'pointer', opacity: s.account_status === 'Transferred' ? 0.3 : 1 }} onClick={() => { if(s.account_status !== 'Transferred') { setEditStudentData({ id: s.id, name: s.name, email: s.email, class_room_id: s.class_room_id || '', account_status: s.account_status || 'Active' }); setIsEditStudentModalOpen(true); } }} title="Edit Student">
+                          <Edit size={16} />
+                        </button>
                         <button className="icon-button" style={{ color: 'var(--status-danger)', background: 'none', border: 'none', cursor: 'pointer', opacity: s.account_status === 'Transferred' ? 0.3 : 1 }} onClick={() => s.account_status !== 'Transferred' && handleDeleteStudent(s.id)} title="Transfer/Delete Student">
                           <Trash2 size={16} />
                         </button>
@@ -888,6 +933,41 @@ const ExecutiveOperations = () => {
                   {updatingProfile ? 'Saving...' : 'Save Decision'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {isEditStudentModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsEditStudentModalOpen(false)}>
+          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', background: '#fff' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Edit Student</h3>
+              <button className="icon-button" onClick={() => setIsEditStudentModalOpen(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleEditStudent} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Student Name</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={editStudentData.name} onChange={e => setEditStudentData({...editStudentData, name: e.target.value})} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Username (Email)</label>
+                <input type="email" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={editStudentData.email} onChange={e => setEditStudentData({...editStudentData, email: e.target.value})} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Account Status</label>
+                <select className="premium-select" style={{ width: '100%' }} value={editStudentData.account_status} onChange={e => setEditStudentData({...editStudentData, account_status: e.target.value})}>
+                  <option value="Active">Active</option>
+                  <option value="Transferred">Transferred</option>
+                  <option value="Suspended">Suspended</option>
+                </select>
+              </div>
+              <button type="submit" className="primary-button" style={{ marginTop: '10px', justifyContent: 'center' }} disabled={isUpdatingStudent}>
+                {isUpdatingStudent ? 'Updating...' : 'Update Student'}
+              </button>
             </form>
           </div>
         </div>
