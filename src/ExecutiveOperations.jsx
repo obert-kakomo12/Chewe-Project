@@ -19,7 +19,7 @@ const ExecutiveOperations = () => {
   const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
-  const [editStudentData, setEditStudentData] = useState({ id: null, name: '', email: '', class_room_id: '', account_status: '', password: '' });
+  const [editStudentData, setEditStudentData] = useState({ id: null, name: '', email: '', class_room_id: '', account_status: '', password: '', suspension_start: '', suspension_end: '' });
   const [isUpdatingStudent, setIsUpdatingStudent] = useState(false);
   const [newStaffData, setNewStaffData] = useState({ name: '', email: '', role: 'Teacher', password: '' });
   const [newStudentData, setNewStudentData] = useState({ name: '', email: '', password: '', classRoomId: '' });
@@ -166,9 +166,10 @@ const ExecutiveOperations = () => {
         },
         body: JSON.stringify({
           name: editStudentData.name,
-          email: editStudentData.email,
           class_room_id: editStudentData.class_room_id,
           account_status: editStudentData.account_status,
+          suspension_start: editStudentData.suspension_start || null,
+          suspension_end: editStudentData.suspension_end || null,
           ...(editStudentData.password ? { password: editStudentData.password } : {})
         })
       });
@@ -590,11 +591,10 @@ const ExecutiveOperations = () => {
                       <td data-label="Username">{s.email}</td>
                       <td data-label="Classroom Assignment">
                         <select 
-                          className="premium-select" 
                           style={{ minWidth: '160px', padding: '4px 8px', fontSize: '0.8rem' }}
                           value={s.class_room_id || ''} 
                           onChange={(e) => handleAssignStudentToClass(s.id, e.target.value)}
-                          disabled={s.account_status === 'Transferred'}
+                          disabled={s.account_status === 'Completed'}
                         >
                           <option value="" disabled>Select Classroom...</option>
                           {classRooms.map(cr => (
@@ -604,17 +604,21 @@ const ExecutiveOperations = () => {
                       </td>
                       <td data-label="Role"><span className="status-badge status-active">{s.role}</span></td>
                       <td data-label="Account Status">
-                        {s.account_status === 'Transferred' ? (
-                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#fef2f2', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>Transferred</span>
+                        {s.account_status === 'Completed' ? (
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#fef2f2', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>Completed</span>
+                        ) : s.account_status === 'Suspended' ? (
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#fffbeb', color: '#d97706', fontSize: '0.75rem', fontWeight: 600 }}>
+                            Suspended {s.suspension_start && s.suspension_end ? `(${s.suspension_start} to ${s.suspension_end})` : ''}
+                          </span>
                         ) : (
                           <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>Active</span>
                         )}
                       </td>
                       <td data-label="Action" style={{ display: 'flex', gap: '8px' }}>
-                        <button className="icon-button" style={{ color: 'var(--accent-blue)', background: 'none', border: 'none', cursor: 'pointer', opacity: s.account_status === 'Transferred' ? 0.3 : 1 }} onClick={() => { if(s.account_status !== 'Transferred') { setEditStudentData({ id: s.id, name: s.name, email: s.email, class_room_id: s.class_room_id || '', account_status: s.account_status || 'Active' }); setIsEditStudentModalOpen(true); } }} title="Edit Student">
+                        <button className="icon-button" style={{ color: 'var(--accent-blue)', background: 'none', border: 'none', cursor: 'pointer', opacity: s.account_status === 'Completed' ? 0.3 : 1 }} onClick={() => { if(s.account_status !== 'Completed') { setEditStudentData({ id: s.id, name: s.name, email: s.email, class_room_id: s.class_room_id || '', account_status: s.account_status || 'Active', suspension_start: s.suspension_start || '', suspension_end: s.suspension_end || '' }); setIsEditStudentModalOpen(true); } }} title="Edit Student">
                           <Edit size={16} />
                         </button>
-                        <button className="icon-button" style={{ color: 'var(--status-danger)', background: 'none', border: 'none', cursor: 'pointer', opacity: s.account_status === 'Transferred' ? 0.3 : 1 }} onClick={() => s.account_status !== 'Transferred' && handleDeleteStudent(s.id)} title="Transfer/Delete Student">
+                        <button className="icon-button" style={{ color: 'var(--status-danger)', background: 'none', border: 'none', cursor: 'pointer', opacity: s.account_status === 'Completed' ? 0.3 : 1 }} onClick={() => s.account_status !== 'Completed' && handleDeleteStudent(s.id)} title="Complete/Delete Student">
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -968,10 +972,22 @@ const ExecutiveOperations = () => {
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Account Status</label>
                 <select className="premium-select" style={{ width: '100%' }} value={editStudentData.account_status} onChange={e => setEditStudentData({...editStudentData, account_status: e.target.value})}>
                   <option value="Active">Active</option>
-                  <option value="Transferred">Transferred</option>
+                  <option value="Completed">Completed</option>
                   <option value="Suspended">Suspended</option>
                 </select>
               </div>
+              {editStudentData.account_status === 'Suspended' && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Suspension Start</label>
+                    <input type="date" className="mark-input" style={{ width: '100%' }} value={editStudentData.suspension_start} onChange={e => setEditStudentData({...editStudentData, suspension_start: e.target.value})} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Suspension End</label>
+                    <input type="date" className="mark-input" style={{ width: '100%' }} value={editStudentData.suspension_end} onChange={e => setEditStudentData({...editStudentData, suspension_end: e.target.value})} />
+                  </div>
+                </div>
+              )}
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>New Password (Optional)</label>
                 <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }} placeholder="Leave blank to keep current password"

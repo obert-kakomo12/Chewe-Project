@@ -289,7 +289,7 @@ const EducationalArchive = () => {
                           pdf.text(`Archived Personnel: ${p.name}`, 20, 20);
                           pdf.text(`Email: ${p.email}`, 20, 30);
                           pdf.text(`Role: ${p.role}`, 20, 40);
-                          pdf.text(`Transferred Date: ${p.status_updated_at ? new Date(p.status_updated_at).toLocaleDateString() : 'N/A'}`, 20, 50);
+                          pdf.text(`Transferred/Completed Date: ${p.status_updated_at ? new Date(p.status_updated_at).toLocaleDateString() : 'N/A'}`, 20, 50);
                           pdf.text(`Status: Pending Permanent Deletion in 3 years`, 20, 60);
                           pdf.save(`${p.name.replace(/\s+/g, '_')}_Archive.pdf`);
                         }}

@@ -70,7 +70,7 @@ export class UsersService {
     return this.usersRepository.createQueryBuilder('user')
       .where("user.role != 'Student'")
       .andWhere(
-        "(user.account_status != 'Transferred' OR user.status_updated_at > :sevenDaysAgo OR user.status_updated_at IS NULL)",
+        "(user.account_status NOT IN ('Transferred', 'Completed') OR user.status_updated_at > :sevenDaysAgo OR user.status_updated_at IS NULL)",
         { sevenDaysAgo }
       )
       .getMany();
@@ -83,7 +83,7 @@ export class UsersService {
     return this.usersRepository.createQueryBuilder('user')
       .where("user.role = 'Student'")
       .andWhere(
-        "(user.account_status != 'Transferred' OR user.status_updated_at > :sevenDaysAgo OR user.status_updated_at IS NULL)",
+        "(user.account_status NOT IN ('Transferred', 'Completed') OR user.status_updated_at > :sevenDaysAgo OR user.status_updated_at IS NULL)",
         { sevenDaysAgo }
       )
       .getMany();
@@ -91,7 +91,7 @@ export class UsersService {
 
   async updateUser(userId: number, updateData: Partial<User>): Promise<void> {
     if (Object.keys(updateData).length > 0) {
-      if (updateData.account_status === 'Transferred') {
+      if (updateData.account_status === 'Transferred' || updateData.account_status === 'Completed') {
         updateData.status_updated_at = new Date();
       }
       await this.usersRepository.update(userId, updateData);
@@ -128,7 +128,7 @@ export class UsersService {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     return this.usersRepository.createQueryBuilder('user')
-      .where("user.account_status = 'Transferred'")
+      .where("user.account_status IN ('Transferred', 'Completed')")
       .andWhere("user.status_updated_at <= :sevenDaysAgo", { sevenDaysAgo })
       .getMany();
   }
@@ -141,7 +141,7 @@ export class UsersService {
     this.logger.log(`Running cron job to permanently delete users transferred before ${threeYearsAgo.toISOString()}`);
 
     const usersToDelete = await this.usersRepository.createQueryBuilder('user')
-      .where("user.account_status = 'Transferred'")
+      .where("user.account_status IN ('Transferred', 'Completed')")
       .andWhere("user.status_updated_at <= :threeYearsAgo", { threeYearsAgo })
       .getMany();
 

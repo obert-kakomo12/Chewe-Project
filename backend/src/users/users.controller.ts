@@ -142,6 +142,8 @@ export class UsersController {
     if (body.email) updateData.email = body.email;
     if (body.role) updateData.role = body.role;
     if (body.account_status) updateData.account_status = body.account_status;
+    if (body.suspension_start !== undefined) updateData.suspension_start = body.suspension_start;
+    if (body.suspension_end !== undefined) updateData.suspension_end = body.suspension_end;
     if (body.password) {
       const salt = await bcrypt.genSalt();
       updateData.password_hash = await bcrypt.hash(body.password, salt);

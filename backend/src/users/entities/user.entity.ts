@@ -43,4 +43,11 @@ export class User {
 
   @Column({ type: 'datetime', nullable: true })
   status_updated_at: Date | null;
+
+  @Column({ type: 'date', nullable: true })
+  suspension_start: string | null;
+
+  @Column({ type: 'date', nullable: true })
+  suspension_end: string | null;
 }
+
