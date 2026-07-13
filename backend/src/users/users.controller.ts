@@ -36,15 +36,26 @@ export class UsersController {
       email: user.email,
       role: user.role,
       profile_picture: user.profile_picture,
+      phone_number: user.phone_number,
+      bio: user.bio,
+      emergency_contact: user.emergency_contact,
       created_at: user.created_at,
     };
   }
 
   @Patch('me')
-  async updateMyProfile(@Headers('authorization') authHeader: string, @Body() body: { name?: string; profilePicture?: string }) {
+  async updateMyProfile(@Headers('authorization') authHeader: string, @Body() body: { name?: string; profilePicture?: string; phone_number?: string; bio?: string; emergency_contact?: string }) {
     const userId = this.extractUserId(authHeader);
 
-    await this.usersService.updateProfile(userId, body.name, body.profilePicture);
+    // Filter out name changes if they are sent, as teachers shouldn't be able to change name.
+    // We only pass the fields we allow teachers to update
+    const updateData: Partial<User> = {};
+    if (body.profilePicture !== undefined) updateData.profile_picture = body.profilePicture;
+    if (body.phone_number !== undefined) updateData.phone_number = body.phone_number;
+    if (body.bio !== undefined) updateData.bio = body.bio;
+    if (body.emergency_contact !== undefined) updateData.emergency_contact = body.emergency_contact;
+
+    await this.usersService.updateProfile(userId, updateData);
     return { success: true, message: 'Profile updated successfully' };
   }
 
@@ -144,6 +155,9 @@ export class UsersController {
     if (body.account_status) updateData.account_status = body.account_status;
     if (body.suspension_start !== undefined) updateData.suspension_start = body.suspension_start;
     if (body.suspension_end !== undefined) updateData.suspension_end = body.suspension_end;
+    if (body.bio !== undefined) updateData.bio = body.bio;
+    if (body.emergency_contact !== undefined) updateData.emergency_contact = body.emergency_contact;
+    if (body.phone_number !== undefined) updateData.phone_number = body.phone_number;
     if (body.password) {
       const salt = await bcrypt.genSalt();
       updateData.password_hash = await bcrypt.hash(body.password, salt);

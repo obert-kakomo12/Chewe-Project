@@ -49,5 +49,13 @@ export class User {
 
   @Column({ type: 'date', nullable: true })
   suspension_end: string | null;
-}
 
+  @Column({ type: 'text', nullable: true })
+  bio: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  emergency_contact: string | null;
+
+  @Column({ default: false })
+  has_unreviewed_updates: boolean;
+}

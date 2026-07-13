@@ -53,13 +53,13 @@ export class UsersService {
     return this.usersRepository.findOneBy({ id: userId });
   }
 
-  async updateProfile(userId: number, name?: string, profilePicture?: string): Promise<void> {
-    const updateData: Partial<User> = {};
-    if (name !== undefined) updateData.name = name;
-    if (profilePicture !== undefined) updateData.profile_picture = profilePicture;
-    
-    if (Object.keys(updateData).length > 0) {
-      await this.usersRepository.update(userId, updateData);
+  async updateProfile(userId: number, data: Partial<User>): Promise<void> {
+    if (Object.keys(data).length > 0) {
+      // If any of the specific teacher fields are updated, flag them for review
+      if (data.bio !== undefined || data.emergency_contact !== undefined || data.phone_number !== undefined || data.profile_picture !== undefined) {
+        data.has_unreviewed_updates = true;
+      }
+      await this.usersRepository.update(userId, data);
     }
   }
 
@@ -94,6 +94,8 @@ export class UsersService {
       if (updateData.account_status === 'Transferred' || updateData.account_status === 'Completed') {
         updateData.status_updated_at = new Date();
       }
+      // Clear the notification flag when Executive edits the user
+      updateData.has_unreviewed_updates = false;
       await this.usersRepository.update(userId, updateData);
     }
   }

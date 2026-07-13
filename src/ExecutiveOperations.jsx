@@ -107,6 +107,9 @@ const ExecutiveOperations = () => {
           email: editStaffData.email,
           role: editStaffData.role,
           account_status: editStaffData.account_status,
+          bio: editStaffData.bio,
+          emergency_contact: editStaffData.emergency_contact,
+          phone_number: editStaffData.phone_number,
           ...(editStaffData.password ? { password: editStaffData.password } : {})
         })
       });
@@ -496,20 +499,27 @@ const ExecutiveOperations = () => {
 
   return (
     <div className="content-area animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        <TabBtn label="Staff Roster" active={activeTab === 'staff-roster'} onClick={() => setActiveTab('staff-roster')} />
+      <div className="tabs-container" style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <TabBtn label={
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            Staff Roster
+            {staff.some(s => s.has_unreviewed_updates) && (
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--status-danger)' }}></span>
+            )}
+          </span>
+        } active={activeTab === 'staff-roster'} onClick={() => setActiveTab('staff-roster')} />
         <TabBtn label="Student Roster" active={activeTab === 'student-roster'} onClick={() => setActiveTab('student-roster')} />
         <TabBtn label="Class & Subject Builder" active={activeTab === 'class-builder'} onClick={() => setActiveTab('class-builder')} />
         <TabBtn label="Sponsorship Pipeline" active={activeTab === 'sponsorship'} onClick={() => setActiveTab('sponsorship')} />
       </div>
 
-      <div className="glass-panel hover-lift" style={{ padding: '24px' }}>
+      <div className="content-container">
         {activeTab === 'staff-roster' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ background: 'rgba(59,130,246,0.1)', padding: '10px', borderRadius: '8px', color: '#3b82f6' }}><Users size={20} /></div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0d1f45', margin: 0 }}>Executive Staff Roster</h3>
+                <div style={{ background: 'rgba(59,130,246,0.1)', padding: '10px', borderRadius: '8px', color: '#3b82f6' }}><Briefcase size={20} /></div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0d1f45', margin: 0 }}>Staff & Personnel</h3>
               </div>
               <button className="primary-button" onClick={() => setIsAddStaffModalOpen(true)}>
                 <Plus size={16} /> Add Staff
@@ -530,9 +540,12 @@ const ExecutiveOperations = () => {
                   <tr><td colSpan="5" style={{ textAlign: 'center' }}>No staff found.</td></tr>
                 ) : (
                   staff.map(s => (
-                    <tr key={s.id}>
-                      <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
-                      <td data-label="Email">{s.email}</td>
+                    <tr key={s.id} style={{ background: s.has_unreviewed_updates ? '#fef2f2' : 'transparent' }}>
+                      <td data-label="Name" style={{ fontWeight: s.has_unreviewed_updates ? 800 : 600 }}>
+                        {s.name}
+                        {s.has_unreviewed_updates && <span style={{ marginLeft: '8px', fontSize: '0.65rem', background: 'var(--status-danger)', color: '#fff', padding: '2px 6px', borderRadius: '10px' }}>NEW UPDATES</span>}
+                      </td>
+                      <td data-label="Email" style={{ fontWeight: s.has_unreviewed_updates ? 700 : 400 }}>{s.email}</td>
                       <td data-label="Role"><span style={{ padding: '2px 8px', borderRadius: '10px', background: '#e0e7ff', color: '#4338ca', fontSize: '0.75rem', fontWeight: 600 }}>{s.role}</span></td>
                       <td data-label="Account Status">
                         {s.account_status === 'Transferred' || s.account_status === 'Suspended' ? (
@@ -881,6 +894,25 @@ const ExecutiveOperations = () => {
                   <option value="Executive">Executive</option>
                 </select>
               </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Phone Number</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={editStaffData.phone_number || ''} onChange={e => setEditStaffData({...editStaffData, phone_number: e.target.value})} />
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Emergency Contact</label>
+                <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }}
+                  value={editStaffData.emergency_contact || ''} onChange={e => setEditStaffData({...editStaffData, emergency_contact: e.target.value})} />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>Bio / Notes</label>
+                <textarea className="mark-input" style={{ width: '100%', textAlign: 'left', minHeight: '60px', resize: 'vertical' }}
+                  value={editStaffData.bio || ''} onChange={e => setEditStaffData({...editStaffData, bio: e.target.value})}></textarea>
+              </div>
+
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.8rem', fontWeight: 500 }}>New Password (Optional)</label>
                 <input type="text" className="mark-input" style={{ width: '100%', textAlign: 'left' }} placeholder="Leave blank to keep current password"

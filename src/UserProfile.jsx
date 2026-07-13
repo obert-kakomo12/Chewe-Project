@@ -14,6 +14,9 @@ const UserProfile = ({ setGlobalProfilePic }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [bio, setBio] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
@@ -31,6 +34,9 @@ const UserProfile = ({ setGlobalProfilePic }) => {
       setProfile(data);
       setName(data.name);
       setProfilePicture(data.profile_picture || '');
+      setPhoneNumber(data.phone_number || '');
+      setBio(data.bio || '');
+      setEmergencyContact(data.emergency_contact || '');
       setLoading(false);
       if (data.profile_picture && setGlobalProfilePic) {
         setGlobalProfilePic(data.profile_picture);
@@ -69,7 +75,7 @@ const UserProfile = ({ setGlobalProfilePic }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
-        body: JSON.stringify({ name, profilePicture })
+        body: JSON.stringify({ name, profilePicture, phone_number: phoneNumber, bio, emergency_contact: emergencyContact })
       });
       if (!res.ok) throw new Error('Failed to update profile');
       setSuccessMsg('Profile updated successfully!');
@@ -171,13 +177,28 @@ const UserProfile = ({ setGlobalProfilePic }) => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Full Name</label>
-                <input type="text" className="search-bar input" style={{ width: '100%' }} value={name} onChange={e => setName(e.target.value)} required />
+                <input type="text" className="search-bar input" style={{ width: '100%' }} value={name} onChange={e => setName(e.target.value)} required disabled={profile?.role !== 'Admin' && profile?.role !== 'Executive'} title={profile?.role !== 'Admin' && profile?.role !== 'Executive' ? "Contact Admin to change name" : ""} />
               </div>
               
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Email Address</label>
                 <input type="email" className="search-bar input" style={{ width: '100%', background: '#f8fafc', color: 'var(--text-muted)' }} value={profile?.email || ''} readOnly />
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>Email cannot be changed directly. Contact admin.</span>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Phone Number</label>
+                <input type="text" className="search-bar input" style={{ width: '100%' }} value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="e.g. +263 712 345 678" />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Emergency Contact</label>
+                <input type="text" className="search-bar input" style={{ width: '100%' }} value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} placeholder="Name & Phone Number" />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Short Bio</label>
+                <textarea className="search-bar input" style={{ width: '100%', minHeight: '80px', resize: 'vertical' }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell us a little about yourself..."></textarea>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
@@ -189,6 +210,7 @@ const UserProfile = ({ setGlobalProfilePic }) => {
           </div>
 
           {/* Password Update Form */}
+          {(profile?.role === 'Admin' || profile?.role === 'Executive') ? (
           <div className="glass-panel hover-lift">
             <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Lock size={18} /> Security Settings</h3>
             
@@ -215,6 +237,13 @@ const UserProfile = ({ setGlobalProfilePic }) => {
               </div>
             </form>
           </div>
+          ) : (
+          <div className="glass-panel hover-lift" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px 20px', background: '#f8fafc' }}>
+             <Lock size={48} color="var(--text-muted)" style={{ marginBottom: '16px', opacity: 0.5 }} />
+             <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Password Locked</h3>
+             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', maxWidth: '250px' }}>For security reasons, your password can only be updated by the Executive. Please contact them if you need a reset.</p>
+          </div>
+          )}
 
         </div>
       </div>
