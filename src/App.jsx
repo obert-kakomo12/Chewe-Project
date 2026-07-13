@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, GraduationCap, ShieldAlert,
   LineChart, Settings, Bell, Search, TrendingUp, TrendingDown,
   AlertCircle, AlertTriangle, UserCheck, ClipboardList,
-  FileText, Database, Menu, X
+  FileText, Database, Menu, X, Briefcase
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
