@@ -120,7 +120,7 @@ export class AcademicsService {
     const uniqueStudents = Array.from(new Map(allStudents.map(s => [s.id, s])).values());
 
     const grades = await this.gradeRepository.find({
-      relations: { student: true }
+      relations: { student: true, assessment: true }
     });
 
     return uniqueStudents.map(student => {
@@ -130,15 +130,27 @@ export class AcademicsService {
       
       const isFull = student.id % 3 !== 0; // Dynamic pseudo-fee status
       
+      // Parse existing term report marks
+      let inClass = 0, monthly = 0, endTerm = 0;
+      const termReportGrade = studentGrades.find(g => g.assessment?.subject === 'Term Report');
+      if (termReportGrade && termReportGrade.teacher_feedback) {
+        const match = termReportGrade.teacher_feedback.match(/In-Class: (\d+), Monthly: (\d+), End Term: (\d+)/);
+        if (match) {
+          inClass = parseInt(match[1], 10);
+          monthly = parseInt(match[2], 10);
+          endTerm = parseInt(match[3], 10);
+        }
+      }
+      
       return {
         id: `CT24-${String(student.id).padStart(4, '0')}`,
         dbId: student.id,
         name: student.name,
         average: average,
         feeStatus: isFull ? 'FULL' : 'ARREARS',
-        inClass: 0,
-        monthly: 0,
-        endTerm: 0,
+        inClass: inClass,
+        monthly: monthly,
+        endTerm: endTerm,
         attendanceStatus: 'Present',
         attendanceRemark: '',
       };

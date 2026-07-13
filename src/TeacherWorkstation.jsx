@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { FileText, Save, Download, X, AlertTriangle, UserCheck, Brain, RefreshCw, Plus } from 'lucide-react';
+import EncryptionBarrier from './EncryptionBarrier';
 import { API_BASE_URL } from './config';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -37,6 +38,9 @@ const TeacherWorkstation = () => {
   const [isGeneratingComment, setIsGeneratingComment] = useState(false);
   const [topicName,       setTopicName]       = useState('');
   const [topicDate,       setTopicDate]       = useState(new Date().toISOString().split('T')[0]);
+  const [pastTopics,      setPastTopics]      = useState([]);
+  const [isEndTermUnlocked, setIsEndTermUnlocked] = useState(false);
+  const [showEncryptionBarrier, setShowEncryptionBarrier] = useState(false);
 
   const fetchAiComment = async (studentData) => {
     setIsGeneratingComment(true);
@@ -443,6 +447,17 @@ const TeacherWorkstation = () => {
         const fetchedStudents = await res.json();
         setStudents(fetchedStudents);
         setClassDataCache({ ...currentCache, [newClass]: fetchedStudents });
+        
+        // Fetch past topics
+        try {
+          const tRes = await fetch(`${API_BASE_URL}/assessments/topics/${encodeURIComponent(actualClassName)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (tRes.ok) {
+            const fetchedTopics = await tRes.json();
+            setPastTopics(fetchedTopics);
+          }
+        } catch (e) { console.error(e); }
       }
     } catch (err) {
       console.error('Failed to fetch class students', err);
@@ -710,8 +725,23 @@ const TeacherWorkstation = () => {
                       onChange={e => handleMarkChange(student.id, 'monthly', e.target.value)} />
                   </td>
                   <td data-label="End Term (50%)" style={{ textAlign: 'center' }}>
-                    <input type="number" className="mark-input" value={student.endTerm || ''}
-                      onChange={e => handleMarkChange(student.id, 'endTerm', e.target.value)} />
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" className="mark-input" value={student.endTerm || ''}
+                        readOnly={student.endTerm > 0 && !isEndTermUnlocked}
+                        onClick={() => {
+                          if (student.endTerm > 0 && !isEndTermUnlocked) {
+                            setShowEncryptionBarrier(true);
+                          }
+                        }}
+                        onChange={e => handleMarkChange(student.id, 'endTerm', e.target.value)}
+                        style={{ background: (student.endTerm > 0 && !isEndTermUnlocked) ? 'rgba(0,0,0,0.05)' : 'white' }}
+                      />
+                      {(student.endTerm > 0 && !isEndTermUnlocked) && (
+                        <div style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                          🔒
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td data-label="Total" style={{ textAlign: 'center' }} className="calc-cell">{student.total}%</td>
                   <td data-label="Z-Score" style={{ textAlign: 'center', fontWeight: 700, color: zColor }}>
@@ -732,6 +762,45 @@ const TeacherWorkstation = () => {
           </tbody>
           </table>
         ) : viewMode === 'topics' ? (
+          <>
+          <div style={{ marginBottom: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+            {pastTopics.length > 0 && (
+              <select 
+                className="premium-select" 
+                style={{ padding: '8px 16px', borderRadius: '4px' }}
+                onChange={async (e) => {
+                  const topic = e.target.value;
+                  if (!topic) {
+                    setTopicName('');
+                    return;
+                  }
+                  setTopicName(topic);
+                  const selectedTopicObj = pastTopics.find(t => t.topicName === topic);
+                  if (selectedTopicObj) setTopicDate(selectedTopicObj.date.split('T')[0]);
+                  
+                  try {
+                    const token = localStorage.getItem('access_token');
+                    const actualClassName = selectedClass.includes(' - ') ? selectedClass.split(' - ')[1] : selectedClass;
+                    const res = await fetch(`${API_BASE_URL}/assessments/topic-marks/${encodeURIComponent(actualClassName)}/${encodeURIComponent(topic)}`, {
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                      const marks = await res.json();
+                      setStudents(prev => prev.map(s => ({
+                        ...s,
+                        topicScore: marks[s.dbId || s.id] !== undefined ? marks[s.dbId || s.id] : (s.topicScore || 0)
+                      })));
+                    }
+                  } catch(err) { console.error(err); }
+                }}
+              >
+                <option value="">-- Load Past Topic --</option>
+                {pastTopics.map((t, i) => (
+                  <option key={i} value={t.topicName}>{t.topicName} ({t.date.split('T')[0]})</option>
+                ))}
+              </select>
+            )}
+          </div>
           <table className="data-table">
           <thead>
             <tr>

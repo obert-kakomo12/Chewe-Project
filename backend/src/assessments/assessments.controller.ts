@@ -68,8 +68,18 @@ export class AssessmentsController {
     return this.assessmentsService.saveBulkMarks(body.className, body.marks, body.topicName, body.topicDate);
   }
 
-  @Get('topic-averages')
-  async getTopicAverages(@Query('className') className: string) {
+  @Get('topic-averages/:className')
+  async getTopicAverages(@Param('className') className: string) {
     return this.assessmentsService.getTopicAverages(className);
+  }
+
+  @Get('topics/:className')
+  async getTopics(@Param('className') className: string) {
+    return this.assessmentsService.getTopicsByClass(className);
+  }
+
+  @Get('topic-marks/:className/:topicName')
+  async getTopicMarks(@Param('className') className: string, @Param('topicName') topicName: string) {
+    return this.assessmentsService.getTopicMarks(className, topicName);
   }
 }

@@ -213,4 +213,35 @@ export class AssessmentsService {
 
     return studentAverages;
   }
+
+  async getTopicsByClass(className: string) {
+    const assessments = await this.assessmentRepository.find({
+      where: { class: className, type: 'Topic Test' },
+      order: { date: 'DESC' }
+    });
+    return assessments.map(a => ({
+      topicName: a.subject.replace('Topic: ', ''),
+      date: a.date
+    }));
+  }
+
+  async getTopicMarks(className: string, topicName: string) {
+    const assessment = await this.assessmentRepository.findOne({
+      where: { class: className, subject: `Topic: ${topicName}`, type: 'Topic Test' }
+    });
+
+    if (!assessment) return {};
+
+    const grades = await this.gradeRepository.find({
+      where: { assessment: { id: assessment.id } },
+      relations: { student: true }
+    });
+
+    const marks: Record<number, number> = {};
+    grades.forEach(g => {
+      marks[g.student.id] = g.score;
+    });
+
+    return marks;
+  }
 }
