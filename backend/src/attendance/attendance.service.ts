@@ -68,7 +68,7 @@ export class AttendanceService {
     
     for (const record of records) {
       const studentId = parseInt(record.studentId?.toString().replace(/\D/g, '') || '0', 10);
-      if (studentId === 0) continue;
+      if (studentId === 0 || !record.status) continue; // Skip unmarked students
 
       let att = await this.attendanceRepository.findOne({
         where: { student: { id: studentId }, date: new Date(cleanDate) }
