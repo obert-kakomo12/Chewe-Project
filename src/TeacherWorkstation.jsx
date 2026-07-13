@@ -823,6 +823,7 @@ const TeacherWorkstation = () => {
             ))}
           </tbody>
           </table>
+          </>
         ) : viewMode === 'attendance' ? (
           <table className="data-table">
             <thead>
