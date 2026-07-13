@@ -464,7 +464,7 @@ const TeacherWorkstation = () => {
   const processedStudents = useMemo(() => {
     let data = students.map(s => ({
       ...s,
-      total: Math.round((s.inClass * W_IN_CLASS) + (s.monthly * W_MONTHLY) + (s.endTerm * W_END_TERM)),
+      total: Math.round(((s.inClass || 0) * W_IN_CLASS) + ((s.monthly || 0) * W_MONTHLY) + ((s.endTerm || 0) * W_END_TERM)),
     }));
 
     // Mean & stdDev for Z-score
