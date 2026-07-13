@@ -35,6 +35,8 @@ const TeacherWorkstation = () => {
   const [reportModalData, setReportModalData] = useState(null);
   const [editedComment,   setEditedComment]   = useState('');
   const [isGeneratingComment, setIsGeneratingComment] = useState(false);
+  const [topicName,       setTopicName]       = useState('');
+  const [topicDate,       setTopicDate]       = useState(new Date().toISOString().split('T')[0]);
 
   const fetchAiComment = async (studentData) => {
     setIsGeneratingComment(true);
@@ -289,22 +291,34 @@ const TeacherWorkstation = () => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('access_token');
+      const payload = {
+        className: selectedClass,
+        marks: processedStudents.map(s => ({
+          studentId: s.dbId || s.id,
+          inClass: s.inClass,
+          monthly: s.monthly,
+          endTerm: s.endTerm,
+          total: viewMode === 'topics' ? s.topicScore : s.total
+        }))
+      };
+      
+      if (viewMode === 'topics') {
+        if (!topicName) {
+          alert('Please enter a Topic Name');
+          setIsSubmitting(false);
+          return;
+        }
+        payload.topicName = topicName;
+        payload.topicDate = topicDate;
+      }
+
       const res = await fetch(`${API_BASE_URL}/assessments/marks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          className: selectedClass,
-          marks: processedStudents.map(s => ({
-            studentId: s.dbId || s.id,
-            inClass: s.inClass,
-            monthly: s.monthly,
-            endTerm: s.endTerm,
-            total: s.total
-          }))
-        })
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         alert('Marks saved successfully to the database.');
@@ -316,6 +330,32 @@ const TeacherWorkstation = () => {
       alert('Error connecting to server.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAutoCalculate = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const actualClassName = selectedClass.includes(' - ') ? selectedClass.split(' - ')[1] : selectedClass;
+      const res = await fetch(`${API_BASE_URL}/assessments/topic-averages?className=${encodeURIComponent(actualClassName)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const averages = await res.json();
+        setStudents(prev => prev.map(s => {
+          const avg = averages[s.dbId || s.id];
+          if (avg !== undefined) {
+            // Apply the average to both inClass and monthly for simplicity, or let them choose.
+            // A standard approach is auto-filling inClass and monthly.
+            return { ...s, inClass: avg, monthly: avg };
+          }
+          return s;
+        }));
+        alert('Successfully auto-calculated and filled In-Class and Monthly marks from past Topic tests!');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to auto-calculate marks');
     }
   };
 
@@ -505,10 +545,36 @@ const TeacherWorkstation = () => {
           <select className="premium-select" value={selectedClass} onChange={e => handleClassSwitch(e.target.value)}>
             {teacherProfile.subjects.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          {viewMode === 'academics' ? (
-            <button className="action-button" onClick={handleSaveMarks} disabled={isSubmitting}>
-              <Save size={16} /> {isSubmitting ? 'Saving...' : 'Save Marks'}
-            </button>
+          {viewMode === 'academics' || viewMode === 'topics' ? (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {viewMode === 'topics' && (
+                <>
+                  <input 
+                    type="text"
+                    className="premium-select"
+                    placeholder="Topic Studied (e.g., Algebra)"
+                    style={{ padding: '6px 12px', height: '100%', width: '200px' }}
+                    value={topicName}
+                    onChange={(e) => setTopicName(e.target.value)}
+                  />
+                  <input 
+                    type="date" 
+                    className="premium-select" 
+                    style={{ padding: '6px 12px', height: '100%' }}
+                    value={topicDate} 
+                    onChange={(e) => setTopicDate(e.target.value)} 
+                  />
+                </>
+              )}
+              {viewMode === 'academics' && (
+                <button className="action-button" onClick={handleAutoCalculate} style={{ background: '#4f46e5', marginRight: '8px' }}>
+                  Auto-Calculate from Topics
+                </button>
+              )}
+              <button className="action-button" onClick={handleSaveMarks} disabled={isSubmitting}>
+                <Save size={16} /> {isSubmitting ? 'Saving...' : 'Save Marks'}
+              </button>
+            </div>
           ) : viewMode === 'attendance' ? (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input 
@@ -539,7 +605,21 @@ const TeacherWorkstation = () => {
             color: viewMode === 'academics' ? '#fff' : 'var(--text-secondary)'
           }}
         >
-          Academics
+          Term Report Entry
+        </button>
+        <button 
+          onClick={() => setViewMode('topics')}
+          style={{ 
+            padding: '8px 16px', 
+            borderRadius: '4px', 
+            border: 'none', 
+            cursor: 'pointer',
+            fontWeight: 500,
+            background: viewMode === 'topics' ? 'var(--accent-blue)' : '#e5e7eb',
+            color: viewMode === 'topics' ? '#fff' : 'var(--text-secondary)'
+          }}
+        >
+          Topic / Fortnight Tests
         </button>
         <button 
           onClick={() => setViewMode('attendance')}
@@ -649,6 +729,29 @@ const TeacherWorkstation = () => {
                 </tr>
               );
             })}
+          </tbody>
+          </table>
+        ) : viewMode === 'topics' ? (
+          <table className="data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th style={{ textAlign: 'center' }}>Topic Score / 100</th>
+            </tr>
+          </thead>
+          <tbody>
+            {processedStudents.map(student => (
+              <tr key={student.id}>
+                <td data-label="Student">
+                  <span className="student-name">{student.name}</span>
+                  <span className="student-id">{student.id}</span>
+                </td>
+                <td data-label="Topic Score / 100" style={{ textAlign: 'center' }}>
+                  <input type="number" className="mark-input" value={student.topicScore || ''}
+                    onChange={e => handleMarkChange(student.id, 'topicScore', e.target.value)} />
+                </td>
+              </tr>
+            ))}
           </tbody>
           </table>
         ) : viewMode === 'attendance' ? (

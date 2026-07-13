@@ -64,7 +64,12 @@ export class AssessmentsController {
   }
 
   @Post('marks')
-  async saveMarks(@Body() body: { className: string, marks: any[] }) {
-    return this.assessmentsService.saveBulkMarks(body.className, body.marks);
+  async saveMarks(@Body() body: { className: string, marks: any[], topicName?: string, topicDate?: string }) {
+    return this.assessmentsService.saveBulkMarks(body.className, body.marks, body.topicName, body.topicDate);
+  }
+
+  @Get('topic-averages')
+  async getTopicAverages(@Query('className') className: string) {
+    return this.assessmentsService.getTopicAverages(className);
   }
 }

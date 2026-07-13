@@ -100,22 +100,43 @@ export class AssessmentsService {
     }
   }
 
-  async saveBulkMarks(className: string, marks: any[]) {
-    // Check if an overall assessment exists for this class
-    let assessment = await this.assessmentRepository.findOne({
-      where: { class: className, subject: 'Term Report', type: 'End Term' },
-    });
-
-    if (!assessment) {
-      assessment = this.assessmentRepository.create({
-        subject: 'Term Report',
-        class: className,
-        type: 'End Term',
-        date: new Date().toISOString().split('T')[0],
-        status: 'Graded',
-        avgScore: '0',
+  async saveBulkMarks(className: string, marks: any[], topicName?: string, topicDate?: string) {
+    let assessment: Assessment;
+    
+    if (topicName && topicDate) {
+      // Topic Assessment Mode
+      assessment = await this.assessmentRepository.findOne({
+        where: { class: className, subject: `Topic: ${topicName}`, type: 'Topic Test', date: topicDate },
       });
-      await this.assessmentRepository.save(assessment);
+
+      if (!assessment) {
+        assessment = this.assessmentRepository.create({
+          subject: `Topic: ${topicName}`,
+          class: className,
+          type: 'Topic Test',
+          date: topicDate,
+          status: 'Graded',
+          avgScore: '0',
+        });
+        await this.assessmentRepository.save(assessment);
+      }
+    } else {
+      // Term Report Mode
+      assessment = await this.assessmentRepository.findOne({
+        where: { class: className, subject: 'Term Report', type: 'End Term' },
+      });
+
+      if (!assessment) {
+        assessment = this.assessmentRepository.create({
+          subject: 'Term Report',
+          class: className,
+          type: 'End Term',
+          date: new Date().toISOString().split('T')[0],
+          status: 'Graded',
+          avgScore: '0',
+        });
+        await this.assessmentRepository.save(assessment);
+      }
     }
 
     let sum = 0;
@@ -134,11 +155,11 @@ export class AssessmentsService {
           student: { id: studentId } as any,
           assessment: { id: assessment.id } as any,
           score: mark.total,
-          teacher_feedback: `In-Class: ${mark.inClass}, Monthly: ${mark.monthly}, End Term: ${mark.endTerm}`,
+          teacher_feedback: topicName ? `Topic Score` : `In-Class: ${mark.inClass}, Monthly: ${mark.monthly}, End Term: ${mark.endTerm}`,
         });
       } else {
         grade.score = mark.total;
-        grade.teacher_feedback = `In-Class: ${mark.inClass}, Monthly: ${mark.monthly}, End Term: ${mark.endTerm}`;
+        grade.teacher_feedback = topicName ? `Topic Score` : `In-Class: ${mark.inClass}, Monthly: ${mark.monthly}, End Term: ${mark.endTerm}`;
       }
 
       await this.gradeRepository.save(grade);
@@ -152,5 +173,44 @@ export class AssessmentsService {
     }
 
     return { success: true, message: 'Marks successfully saved to database.' };
+  }
+
+  async getTopicAverages(className: string) {
+    // Get all Topic Assessments for this class
+    const assessments = await this.assessmentRepository.find({
+      where: { class: className, type: 'Topic Test' }
+    });
+    
+    if (!assessments.length) return {};
+
+    const assessmentIds = assessments.map(a => a.id);
+    
+    // Find all grades for these assessments
+    const grades = await this.gradeRepository.find({
+      where: assessmentIds.map(id => ({ assessment: { id } })),
+      relations: { student: true, assessment: true }
+    });
+
+    // Group grades by student
+    const studentAverages: Record<number, number> = {};
+    const studentCounts: Record<number, number> = {};
+
+    grades.forEach(g => {
+      const sId = g.student.id;
+      if (!studentAverages[sId]) {
+        studentAverages[sId] = 0;
+        studentCounts[sId] = 0;
+      }
+      studentAverages[sId] += g.score;
+      studentCounts[sId] += 1;
+    });
+
+    // Calculate averages
+    Object.keys(studentAverages).forEach(sId => {
+      const id = parseInt(sId, 10);
+      studentAverages[id] = Math.round(studentAverages[id] / studentCounts[id]);
+    });
+
+    return studentAverages;
   }
 }
