@@ -101,12 +101,12 @@ export class AssessmentsService {
   }
 
   async saveBulkMarks(className: string, marks: any[], topicName?: string, topicDate?: string) {
-    let assessment: Assessment;
+    let assessment: Assessment | null;
     
     if (topicName && topicDate) {
       // Topic Assessment Mode
       assessment = await this.assessmentRepository.findOne({
-        where: { class: className, subject: `Topic: ${topicName}`, type: 'Topic Test', date: topicDate },
+        where: { class: className, subject: `Topic: ${topicName}`, type: 'Topic Test', date: new Date(topicDate) },
       });
 
       if (!assessment) {
@@ -114,7 +114,7 @@ export class AssessmentsService {
           subject: `Topic: ${topicName}`,
           class: className,
           type: 'Topic Test',
-          date: topicDate,
+          date: new Date(topicDate),
           status: 'Graded',
           avgScore: '0',
         });
@@ -131,7 +131,7 @@ export class AssessmentsService {
           subject: 'Term Report',
           class: className,
           type: 'End Term',
-          date: new Date().toISOString().split('T')[0],
+          date: new Date(),
           status: 'Graded',
           avgScore: '0',
         });
