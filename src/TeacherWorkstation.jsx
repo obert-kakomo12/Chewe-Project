@@ -320,6 +320,12 @@ const TeacherWorkstation = () => {
   };
 
   const handleSubmitRegister = async () => {
+    const unmarkedStudents = processedStudents.filter(s => !s.attendanceStatus);
+    if (unmarkedStudents.length > 0) {
+      alert('Error: Student left unmarked. Please ensure all students have an attendance status.');
+      return;
+    }
+
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
