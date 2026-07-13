@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Post, Delete, Body, Headers, UnauthorizedExcept
 import { UsersService } from './users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { User } from './entities/user.entity';
 
 @Controller('users')
 export class UsersController {
