@@ -40,6 +40,7 @@ const TeacherWorkstation = () => {
   const [topicDate,       setTopicDate]       = useState(new Date().toISOString().split('T')[0]);
   const [exercisesCount,  setExercisesCount]  = useState('');
   const [maxScore,        setMaxScore]        = useState('100');
+  const [topicLink,       setTopicLink]       = useState('');
   const [pastTopics,      setPastTopics]      = useState([]);
   const [isEndTermUnlocked, setIsEndTermUnlocked] = useState(false);
   const [showEncryptionBarrier, setShowEncryptionBarrier] = useState(false);
@@ -318,6 +319,13 @@ const TeacherWorkstation = () => {
         payload.topicDate = topicDate;
         payload.topicExercises = parseInt(exercisesCount) || 0;
         payload.topicMaxScore = parseInt(maxScore) || 100;
+        
+        const courseObj = teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === activeClass);
+        if (courseObj) {
+          payload.courseId = courseObj.id;
+        }
+        payload.topicLink = topicLink;
+        payload.teacherName = teacherProfile?.name;
       }
 
       const res = await fetch(`${API_BASE_URL}/assessments/marks`, {
@@ -599,6 +607,14 @@ const TeacherWorkstation = () => {
                     style={{ padding: '6px 12px', height: '100%', width: '150px' }}
                     value={maxScore} 
                     onChange={(e) => setMaxScore(e.target.value)} 
+                  />
+                  <input 
+                    type="text" 
+                    className="premium-select" 
+                    placeholder="Material Link (Optional)"
+                    style={{ padding: '6px 12px', height: '100%', width: '200px' }}
+                    value={topicLink} 
+                    onChange={(e) => setTopicLink(e.target.value)} 
                   />
                 </>
               )}

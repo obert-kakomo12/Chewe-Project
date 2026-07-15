@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Assessment } from './entities/assessment.entity';
 import { Grade } from './entities/grade.entity';
 import { AiService } from '../ai/ai.service';
+import { MaterialsService } from '../materials/materials.service';
 
 @Injectable()
 export class AssessmentsService {
@@ -13,6 +14,7 @@ export class AssessmentsService {
     @InjectRepository(Grade)
     private gradeRepository: Repository<Grade>,
     private readonly aiService: AiService,
+    private readonly materialsService: MaterialsService,
   ) {}
 
   async findMarksByStudentId(studentId: number) {
@@ -100,7 +102,7 @@ export class AssessmentsService {
     }
   }
 
-  async saveBulkMarks(className: string, marks: any[], topicName?: string, topicDate?: string, topicExercises?: number, topicMaxScore?: number) {
+  async saveBulkMarks(className: string, marks: any[], topicName?: string, topicDate?: string, topicExercises?: number, topicMaxScore?: number, courseId?: number, topicLink?: string, teacherName?: string) {
     let assessment: Assessment | null;
     
     if (topicName && topicDate) {
@@ -121,6 +123,16 @@ export class AssessmentsService {
           max_score: topicMaxScore || 100,
         });
         await this.assessmentRepository.save(assessment);
+
+        if (courseId) {
+          await this.materialsService.create({
+            title: `Topic: ${topicName}`,
+            description: `Topic Test recorded. Exercises: ${topicExercises || 0}, Max Score: ${topicMaxScore || 100}`,
+            google_drive_link: topicLink || '#',
+            posted_by: teacherName || 'Teacher',
+            course: { id: courseId }
+          });
+        }
       }
     } else {
       // Term Report Mode

@@ -7,13 +7,15 @@ import { Grade } from './entities/grade.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { FinanceModule } from '../finance/finance.module';
 import { AiModule } from '../ai/ai.module';
+import { MaterialsModule } from '../materials/materials.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Assessment, Grade]),
     JwtModule.register({ secret: process.env.JWT_SECRET || 'secretKey' }),
     FinanceModule,
-    AiModule
+    AiModule,
+    MaterialsModule
   ],
   controllers: [AssessmentsController],
   providers: [AssessmentsService],
