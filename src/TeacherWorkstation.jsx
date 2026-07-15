@@ -213,7 +213,7 @@ const TeacherWorkstation = () => {
           if (attRes.ok) {
             const records = await attRes.json();
             setStudents(prev => prev.map(student => {
-              const record = records.find(r => r.student && r.student.id === student.id);
+              const record = (records || []).find(r => r.student && (r.student.id === student.id || r.student.id === student.dbId));
               return {
                 ...student,
                 attendanceStatus: record ? record.status : undefined,
@@ -543,7 +543,7 @@ const TeacherWorkstation = () => {
       zScore: parseFloat(calcZScore(s.total, mean, stdDev)),
     }));
 
-    data.sort((a, b) => a.name.localeCompare(b.name));
+    data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     return data;
   }, [students]);
 
