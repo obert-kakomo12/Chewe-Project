@@ -8,10 +8,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { FinanceModule } from '../finance/finance.module';
 import { AiModule } from '../ai/ai.module';
 import { MaterialsModule } from '../materials/materials.module';
+import { AttendanceRecord } from '../attendance/entities/attendance-record.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Assessment, Grade]),
+    TypeOrmModule.forFeature([Assessment, Grade, AttendanceRecord]),
     JwtModule.register({ secret: process.env.JWT_SECRET || 'secretKey' }),
     FinanceModule,
     AiModule,

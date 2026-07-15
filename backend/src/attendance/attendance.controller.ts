@@ -38,12 +38,12 @@ export class AttendanceController {
   }
 
   @Post('bulk')
-  saveBulkAttendance(@Body() body: { className: string, date: string, records: any[] }) {
-    return this.attendanceService.saveBulkAttendance(body.className, body.date, body.records);
+  async saveBulk(@Body() body: { className: string, date: string, records: any[], courseId?: number }) {
+    return this.attendanceService.saveBulkAttendance(body.className, body.date, body.records, body.courseId);
   }
 
   @Get('records')
-  getRecordsByDateAndClass(@Query('date') date: string, @Query('className') className: string) {
-    return this.attendanceService.getRecordsByDateAndClass(date, className);
+  async getRecords(@Query('date') date: string, @Query('className') className: string, @Query('courseId') courseId?: string) {
+    return this.attendanceService.getRecordsByDateAndClass(date, className, courseId ? parseInt(courseId, 10) : undefined);
   }
 }

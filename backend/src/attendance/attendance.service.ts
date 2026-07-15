@@ -61,7 +61,7 @@ export class AttendanceService {
     };
   }
 
-  async saveBulkAttendance(className: string, date: string, records: any[]) {
+  async saveBulkAttendance(className: string, date: string, records: any[], courseId?: number) {
     // Strip time to ensure clean YYYY-MM-DD
     const cleanDate = date.split('T')[0];
     let savedCount = 0;
@@ -70,32 +70,46 @@ export class AttendanceService {
       const studentId = parseInt(record.studentId?.toString().replace(/\D/g, '') || '0', 10);
       if (studentId === 0 || !record.status) continue; // Skip unmarked students
 
+      const whereClause: any = { student: { id: studentId }, date: new Date(cleanDate) };
+      if (courseId) {
+        whereClause.course = { id: courseId };
+      }
+
       let att = await this.attendanceRepository.findOne({
-        where: { student: { id: studentId }, date: new Date(cleanDate) }
+        where: whereClause
       });
 
       if (!att) {
-        att = this.attendanceRepository.create({
+        const createPayload: any = {
           student: { id: studentId } as any,
           date: new Date(cleanDate),
           status: record.status,
           notes: record.remark || '',
-        });
+        };
+        if (courseId) {
+          createPayload.course = { id: courseId };
+        }
+        att = this.attendanceRepository.create(createPayload) as any;
       } else {
         att.status = record.status;
         att.notes = record.remark || '';
       }
-      await this.attendanceRepository.save(att);
+      await this.attendanceRepository.save(att as any);
       savedCount++;
     }
 
     return { success: true, message: `Register successfully submitted and synced for ${savedCount} records.` };
   }
 
-  async getRecordsByDateAndClass(date: string, className: string) {
+  async getRecordsByDateAndClass(date: string, className: string, courseId?: number) {
     const cleanDate = date.split('T')[0];
+    const whereClause: any = { date: new Date(cleanDate) };
+    if (courseId) {
+      whereClause.course = { id: courseId };
+    }
+    
     return this.attendanceRepository.find({
-      where: { date: new Date(cleanDate) },
+      where: whereClause,
       relations: { student: true }
     });
   }

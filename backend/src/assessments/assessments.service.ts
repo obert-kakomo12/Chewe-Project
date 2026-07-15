@@ -5,6 +5,7 @@ import { Assessment } from './entities/assessment.entity';
 import { Grade } from './entities/grade.entity';
 import { AiService } from '../ai/ai.service';
 import { MaterialsService } from '../materials/materials.service';
+import { AttendanceRecord } from '../attendance/entities/attendance-record.entity';
 
 @Injectable()
 export class AssessmentsService {
@@ -13,6 +14,8 @@ export class AssessmentsService {
     private assessmentRepository: Repository<Assessment>,
     @InjectRepository(Grade)
     private gradeRepository: Repository<Grade>,
+    @InjectRepository(AttendanceRecord)
+    private attendanceRepository: Repository<AttendanceRecord>,
     private readonly aiService: AiService,
     private readonly materialsService: MaterialsService,
   ) {}
@@ -245,6 +248,50 @@ export class AssessmentsService {
       exercisesCount: a.exercises_count,
       maxScore: a.max_score
     }));
+  }
+
+  async getStudentDossier(studentId: number, courseId: number, className: string) {
+    // 1. Get all grades for this student in this class/course
+    const grades = await this.gradeRepository.find({
+      where: { student: { id: studentId }, assessment: { class: className } },
+      relations: { assessment: true }
+    });
+
+    // 2. Get attendance records for this student in this course
+    const attendanceRecords = await this.attendanceRepository.find({
+      where: { student: { id: studentId }, course: { id: courseId } },
+      order: { date: 'DESC' }
+    });
+
+    const totalDays = attendanceRecords.length;
+    const presentDays = attendanceRecords.filter(r => r.status === 'Present').length;
+    const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
+    
+    const absentOrLateDays = attendanceRecords.filter(r => r.status !== 'Present');
+
+    let totalScore = 0;
+    let totalMax = 0;
+    const pastTopics = grades.map(g => {
+      const score = Number(g.score) || 0;
+      const maxScore = g.assessment.max_score || 100;
+      totalScore += score;
+      totalMax += maxScore;
+      return {
+        topicName: g.assessment.subject.replace('Topic: ', ''),
+        date: g.assessment.date,
+        score,
+        maxScore
+      };
+    });
+
+    const averageGrade = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+
+    return {
+      averageGrade,
+      pastTopics,
+      attendanceRate,
+      absentOrLateDays: absentOrLateDays.map(r => ({ date: r.date, status: r.status, notes: r.notes }))
+    };
   }
 
   async getTopicMarks(className: string, topicName: string) {

@@ -73,6 +73,15 @@ export class AssessmentsController {
     return this.assessmentsService.getTopicAverages(className);
   }
 
+  @Get('dossier/:studentId/:courseId')
+  async getStudentDossier(
+    @Param('studentId') studentId: string, 
+    @Param('courseId') courseId: string,
+    @Query('className') className: string
+  ) {
+    return this.assessmentsService.getStudentDossier(parseInt(studentId, 10), parseInt(courseId, 10), className);
+  }
+
   @Get('topics/:className')
   async getTopics(@Param('className') className: string) {
     return this.assessmentsService.getTopicsByClass(className);

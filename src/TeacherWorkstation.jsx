@@ -44,6 +44,12 @@ const TeacherWorkstation = () => {
   const [pastTopics,      setPastTopics]      = useState([]);
   const [isEndTermUnlocked, setIsEndTermUnlocked] = useState(false);
   const [showEncryptionBarrier, setShowEncryptionBarrier] = useState(false);
+  const [encryptionPin, setEncryptionPin] = useState('');
+  
+  // Dossier State
+  const [showDossierModal, setShowDossierModal] = useState(false);
+  const [dossierStudent, setDossierStudent] = useState(null);
+  const [dossierData, setDossierData] = useState(null);
 
   const fetchAiComment = async (studentData) => {
     setIsGeneratingComment(true);
@@ -197,8 +203,11 @@ const TeacherWorkstation = () => {
       const fetchAttendance = async () => {
         try {
           const token = localStorage.getItem('access_token');
-          const actualClassName = selectedClass.includes(' - ') ? selectedClass.split(' - ')[1] : selectedClass;
-          const attRes = await fetch(`${API_BASE_URL}/attendance/records?date=${registerDate}&className=${encodeURIComponent(actualClassName)}`, {
+          const actualClassName = selectedClass.includes('Homeroom - ') ? selectedClass.replace('Homeroom - ', '') : (selectedClass.split(' - ')[1] || selectedClass);
+          const courseObj = teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === selectedClass);
+          const courseQuery = courseObj ? `&courseId=${courseObj.id}` : '';
+          
+          const attRes = await fetch(`${API_BASE_URL}/attendance/records?date=${registerDate}&className=${encodeURIComponent(actualClassName)}${courseQuery}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (attRes.ok) {
@@ -320,7 +329,7 @@ const TeacherWorkstation = () => {
         payload.topicExercises = parseInt(exercisesCount) || 0;
         payload.topicMaxScore = parseInt(maxScore) || 100;
         
-        const courseObj = teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === activeClass);
+        const courseObj = teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === selectedClass);
         if (courseObj) {
           payload.courseId = courseObj.id;
         }
@@ -485,7 +494,30 @@ const TeacherWorkstation = () => {
   };
 
   const handleAttendanceChange = (id, field, value) => {
-    setStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setProcessedStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+
+  const openDossier = async (student) => {
+    setDossierStudent(student);
+    setDossierData(null);
+    setShowDossierModal(true);
+    
+    const actualClassName = selectedClass.includes('Homeroom - ') ? selectedClass.replace('Homeroom - ', '') : (selectedClass.split(' - ')[1] || selectedClass);
+    const courseObj = teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === selectedClass);
+    if (!courseObj) return;
+
+    try {
+      const dbId = student.id.replace(/\D/g, '');
+      const res = await fetch(`${API_BASE_URL}/assessments/dossier/${dbId}/${courseObj.id}?className=${encodeURIComponent(actualClassName)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDossierData(data);
+      }
+    } catch (err) {
+      console.error('Failed to load dossier', err);
+    }
   };
 
   // ── Processed students with weighted total, rank, Z-score ──────────────────
@@ -751,7 +783,7 @@ const TeacherWorkstation = () => {
                 <tr key={student.id}>
                   <td data-label="Student">
                     <span className="student-name">{student.name}</span>
-                    <span className="student-id">{student.id}</span>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{student.id}</div>
                   </td>
                   <td data-label="In-Class (20%)" style={{ textAlign: 'center' }}>
                     <input type="number" className="mark-input" value={student.inClass || ''}
@@ -787,10 +819,17 @@ const TeacherWorkstation = () => {
                   <td data-label="Rank" style={{ textAlign: 'center' }} className="calc-cell">
                     {student.rank}/{processedStudents.length}
                   </td>
-                  <td data-label="Report">
+                  <td data-label="Report" style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => generateReport(student)} className="icon-button"
                       style={{ color: 'var(--accent-blue)', gap: '6px', fontSize: '0.8rem', display: 'flex' }}>
                       <FileText size={16} /> View
+                    </button>
+                    <button 
+                      className="secondary-button" 
+                      style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                      onClick={() => openDossier(student)}
+                    >
+                      📄 Dossier
                     </button>
                   </td>
                 </tr>
@@ -945,8 +984,8 @@ const TeacherWorkstation = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Student Name</th>
-                  <th>ID</th>
+                  <th>Student ID</th>
+                  <th>Name</th>
                   <th>Fee Status</th>
                   <th>Overall Average</th>
                 </tr>
@@ -1211,6 +1250,108 @@ const TeacherWorkstation = () => {
                 {isSubmitting ? 'Enrolling...' : 'Create & Enroll Student'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Dossier Modal */}
+      {showDossierModal && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade-in" style={{ maxWidth: '600px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Consultation Dossier</h3>
+              <button onClick={() => setShowDossierModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+            
+            {dossierStudent && (
+              <div style={{ marginBottom: '20px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{dossierStudent.name}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{dossierStudent.id} &nbsp;·&nbsp; {activeClass}</div>
+              </div>
+            )}
+
+            {!dossierData ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Gathering records...</div>
+            ) : (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '24px' }}>
+                  <div style={{ padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Average Grade</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: dossierData.averageGrade >= 50 ? 'var(--status-success)' : 'var(--status-danger)' }}>
+                      {dossierData.averageGrade}%
+                    </div>
+                  </div>
+                  <div style={{ padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subject Attendance</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: dossierData.attendanceRate >= 85 ? 'var(--status-success)' : 'var(--status-warning)' }}>
+                      {dossierData.attendanceRate}%
+                    </div>
+                  </div>
+                </div>
+
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Academic History</h4>
+                <div style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                  <table className="data-table" style={{ margin: 0, fontSize: '0.85rem' }}>
+                    <thead style={{ position: 'sticky', top: 0, background: '#f8fafc' }}>
+                      <tr>
+                        <th style={{ padding: '8px 12px' }}>Topic</th>
+                        <th style={{ padding: '8px 12px' }}>Date</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dossierData.pastTopics.length === 0 ? (
+                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '15px', color: 'var(--text-muted)' }}>No tests recorded yet.</td></tr>
+                      ) : dossierData.pastTopics.map((t, i) => (
+                        <tr key={i}>
+                          <td style={{ padding: '8px 12px', fontWeight: 500 }}>{t.topicName}</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{new Date(t.date).toLocaleDateString()}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700 }}>{t.score}/{t.maxScore}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Absences & Lates</h4>
+                <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                  <table className="data-table" style={{ margin: 0, fontSize: '0.85rem' }}>
+                    <thead style={{ position: 'sticky', top: 0, background: '#f8fafc' }}>
+                      <tr>
+                        <th style={{ padding: '8px 12px' }}>Date</th>
+                        <th style={{ padding: '8px 12px' }}>Status</th>
+                        <th style={{ padding: '8px 12px' }}>Remark</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dossierData.absentOrLateDays.length === 0 ? (
+                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '15px', color: 'var(--status-success)' }}>Perfect attendance!</td></tr>
+                      ) : dossierData.absentOrLateDays.map((r, i) => (
+                        <tr key={i}>
+                          <td style={{ padding: '8px 12px' }}>{new Date(r.date).toLocaleDateString()}</td>
+                          <td style={{ padding: '8px 12px' }}>
+                            <span style={{ 
+                              padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700,
+                              background: r.status === 'Absent' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                              color: r.status === 'Absent' ? 'var(--status-danger)' : 'var(--status-warning)'
+                            }}>
+                              {r.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{r.notes || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button className="secondary-button" onClick={() => window.print()} disabled={!dossierData}>
+                🖨️ Print Dossier
+              </button>
+            </div>
           </div>
         </div>
       )}
