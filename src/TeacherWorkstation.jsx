@@ -39,6 +39,7 @@ const TeacherWorkstation = () => {
   const [topicName,       setTopicName]       = useState('');
   const [topicDate,       setTopicDate]       = useState(new Date().toISOString().split('T')[0]);
   const [exercisesCount,  setExercisesCount]  = useState('');
+  const [maxScore,        setMaxScore]        = useState('100');
   const [pastTopics,      setPastTopics]      = useState([]);
   const [isEndTermUnlocked, setIsEndTermUnlocked] = useState(false);
   const [showEncryptionBarrier, setShowEncryptionBarrier] = useState(false);
@@ -316,6 +317,7 @@ const TeacherWorkstation = () => {
         payload.topicName = topicName;
         payload.topicDate = topicDate;
         payload.topicExercises = parseInt(exercisesCount) || 0;
+        payload.topicMaxScore = parseInt(maxScore) || 100;
       }
 
       const res = await fetch(`${API_BASE_URL}/assessments/marks`, {
@@ -469,7 +471,8 @@ const TeacherWorkstation = () => {
   const handleMarkChange = (id, field, value) => {
     let n = parseInt(value, 10);
     if (isNaN(n)) n = 0;
-    n = Math.min(100, Math.max(0, n));
+    const currentMax = (field === 'topicScore') ? (parseInt(maxScore, 10) || 100) : 100;
+    n = Math.min(currentMax, Math.max(0, n));
     setStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: n } : s));
   };
 
@@ -588,6 +591,14 @@ const TeacherWorkstation = () => {
                     style={{ padding: '6px 12px', height: '100%', width: '150px' }}
                     value={exercisesCount} 
                     onChange={(e) => setExercisesCount(e.target.value)} 
+                  />
+                  <input 
+                    type="number" 
+                    className="premium-select" 
+                    placeholder="Max Score (e.g. 30)"
+                    style={{ padding: '6px 12px', height: '100%', width: '150px' }}
+                    value={maxScore} 
+                    onChange={(e) => setMaxScore(e.target.value)} 
                   />
                 </>
               )}
@@ -789,8 +800,10 @@ const TeacherWorkstation = () => {
                   if (selectedTopicObj) {
                     setTopicDate(selectedTopicObj.date.split('T')[0]);
                     setExercisesCount(selectedTopicObj.exercisesCount || '');
+                    setMaxScore(selectedTopicObj.maxScore || '100');
                   } else {
                     setExercisesCount('');
+                    setMaxScore('100');
                   }
                   
                   try {
@@ -820,7 +833,7 @@ const TeacherWorkstation = () => {
           <thead>
             <tr>
               <th>Student</th>
-              <th style={{ textAlign: 'center' }}>Topic Score / 100</th>
+              <th style={{ textAlign: 'center' }}>Topic Score / {maxScore || 100}</th>
             </tr>
           </thead>
           <tbody>

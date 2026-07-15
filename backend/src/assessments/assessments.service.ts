@@ -100,7 +100,7 @@ export class AssessmentsService {
     }
   }
 
-  async saveBulkMarks(className: string, marks: any[], topicName?: string, topicDate?: string, topicExercises?: number) {
+  async saveBulkMarks(className: string, marks: any[], topicName?: string, topicDate?: string, topicExercises?: number, topicMaxScore?: number) {
     let assessment: Assessment | null;
     
     if (topicName && topicDate) {
@@ -118,6 +118,7 @@ export class AssessmentsService {
           status: 'Graded',
           avgScore: '0',
           exercises_count: topicExercises || 0,
+          max_score: topicMaxScore || 100,
         });
         await this.assessmentRepository.save(assessment);
       }
@@ -173,6 +174,9 @@ export class AssessmentsService {
       if (topicName && topicExercises !== undefined) {
         assessment.exercises_count = topicExercises;
       }
+      if (topicName && topicMaxScore !== undefined) {
+        assessment.max_score = topicMaxScore;
+      }
       await this.assessmentRepository.save(assessment);
     }
 
@@ -226,7 +230,8 @@ export class AssessmentsService {
     return assessments.map(a => ({
       topicName: a.subject.replace('Topic: ', ''),
       date: a.date,
-      exercisesCount: a.exercises_count
+      exercisesCount: a.exercises_count,
+      maxScore: a.max_score
     }));
   }
 
