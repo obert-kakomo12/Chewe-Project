@@ -495,7 +495,7 @@ const TeacherWorkstation = () => {
   };
 
   const handleAttendanceChange = (id, field, value) => {
-    setProcessedStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const openDossier = async (student) => {
