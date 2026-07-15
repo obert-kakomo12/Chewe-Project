@@ -404,6 +404,7 @@ const TeacherWorkstation = () => {
         body: JSON.stringify({
           className: selectedClass,
           date: registerDate,
+          courseId: teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === selectedClass)?.id,
           records: processedStudents.map(s => ({
             studentId: s.dbId || s.id,
             status: s.attendanceStatus,
