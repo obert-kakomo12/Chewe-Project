@@ -38,6 +38,7 @@ const TeacherWorkstation = () => {
   const [isGeneratingComment, setIsGeneratingComment] = useState(false);
   const [topicName,       setTopicName]       = useState('');
   const [topicDate,       setTopicDate]       = useState(new Date().toISOString().split('T')[0]);
+  const [exercisesCount,  setExercisesCount]  = useState('');
   const [pastTopics,      setPastTopics]      = useState([]);
   const [isEndTermUnlocked, setIsEndTermUnlocked] = useState(false);
   const [showEncryptionBarrier, setShowEncryptionBarrier] = useState(false);
@@ -314,6 +315,7 @@ const TeacherWorkstation = () => {
         }
         payload.topicName = topicName;
         payload.topicDate = topicDate;
+        payload.topicExercises = parseInt(exercisesCount) || 0;
       }
 
       const res = await fetch(`${API_BASE_URL}/assessments/marks`, {
@@ -579,6 +581,14 @@ const TeacherWorkstation = () => {
                     value={topicDate} 
                     onChange={(e) => setTopicDate(e.target.value)} 
                   />
+                  <input 
+                    type="number" 
+                    className="premium-select" 
+                    placeholder="Exercises (e.g. 5)"
+                    style={{ padding: '6px 12px', height: '100%', width: '150px' }}
+                    value={exercisesCount} 
+                    onChange={(e) => setExercisesCount(e.target.value)} 
+                  />
                 </>
               )}
               {viewMode === 'academics' && (
@@ -776,7 +786,12 @@ const TeacherWorkstation = () => {
                   }
                   setTopicName(topic);
                   const selectedTopicObj = pastTopics.find(t => t.topicName === topic);
-                  if (selectedTopicObj) setTopicDate(selectedTopicObj.date.split('T')[0]);
+                  if (selectedTopicObj) {
+                    setTopicDate(selectedTopicObj.date.split('T')[0]);
+                    setExercisesCount(selectedTopicObj.exercisesCount || '');
+                  } else {
+                    setExercisesCount('');
+                  }
                   
                   try {
                     const token = localStorage.getItem('access_token');

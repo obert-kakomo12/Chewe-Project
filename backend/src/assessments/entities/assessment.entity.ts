@@ -34,6 +34,9 @@ export class Assessment {
   @Column({ type: 'date' })
   date: Date;
 
+  @Column({ type: 'int', nullable: true, default: 0 })
+  exercises_count: number;
+
   @CreateDateColumn()
   created_at: Date;
 }
