@@ -197,7 +197,7 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, setIsMobileOpen, cur
       </nav>
 
       <div style={{ padding: '14px 20px 18px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em' }}>
-        v1.0 · AES-256 · MoPSE Compliant
+        v1.0 · AES-256 · Enterprise Educational Management
       </div>
     </aside>
   </>
