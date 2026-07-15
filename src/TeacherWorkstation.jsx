@@ -20,6 +20,14 @@ const calcZScore = (value, mean, stdDev) => {
   return ((value - mean) / stdDev).toFixed(2);
 };
 
+const getLocalDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const TeacherWorkstation = () => {
   const currentUserStr = localStorage.getItem('currentUser');
@@ -28,7 +36,7 @@ const TeacherWorkstation = () => {
 
   const [teacherProfile,  setTeacherProfile]  = useState(null);
   const [viewMode,        setViewMode]        = useState('academics'); // 'academics' or 'attendance'
-  const [registerDate,    setRegisterDate]    = useState(new Date().toISOString().split('T')[0]);
+  const [registerDate,    setRegisterDate]    = useState(getLocalDateString());
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [selectedClass,   setSelectedClass]   = useState('');
   const [classDataCache,  setClassDataCache]  = useState({});
@@ -37,7 +45,7 @@ const TeacherWorkstation = () => {
   const [editedComment,   setEditedComment]   = useState('');
   const [isGeneratingComment, setIsGeneratingComment] = useState(false);
   const [topicName,       setTopicName]       = useState('');
-  const [topicDate,       setTopicDate]       = useState(new Date().toISOString().split('T')[0]);
+  const [topicDate,       setTopicDate]       = useState(getLocalDateString());
   const [exercisesCount,  setExercisesCount]  = useState('');
   const [maxScore,        setMaxScore]        = useState('100');
   const [topicLink,       setTopicLink]       = useState('');
