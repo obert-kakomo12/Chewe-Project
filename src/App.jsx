@@ -119,7 +119,7 @@ const NAV_SECTIONS = [
   {
     label: 'Student Support',
     items: [
-      { id: 'attendance', label: 'Attendance & Alerts',   icon: UserCheck },
+      { id: 'attendance', label: 'Truancy & Alerts',   icon: Bell },
       { id: 'safe-space', label: 'Counseling Safe Space', icon: ShieldAlert },
     ]
   },
@@ -212,7 +212,7 @@ const pageTitle = {
   'teacher':    'Teacher Workstation',
   'assessment': 'Assessment Management',
   'pathfinder': 'Level 3 Streaming',
-  'attendance': 'Attendance & Alerts',
+  'attendance': 'Truancy & Alerts',
   'safe-space': 'Counseling Safe Space',
   'reports':    'Reporting & Documentation',
   'archive':    'Educational Archive',
