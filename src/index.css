@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400..700;1,400..700&display=swap');
 
 :root {
   /* ── CT Tech's Pulse — White + Dark Blue Theme ── */
@@ -32,7 +32,7 @@
   --border-color:   #d1ddef;
   --border-subtle:  #e4ecf5;
 
-  --font-main: 'Inter', 'Roboto', sans-serif;
+  --font-main: 'Cabin', sans-serif;
   --transition-fast: 0.15s ease-in-out;
 
   --shadow-sm: 0 1px 3px rgba(13, 31, 69, 0.08), 0 1px 2px rgba(13, 31, 69, 0.05);
