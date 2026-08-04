@@ -40,8 +40,15 @@
   --shadow-lg: 0 20px 40px rgba(13, 31, 69, 0.18);
 }
 
-/* ─── Reset ──────────────────────────────────────────────── */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* ─── Reset & Boxed Design System ────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-radius: 0px !important;
+}
 
 body {
   font-family: var(--font-main);
