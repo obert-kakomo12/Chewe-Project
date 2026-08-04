@@ -96,6 +96,12 @@ const TeacherWorkstation = () => {
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedHistorySession, setSelectedHistorySession] = useState(null);
+  
+  const [historyTab, setHistoryTab] = useState('sessions'); // 'sessions' or 'absents'
+  const [absentRecords, setAbsentRecords] = useState([]);
+  const [loadingAbsents, setLoadingAbsents] = useState(false);
+  const [absentSearchQuery, setAbsentSearchQuery] = useState('');
+  const [rosterFilter, setRosterFilter] = useState('all');
 
   const fetchAttendanceHistory = async () => {
     setLoadingHistory(true);
@@ -116,6 +122,28 @@ const TeacherWorkstation = () => {
       console.error('Failed to load attendance history', err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const fetchAbsentRecords = async () => {
+    setLoadingAbsents(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const actualClassName = selectedClass.includes('Homeroom - ') ? selectedClass.replace('Homeroom - ', '') : (selectedClass.split(' - ')[1] || selectedClass);
+      const courseObj = teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === selectedClass);
+      const courseQuery = courseObj ? `&courseId=${courseObj.id}` : '';
+      
+      const res = await fetch(`${API_BASE_URL}/attendance/absents?className=${encodeURIComponent(actualClassName)}${courseQuery}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAbsentRecords(data);
+      }
+    } catch (err) {
+      console.error('Failed to load absent records', err);
+    } finally {
+      setLoadingAbsents(false);
     }
   };
 
@@ -731,11 +759,12 @@ const TeacherWorkstation = () => {
                 className="action-button" 
                 onClick={() => {
                   fetchAttendanceHistory();
+                  fetchAbsentRecords();
                   setHistoryModalOpen(true);
                 }}
                 style={{ background: '#4f46e5', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <History size={16} /> Register History
+                <History size={16} /> Register History & Absents
               </button>
             </div>
           ) : null}
@@ -1451,14 +1480,14 @@ const TeacherWorkstation = () => {
       {/* ── Attendance Register History Modal ────────────────────────────── */}
       {historyModalOpen && (
         <div className="modal-overlay" onClick={() => setHistoryModalOpen(false)}>
-          <div className="report-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '850px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+          <div className="report-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
               <div>
                 <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#0d1f45' }}>
-                  <History size={22} style={{ color: 'var(--accent-blue)' }} /> Previously Marked Registers
+                  <History size={22} style={{ color: 'var(--accent-blue)' }} /> Attendance Register Audit & Absent Logs
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
-                  Audit log of marked attendance sessions including date recorded, target date, and summary counts for <strong>{selectedClass}</strong>.
+                  Complete record of marked registers and absent children log for <strong>{selectedClass}</strong>.
                 </p>
               </div>
               <button className="icon-button" onClick={() => setHistoryModalOpen(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
@@ -1466,97 +1495,205 @@ const TeacherWorkstation = () => {
               </button>
             </div>
 
-            {loadingHistory ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                Loading register history...
-              </div>
-            ) : attendanceHistory.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                No previously marked registers found for this class.
-              </div>
-            ) : (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                <table className="data-table" style={{ margin: 0 }}>
-                  <thead style={{ background: '#f8fafc' }}>
-                    <tr>
-                      <th>Date Marked / Recorded</th>
-                      <th>Register Target Date</th>
-                      <th>Class / Subject</th>
-                      <th style={{ textAlign: 'center' }}>Attendance Summary</th>
-                      <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attendanceHistory.map((session) => (
-                      <tr key={session.key}>
-                        <td data-label="Date Marked">
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Clock size={14} style={{ color: '#4f46e5' }} />
-                            {session.recordedAt ? new Date(session.recordedAt).toLocaleString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) : 'Not recorded'}
-                          </div>
-                        </td>
-                        <td data-label="Register Target Date">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
-                            <Calendar size={14} style={{ color: '#059669' }} />
-                            <strong>{session.registerDate}</strong>
-                          </div>
-                        </td>
-                        <td data-label="Class / Subject">
-                          <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                            {session.courseName}
-                          </span>
-                        </td>
-                        <td data-label="Attendance Summary" style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#059669', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
-                              Present: {session.presentCount}
-                            </span>
-                            <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
-                              Absent: {session.absentCount}
-                            </span>
-                            {session.lateCount > 0 && (
-                              <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
-                                Late: {session.lateCount}
-                              </span>
-                            )}
-                            {session.excusedCount > 0 && (
-                              <span style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
-                                Excused: {session.excusedCount}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td data-label="Actions" style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                            <button
-                              className="secondary-button"
-                              style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              onClick={() => setSelectedHistorySession(session)}
-                            >
-                              <Eye size={14} /> Details
-                            </button>
-                            <button
-                              className="action-button"
-                              style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}
-                              onClick={() => {
-                                setRegisterDate(session.registerDate);
-                                setHistoryModalOpen(false);
-                              }}
-                            >
-                              Load Register
-                            </button>
-                          </div>
-                        </td>
+            {/* Navigation Tabs */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>
+              <button
+                className="secondary-button"
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: historyTab === 'sessions' ? 'var(--accent-blue)' : '#f1f5f9',
+                  color: historyTab === 'sessions' ? '#fff' : 'var(--text-secondary)'
+                }}
+                onClick={() => {
+                  setHistoryTab('sessions');
+                  fetchAttendanceHistory();
+                }}
+              >
+                📋 Marked Register Sessions
+              </button>
+              <button
+                className="secondary-button"
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: historyTab === 'absents' ? '#ef4444' : '#f1f5f9',
+                  color: historyTab === 'absents' ? '#fff' : 'var(--text-secondary)'
+                }}
+                onClick={() => {
+                  setHistoryTab('absents');
+                  fetchAbsentRecords();
+                }}
+              >
+                🔴 Record of Absent Children ({absentRecords.length})
+              </button>
+            </div>
+
+            {historyTab === 'sessions' ? (
+              loadingHistory ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                  Loading register history...
+                </div>
+              ) : attendanceHistory.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                  No previously marked registers found for this class.
+                </div>
+              ) : (
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <table className="data-table" style={{ margin: 0 }}>
+                    <thead style={{ background: '#f8fafc' }}>
+                      <tr>
+                        <th>Date Marked / Recorded</th>
+                        <th>Register Target Date</th>
+                        <th>Class / Subject</th>
+                        <th style={{ textAlign: 'center' }}>Attendance Summary</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {attendanceHistory.map((session) => (
+                        <tr key={session.key}>
+                          <td data-label="Date Marked">
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Clock size={14} style={{ color: '#4f46e5' }} />
+                              {session.recordedAt ? new Date(session.recordedAt).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 'Not recorded'}
+                            </div>
+                          </td>
+                          <td data-label="Register Target Date">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                              <Calendar size={14} style={{ color: '#059669' }} />
+                              <strong>{session.registerDate}</strong>
+                            </div>
+                          </td>
+                          <td data-label="Class / Subject">
+                            <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                              {session.courseName}
+                            </span>
+                          </td>
+                          <td data-label="Attendance Summary" style={{ textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                              <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#059669', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                Present: {session.presentCount}
+                              </span>
+                              <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                Absent: {session.absentCount}
+                              </span>
+                              {session.lateCount > 0 && (
+                                <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                  Late: {session.lateCount}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td data-label="Actions" style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button
+                                className="secondary-button"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                onClick={() => {
+                                  setSelectedHistorySession(session);
+                                  setRosterFilter('all');
+                                }}
+                              >
+                                <Eye size={14} /> Details
+                              </button>
+                              <button
+                                className="action-button"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}
+                                onClick={() => {
+                                  setRegisterDate(session.registerDate);
+                                  setHistoryModalOpen(false);
+                                }}
+                              >
+                                Load Register
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : (
+              /* Absent Children Log Tab */
+              <div>
+                <div style={{ marginBottom: '12px' }}>
+                  <input
+                    type="text"
+                    className="premium-select"
+                    placeholder="🔍 Search absent child by name or student ID..."
+                    value={absentSearchQuery}
+                    onChange={(e) => setAbsentSearchQuery(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                {loadingAbsents ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                    Loading absent children records...
+                  </div>
+                ) : absentRecords.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#059669', fontWeight: 600 }}>
+                    ✓ No absent children recorded for this class!
+                  </div>
+                ) : (
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                    <table className="data-table" style={{ margin: 0, fontSize: '0.85rem' }}>
+                      <thead style={{ background: '#f8fafc' }}>
+                        <tr>
+                          <th>Student ID</th>
+                          <th>Student Name</th>
+                          <th>Absence Target Date</th>
+                          <th>Date & Time Marked</th>
+                          <th>Class / Subject</th>
+                          <th>Reason / Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {absentRecords
+                          .filter(r => 
+                            r.studentName.toLowerCase().includes(absentSearchQuery.toLowerCase()) || 
+                            r.studentId.toLowerCase().includes(absentSearchQuery.toLowerCase())
+                          )
+                          .map((rec) => (
+                            <tr key={rec.id}>
+                              <td style={{ fontWeight: 600 }}>{rec.studentId}</td>
+                              <td style={{ fontWeight: 700, color: '#dc2626' }}>{rec.studentName}</td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Calendar size={14} style={{ color: '#dc2626' }} />
+                                  <strong>{rec.date}</strong>
+                                </div>
+                              </td>
+                              <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                {rec.recordedAt ? new Date(rec.recordedAt).toLocaleString() : '—'}
+                              </td>
+                              <td style={{ color: 'var(--text-secondary)' }}>{rec.courseName}</td>
+                              <td>
+                                <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 500 }}>
+                                  {rec.notes || 'No remark entered'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1566,7 +1703,7 @@ const TeacherWorkstation = () => {
       {/* ── Detailed Session Roster Modal ──────────────────────────────────── */}
       {selectedHistorySession && (
         <div className="modal-overlay" onClick={() => setSelectedHistorySession(null)}>
-          <div className="report-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px', width: '90%', maxHeight: '85vh', overflowY: 'auto' }}>
+          <div className="report-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '750px', width: '90%', maxHeight: '85vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
               <div>
                 <h3 style={{ margin: 0, color: '#0d1f45' }}>
@@ -1584,20 +1721,32 @@ const TeacherWorkstation = () => {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div 
+                style={{ background: rosterFilter === 'all' ? '#e2e8f0' : '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center', cursor: 'pointer' }}
+                onClick={() => setRosterFilter('all')}
+              >
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Enrolled</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1e293b' }}>{selectedHistorySession.totalStudents}</div>
               </div>
-              <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)', textAlign: 'center' }}>
+              <div 
+                style={{ background: rosterFilter === 'Present' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.4)', textAlign: 'center', cursor: 'pointer' }}
+                onClick={() => setRosterFilter('Present')}
+              >
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#059669', textTransform: 'uppercase' }}>Children Present</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#059669' }}>{selectedHistorySession.presentCount}</div>
               </div>
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)', textAlign: 'center' }}>
+              <div 
+                style={{ background: rosterFilter === 'Absent' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.4)', textAlign: 'center', cursor: 'pointer' }}
+                onClick={() => setRosterFilter('Absent')}
+              >
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#dc2626', textTransform: 'uppercase' }}>Children Absent</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#dc2626' }}>{selectedHistorySession.absentCount}</div>
               </div>
               {selectedHistorySession.lateCount > 0 && (
-                <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)', textAlign: 'center' }}>
+                <div 
+                  style={{ background: rosterFilter === 'Late' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.4)', textAlign: 'center', cursor: 'pointer' }}
+                  onClick={() => setRosterFilter('Late')}
+                >
                   <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#d97706', textTransform: 'uppercase' }}>Children Late</div>
                   <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#d97706' }}>{selectedHistorySession.lateCount}</div>
                 </div>
@@ -1616,28 +1765,30 @@ const TeacherWorkstation = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedHistorySession.records.map((rec) => (
-                    <tr key={rec.id}>
-                      <td style={{ fontWeight: 600 }}>{rec.studentId}</td>
-                      <td style={{ fontWeight: 500 }}>{rec.studentName}</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <span style={{
-                          padding: '3px 10px',
-                          borderRadius: '12px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          background: rec.status === 'Present' ? 'rgba(16, 185, 129, 0.15)' : rec.status === 'Absent' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                          color: rec.status === 'Present' ? '#059669' : rec.status === 'Absent' ? '#dc2626' : '#d97706'
-                        }}>
-                          {rec.status}
-                        </span>
-                      </td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{rec.notes || '—'}</td>
-                      <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {rec.recordedAt ? new Date(rec.recordedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                      </td>
-                    </tr>
-                  ))}
+                  {selectedHistorySession.records
+                    .filter(rec => rosterFilter === 'all' || rec.status === rosterFilter)
+                    .map((rec) => (
+                      <tr key={rec.id}>
+                        <td style={{ fontWeight: 600 }}>{rec.studentId}</td>
+                        <td style={{ fontWeight: rec.status === 'Absent' ? 700 : 500, color: rec.status === 'Absent' ? '#dc2626' : 'inherit' }}>{rec.studentName}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span style={{
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            background: rec.status === 'Present' ? 'rgba(16, 185, 129, 0.15)' : rec.status === 'Absent' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                            color: rec.status === 'Present' ? '#059669' : rec.status === 'Absent' ? '#dc2626' : '#d97706'
+                          }}>
+                            {rec.status}
+                          </span>
+                        </td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{rec.notes || '—'}</td>
+                        <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {rec.recordedAt ? new Date(rec.recordedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

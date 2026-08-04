@@ -173,4 +173,28 @@ export class AttendanceService {
 
     return Array.from(groupedMap.values()).sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
   }
+
+  async getAbsentChildrenRecord(className?: string, courseId?: number) {
+    const whereClause: any = { status: 'Absent' };
+    if (courseId) {
+      whereClause.course = { id: courseId };
+    }
+
+    const records = await this.attendanceRepository.find({
+      where: whereClause,
+      relations: { student: true, course: { class_room: true, subject: true } },
+      order: { date: 'DESC', recorded_at: 'DESC' }
+    });
+
+    return records.map(r => ({
+      id: r.id,
+      studentId: r.student ? `STU-${String(r.student.id).padStart(3, '0')}` : 'N/A',
+      studentDbId: r.student?.id,
+      studentName: r.student?.name || 'Unknown Student',
+      date: r.date ? (typeof r.date === 'string' ? r.date : new Date(r.date).toISOString().split('T')[0]) : 'Unknown',
+      recordedAt: r.recorded_at,
+      courseName: r.course ? `${r.course.subject?.name || ''} - ${r.course.class_room?.name || ''}` : className || 'General',
+      notes: r.notes || 'No reason provided'
+    }));
+  }
 }
