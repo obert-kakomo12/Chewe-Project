@@ -46,4 +46,9 @@ export class AttendanceController {
   async getRecords(@Query('date') date: string, @Query('className') className: string, @Query('courseId') courseId?: string) {
     return this.attendanceService.getRecordsByDateAndClass(date, className, courseId ? parseInt(courseId, 10) : undefined);
   }
+
+  @Get('history')
+  async getHistory(@Query('className') className?: string, @Query('courseId') courseId?: string) {
+    return this.attendanceService.getAttendanceHistory(className, courseId ? parseInt(courseId, 10) : undefined);
+  }
 }

@@ -113,4 +113,64 @@ export class AttendanceService {
       relations: { student: true }
     });
   }
+
+  async getAttendanceHistory(className?: string, courseId?: number) {
+    const whereClause: any = {};
+    if (courseId) {
+      whereClause.course = { id: courseId };
+    }
+
+    const records = await this.attendanceRepository.find({
+      where: whereClause,
+      relations: { student: true, course: { class_room: true, subject: true } },
+      order: { recorded_at: 'DESC' }
+    });
+
+    const groupedMap = new Map<string, any>();
+
+    for (const record of records) {
+      const dateStr = record.date ? (typeof record.date === 'string' ? record.date : new Date(record.date).toISOString().split('T')[0]) : 'Unknown';
+      const cId = record.course?.id || 'nocourse';
+      const key = `${dateStr}_${cId}`;
+
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, {
+          key,
+          registerDate: dateStr,
+          courseId: record.course?.id || null,
+          courseName: record.course ? `${record.course.subject?.name || ''} - ${record.course.class_room?.name || ''}` : className || 'General',
+          recordedAt: record.recorded_at,
+          totalStudents: 0,
+          presentCount: 0,
+          absentCount: 0,
+          lateCount: 0,
+          excusedCount: 0,
+          records: []
+        });
+      }
+
+      const group = groupedMap.get(key);
+      group.totalStudents++;
+      if (record.status === 'Present') group.presentCount++;
+      else if (record.status === 'Absent') group.absentCount++;
+      else if (record.status === 'Late') group.lateCount++;
+      else if (record.status === 'Excused') group.excusedCount++;
+
+      if (record.recorded_at && new Date(record.recorded_at) > new Date(group.recordedAt)) {
+        group.recordedAt = record.recorded_at;
+      }
+
+      group.records.push({
+        id: record.id,
+        studentId: record.student ? `STU-${String(record.student.id).padStart(3, '0')}` : 'N/A',
+        studentDbId: record.student?.id,
+        studentName: record.student?.name || 'Unknown Student',
+        status: record.status,
+        notes: record.notes || '',
+        recordedAt: record.recorded_at
+      });
+    }
+
+    return Array.from(groupedMap.values()).sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+  }
 }

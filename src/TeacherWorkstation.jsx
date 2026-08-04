@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Save, Download, X, AlertTriangle, UserCheck, Brain, RefreshCw, Plus } from 'lucide-react';
+import { FileText, Save, Download, X, AlertTriangle, UserCheck, Brain, RefreshCw, Plus, History, Calendar, Clock, Eye } from 'lucide-react';
 import EncryptionBarrier from './EncryptionBarrier';
 import { API_BASE_URL } from './config';
 import { jsPDF } from 'jspdf';
@@ -92,6 +92,33 @@ const TeacherWorkstation = () => {
   const [newStudentData, setNewStudentData] = useState({ name: '', email: '' });
   const [classMaterials, setClassMaterials] = useState([]);
   
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedHistorySession, setSelectedHistorySession] = useState(null);
+
+  const fetchAttendanceHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const actualClassName = selectedClass.includes('Homeroom - ') ? selectedClass.replace('Homeroom - ', '') : (selectedClass.split(' - ')[1] || selectedClass);
+      const courseObj = teacherProfile?.courses?.find(c => `${c.subject?.name} - ${c.class_room?.name}` === selectedClass);
+      const courseQuery = courseObj ? `&courseId=${courseObj.id}` : '';
+      
+      const res = await fetch(`${API_BASE_URL}/attendance/history?className=${encodeURIComponent(actualClassName)}${courseQuery}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAttendanceHistory(data);
+      }
+    } catch (err) {
+      console.error('Failed to load attendance history', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const [teacherCourses, setTeacherCourses] = useState([]);
   const [homeroomClasses, setHomeroomClasses] = useState([]);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -679,6 +706,16 @@ const TeacherWorkstation = () => {
               />
               <button className="action-button" onClick={handleSubmitRegister} disabled={isSubmitting}>
                 <Save size={16} /> {isSubmitting ? 'Submitting...' : 'Submit Register'}
+              </button>
+              <button 
+                className="action-button" 
+                onClick={() => {
+                  fetchAttendanceHistory();
+                  setHistoryModalOpen(true);
+                }}
+                style={{ background: '#4f46e5', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <History size={16} /> Register History
               </button>
             </div>
           ) : null}
@@ -1359,6 +1396,188 @@ const TeacherWorkstation = () => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
               <button className="secondary-button" onClick={() => window.print()} disabled={!dossierData}>
                 🖨️ Print Dossier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Attendance Register History Modal ────────────────────────────── */}
+      {historyModalOpen && (
+        <div className="modal-overlay" onClick={() => setHistoryModalOpen(false)}>
+          <div className="report-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '850px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#0d1f45' }}>
+                  <History size={22} style={{ color: 'var(--accent-blue)' }} /> Previously Marked Registers
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                  Audit log of marked attendance sessions including date recorded, target date, and summary counts for <strong>{selectedClass}</strong>.
+                </p>
+              </div>
+              <button className="icon-button" onClick={() => setHistoryModalOpen(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            {loadingHistory ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                Loading register history...
+              </div>
+            ) : attendanceHistory.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                No previously marked registers found for this class.
+              </div>
+            ) : (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <table className="data-table" style={{ margin: 0 }}>
+                  <thead style={{ background: '#f8fafc' }}>
+                    <tr>
+                      <th>Date Marked / Recorded</th>
+                      <th>Register Target Date</th>
+                      <th>Class / Subject</th>
+                      <th style={{ textAlign: 'center' }}>Attendance Summary</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceHistory.map((session) => (
+                      <tr key={session.key}>
+                        <td data-label="Date Marked">
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock size={14} style={{ color: '#4f46e5' }} />
+                            {session.recordedAt ? new Date(session.recordedAt).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'Not recorded'}
+                          </div>
+                        </td>
+                        <td data-label="Register Target Date">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                            <Calendar size={14} style={{ color: '#059669' }} />
+                            <strong>{session.registerDate}</strong>
+                          </div>
+                        </td>
+                        <td data-label="Class / Subject">
+                          <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                            {session.courseName}
+                          </span>
+                        </td>
+                        <td data-label="Attendance Summary" style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#059669', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                              Present: {session.presentCount}
+                            </span>
+                            <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                              Absent: {session.absentCount}
+                            </span>
+                            {session.lateCount > 0 && (
+                              <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                Late: {session.lateCount}
+                              </span>
+                            )}
+                            {session.excusedCount > 0 && (
+                              <span style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                Excused: {session.excusedCount}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td data-label="Actions" style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            <button
+                              className="secondary-button"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => setSelectedHistorySession(session)}
+                            >
+                              <Eye size={14} /> Details
+                            </button>
+                            <button
+                              className="action-button"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#059669' }}
+                              onClick={() => {
+                                setRegisterDate(session.registerDate);
+                                setHistoryModalOpen(false);
+                              }}
+                            >
+                              Load Register
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Detailed Session Roster Modal ──────────────────────────────────── */}
+      {selectedHistorySession && (
+        <div className="modal-overlay" onClick={() => setSelectedHistorySession(null)}>
+          <div className="report-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px', width: '90%', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#0d1f45' }}>
+                  Register Roster Details
+                </h3>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                  <span>📅 <strong>Register Target Date:</strong> {selectedHistorySession.registerDate}</span>
+                  <span>🕒 <strong>Recorded On:</strong> {selectedHistorySession.recordedAt ? new Date(selectedHistorySession.recordedAt).toLocaleString() : 'N/A'}</span>
+                  <span>🏫 <strong>Class:</strong> {selectedHistorySession.courseName}</span>
+                </div>
+              </div>
+              <button className="icon-button" onClick={() => setSelectedHistorySession(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+              <table className="data-table" style={{ margin: 0, fontSize: '0.85rem' }}>
+                <thead style={{ background: '#f8fafc' }}>
+                  <tr>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th style={{ textAlign: 'center' }}>Status</th>
+                    <th>Remarks / Notes</th>
+                    <th>Recorded Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedHistorySession.records.map((rec) => (
+                    <tr key={rec.id}>
+                      <td style={{ fontWeight: 600 }}>{rec.studentId}</td>
+                      <td style={{ fontWeight: 500 }}>{rec.studentName}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span style={{
+                          padding: '3px 10px',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          background: rec.status === 'Present' ? 'rgba(16, 185, 129, 0.15)' : rec.status === 'Absent' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                          color: rec.status === 'Present' ? '#059669' : rec.status === 'Absent' ? '#dc2626' : '#d97706'
+                        }}>
+                          {rec.status}
+                        </span>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{rec.notes || '—'}</td>
+                      <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {rec.recordedAt ? new Date(rec.recordedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+              <button className="secondary-button" onClick={() => setSelectedHistorySession(null)}>
+                Close
               </button>
             </div>
           </div>
