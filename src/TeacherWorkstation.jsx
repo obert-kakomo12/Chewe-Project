@@ -582,6 +582,26 @@ const TeacherWorkstation = () => {
     return data;
   }, [students]);
 
+  const attendanceStats = useMemo(() => {
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let unmarked = 0;
+    processedStudents.forEach(s => {
+      if (s.attendanceStatus === 'Present') present++;
+      else if (s.attendanceStatus === 'Absent') absent++;
+      else if (s.attendanceStatus === 'Late') late++;
+      else unmarked++;
+    });
+    return {
+      total: processedStudents.length,
+      present,
+      absent,
+      late,
+      unmarked
+    };
+  }, [processedStudents]);
+
   const classMean = useMemo(() => {
     if (!processedStudents.length) return 0;
     return Math.round(processedStudents.reduce((a, s) => a + s.total, 0) / processedStudents.length);
@@ -954,6 +974,31 @@ const TeacherWorkstation = () => {
           </table>
           </>
         ) : viewMode === 'attendance' ? (
+          <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Children</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1e293b' }}>{attendanceStats.total}</div>
+            </div>
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#059669', textTransform: 'uppercase' }}>Children Present</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#059669' }}>{attendanceStats.present}</div>
+            </div>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#dc2626', textTransform: 'uppercase' }}>Children Absent</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#dc2626' }}>{attendanceStats.absent}</div>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#d97706', textTransform: 'uppercase' }}>Children Late</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#d97706' }}>{attendanceStats.late}</div>
+            </div>
+            {attendanceStats.unmarked > 0 && (
+              <div style={{ background: 'rgba(100, 116, 139, 0.1)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(100, 116, 139, 0.3)', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>Unmarked</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#475569' }}>{attendanceStats.unmarked}</div>
+              </div>
+            )}
+          </div>
           <table className="data-table">
             <thead>
               <tr>
@@ -1012,6 +1057,7 @@ const TeacherWorkstation = () => {
               ))}
             </tbody>
           </table>
+          </>
         ) : viewMode === 'manage-class' ? (
           <div style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
@@ -1535,6 +1581,27 @@ const TeacherWorkstation = () => {
               <button className="icon-button" onClick={() => setSelectedHistorySession(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Enrolled</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1e293b' }}>{selectedHistorySession.totalStudents}</div>
+              </div>
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#059669', textTransform: 'uppercase' }}>Children Present</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#059669' }}>{selectedHistorySession.presentCount}</div>
+              </div>
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#dc2626', textTransform: 'uppercase' }}>Children Absent</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#dc2626' }}>{selectedHistorySession.absentCount}</div>
+              </div>
+              {selectedHistorySession.lateCount > 0 && (
+                <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#d97706', textTransform: 'uppercase' }}>Children Late</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#d97706' }}>{selectedHistorySession.lateCount}</div>
+                </div>
+              )}
             </div>
 
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
