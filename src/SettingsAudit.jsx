@@ -57,15 +57,15 @@ const SettingsAudit = () => {
             <h3 className="section-title">System Hardening</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              {/* Double-Lock */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#f0f4f8', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              {/* RBAC Welfare Control */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #6ee7b7' }}>
                 <div>
                   <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.875rem', color: 'var(--text-primary)', marginBottom: '3px' }}>
-                    <Key size={15} color="var(--accent-blue)" /> Double-Lock Welfare
+                    <Key size={15} color="var(--status-success)" /> Role-Based Access Control (RBAC)
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--status-warning)', fontWeight: 600, marginTop: '4px' }}>Feature in Development</div>
+                  <div style={{ fontSize: '0.75rem', color: '#065f46', fontWeight: 600, marginTop: '4px' }}>Welfare & Executive Access Governed by Roles</div>
                 </div>
-                <Toggle on={doubleLockEnabled} onToggle={() => alert('Double-Lock Welfare requires Enterprise encryption module update.')} color="var(--status-success)" />
+                <Toggle on={true} onToggle={() => alert('Welfare access is controlled directly via User Role Permissions (Admin, Counselor, Teacher).')} color="var(--status-success)" />
               </div>
 
               {/* MFA */}

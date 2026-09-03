@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Headers, UnauthorizedException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Headers, UnauthorizedException, ForbiddenException, Query } from '@nestjs/common';
 import { AssessmentsService } from './assessments.service';
 import { FinanceService } from '../finance/finance.service';
 import { JwtService } from '@nestjs/jwt';
@@ -11,17 +11,21 @@ export class AssessmentsController {
     private readonly jwtService: JwtService
   ) {}
 
-  private extractUserId(authHeader?: string): number {
+  private extractUserPayload(authHeader?: string): { userId: number; role?: string } {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Not authenticated');
     }
     const token = authHeader.split(' ')[1];
     try {
       const payload = this.jwtService.verify(token);
-      return payload.sub;
+      return { userId: payload.sub, role: payload.role };
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
+  }
+
+  private extractUserId(authHeader?: string): number {
+    return this.extractUserPayload(authHeader).userId;
   }
 
   @Get('my-marks')
@@ -32,6 +36,24 @@ export class AssessmentsController {
       throw new UnauthorizedException('Your results have been withheld. Please contact the administration regarding your fee balance.');
     }
     return this.assessmentsService.findMarksByStudentId(userId);
+  }
+
+  @Get('status/:className')
+  async getStatus(@Param('className') className: string) {
+    return this.assessmentsService.getClassAssessmentStatus(className);
+  }
+
+  @Post('unlock')
+  async unlockMarks(
+    @Headers('authorization') authHeader: string,
+    @Body() body: { className: string, userRole?: string }
+  ) {
+    const payload = this.extractUserPayload(authHeader);
+    const role = payload.role || body.userRole;
+    if (role !== 'Admin' && role !== 'Executive') {
+      throw new ForbiddenException('Only Executive Administrators can unlock submitted marks.');
+    }
+    return this.assessmentsService.unlockClassAssessment(body.className);
   }
 
   @Get()

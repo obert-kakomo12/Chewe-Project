@@ -22,20 +22,35 @@ const LoginScreen = ({ onLogin }) => {
     setError('');
     setSuccess('');
 
+    const cleanEmail = email.trim();
+
     if (isForgotPassword) {
       try {
         const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email: cleanEmail }),
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to send reset email');
+        const responseText = await response.text();
+        let data = {};
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonErr) {
+          throw new Error(`Backend server is currently offline or returning an invalid response (${response.status}).`);
+        }
+        if (!response.ok) {
+          const msg = Array.isArray(data?.message) ? data.message.join(', ') : (data?.message || 'Failed to send reset email');
+          throw new Error(msg);
+        }
         
         setSuccess('If the email exists, a reset link has been sent!');
         setIsForgotPassword(false);
       } catch (err) {
-        setError(err.message);
+        if (err.message && err.message.includes('pattern')) {
+          setError('Network connection error or invalid request format. Please check your internet connection.');
+        } else {
+          setError(err.message || 'An error occurred.');
+        }
       } finally {
         setLoading(false);
       }
@@ -43,7 +58,7 @@ const LoginScreen = ({ onLogin }) => {
     }
 
     const endpoint = '/auth/login';
-    const payload = { email, password };
+    const payload = { email: cleanEmail, password };
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -52,10 +67,17 @@ const LoginScreen = ({ onLogin }) => {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data = {};
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonErr) {
+        throw new Error(`Backend server is currently offline or returning an invalid response (${response.status}).`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed');
+        const msg = Array.isArray(data?.message) ? data.message.join(', ') : (data?.message || 'Authentication failed');
+        throw new Error(msg);
       }
 
       setSuccess('Login successful!');
@@ -91,7 +113,11 @@ const LoginScreen = ({ onLogin }) => {
         setError('Login successful but no token received.');
       }
     } catch (err) {
-      setError(err.message);
+      if (err.message && err.message.includes('pattern')) {
+        setError('Connection error or invalid request URL pattern. Please check your network or try again.');
+      } else {
+        setError(err.message || 'Authentication failed');
+      }
     } finally {
       setLoading(false);
     }

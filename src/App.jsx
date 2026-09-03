@@ -677,9 +677,6 @@ function App() {
           </div>
         );
       }
-      if (!isDecrypted) {
-        return <EncryptionBarrier userEmail={userEmail} onUnlock={() => setIsDecrypted(true)} />;
-      }
     }
 
     switch (activeItem) {

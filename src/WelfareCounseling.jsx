@@ -137,9 +137,9 @@ const WelfareCounseling = () => {
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px',
-            background: '#fff5f5', border: '1px solid #fca5a5', borderRadius: '20px',
-            color: 'var(--status-danger)', fontWeight: 700, fontSize: '0.78rem' }}>
-            <Lock size={13} /> Double-Lock Active
+            background: '#f0fdf4', border: '1px solid #6ee7b7', borderRadius: '20px',
+            color: 'var(--status-success)', fontWeight: 700, fontSize: '0.78rem' }}>
+            <ShieldAlert size={13} /> RBAC Protected
           </span>
           <TabBtn label="Case Repository" active={activeTab === 'cases'}    onClick={() => setActiveTab('cases')} />
           <TabBtn label="Guidance Reports" active={activeTab === 'guidance'} onClick={() => setActiveTab('guidance')} />
@@ -271,18 +271,18 @@ const WelfareCounseling = () => {
                           </td>
                           <td data-label="Type" style={{ fontSize: '0.82rem' }}>{log.type}</td>
                           <td data-label="Data">
-                            {log.encrypted
-                              ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}><Lock size={11} /> Encrypted</span>
-                              : <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '0.72rem' }}><EyeOff size={11} /> Standard</span>}
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--status-success)', fontSize: '0.72rem', fontWeight: 600 }}>
+                              <ShieldAlert size={11} /> Protected
+                            </span>
                           </td>
                           <td data-label="Action">
                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                               <button onClick={() => handleSelectCase(log)} className="icon-button" style={{ color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                 <Search size={14} /> Analyze
                               </button>
-                              <button className="icon-button" disabled={log.encrypted || generatingId === log.id}
+                              <button className="icon-button" disabled={generatingId === log.id}
                                 onClick={() => generateAiSuggestion(log)}
-                                style={{ color: log.encrypted ? 'var(--text-muted)' : (generatingId === log.id ? 'var(--text-muted)' : '#8b5cf6'), cursor: log.encrypted ? 'not-allowed' : 'pointer' }} title="Generate Predictive AI Suggestion">
+                                style={{ color: generatingId === log.id ? 'var(--text-muted)' : '#8b5cf6', cursor: 'pointer' }} title="Generate Predictive AI Suggestion">
                                 <Brain size={14} />
                               </button>
                             </div>

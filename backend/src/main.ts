@@ -8,6 +8,7 @@ async function bootstrap() {
   // CORS Hardening
   app.enableCors({
     origin: [
+      'http://localhost:5050',
       'http://localhost:5000', 
       'http://localhost:5173', 
       'https://ctschool.vercel.app', 
@@ -24,6 +25,6 @@ async function bootstrap() {
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 5000);
 }
 bootstrap();

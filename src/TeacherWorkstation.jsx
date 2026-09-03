@@ -39,6 +39,7 @@ const TeacherWorkstation = () => {
   const [registerDate,    setRegisterDate]    = useState(getLocalDateString());
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [selectedClass,   setSelectedClass]   = useState('');
+  const [assessmentStatus, setAssessmentStatus] = useState('Draft');
   const [classDataCache,  setClassDataCache]  = useState({});
   const [students,        setStudents]        = useState([]);
   const [reportModalData, setReportModalData] = useState(null);
@@ -354,9 +355,39 @@ const TeacherWorkstation = () => {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
+        setAssessmentStatus('Graded');
         alert('Marks saved successfully to the database.');
       } else {
-        alert('Failed to save marks.');
+        const errData = await res.json();
+        alert(errData.message || 'Failed to save marks.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to server.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUnlockMarks = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const actualClassName = selectedClass.includes(' - ') ? selectedClass.split(' - ')[1] : selectedClass;
+      const res = await fetch(`${API_BASE_URL}/assessments/unlock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ className: actualClassName, userRole: currentUserRole })
+      });
+      if (res.ok) {
+        setAssessmentStatus('Draft');
+        alert('Marks unlocked successfully! Teachers can edit scores again.');
+      } else {
+        alert('Failed to unlock marks.');
       }
     } catch (err) {
       console.error(err);
@@ -462,6 +493,11 @@ const TeacherWorkstation = () => {
   const handleClassSwitch = async (newClass, currentCache = classDataCache) => {
     setSelectedClass(newClass);
     const actualClassName = newClass.includes(' - ') ? newClass.split(' - ')[1] : newClass;
+
+    fetch(`${API_BASE_URL}/assessments/status/${encodeURIComponent(actualClassName)}`)
+      .then(res => res.json())
+      .then(data => setAssessmentStatus(data.status || 'Draft'))
+      .catch(() => setAssessmentStatus('Draft'));
     
     if (currentCache[newClass]) {
       setStudents(currentCache[newClass]);

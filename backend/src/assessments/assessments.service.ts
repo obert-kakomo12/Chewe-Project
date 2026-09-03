@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Assessment } from './entities/assessment.entity';
@@ -105,6 +105,24 @@ export class AssessmentsService {
     }
   }
 
+  async getClassAssessmentStatus(className: string) {
+    const assessment = await this.assessmentRepository.findOne({
+      where: { class: className, subject: 'Term Report', type: 'End Term' },
+    });
+    return { status: assessment ? assessment.status : 'Draft' };
+  }
+
+  async unlockClassAssessment(className: string) {
+    const assessment = await this.assessmentRepository.findOne({
+      where: { class: className, subject: 'Term Report', type: 'End Term' },
+    });
+    if (assessment) {
+      assessment.status = 'Draft';
+      await this.assessmentRepository.save(assessment);
+    }
+    return { success: true, status: 'Draft', message: `Marks unlocked for ${className}.` };
+  }
+
   async saveBulkMarks(className: string, marks: any[], topicName?: string, topicDate?: string, topicExercises?: number, topicMaxScore?: number, courseId?: number, topicLink?: string, teacherName?: string) {
     let assessment: Assessment | null;
     
@@ -155,6 +173,7 @@ export class AssessmentsService {
         await this.assessmentRepository.save(assessment);
       }
     }
+    await this.assessmentRepository.save(assessment);
 
     let sum = 0;
     let count = 0;
@@ -195,7 +214,7 @@ export class AssessmentsService {
       await this.assessmentRepository.save(assessment);
     }
 
-    return { success: true, message: 'Marks successfully saved to database.' };
+    return { success: true, message: 'Marks successfully saved and submitted to database.', status: assessment.status };
   }
 
   async getTopicAverages(className: string) {
